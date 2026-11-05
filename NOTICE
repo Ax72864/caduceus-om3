@@ -9,14 +9,14 @@ official firmware file that each user downloads themselves; releases/*/patch.jso
 
 Based on Caduceus (cakelesscoder/caduceus-ep7, Apache-2.0, Copyright 2026 cakelesscoder), firmware patches for the
 Olympus PEN E-P7: the on-camera look editor design, the BUNDLES.BIN slot layout (firmware/vendor/
-caduceus-bundles-layout.json), the tone-curve model and base LUT in the Look Lab (looklab/data.js, ported from its
-webapp), the 29 starter colour looks in the Look Lab, the Look Lab's importer for Caduceus look codes, pack links and LOOKS.BIN
-(ported from its webapp/src/sharecode.ts, pack.ts and format.ts), and the official-firmware download request in patch.py.
+caduceus-bundles-layout.json), the Caduceus Control Panel web app (webapp/, built into looklab/), to which this project adds the OM-3 mode
+(webapp/src/om3.ts, om3names.ts and the OM-3 parts of main.ts, preview.ts and pack.ts), and the official-firmware
+download request in patch.py.
 
-Test photos in looklab/samples are public domain (CC0 1.0); see looklab/samples/CREDITS.md.
+Sample photos in webapp/public/samples are public domain (CC0 1.0); see webapp/public/samples/CREDITS.md.
 
-The Look Lab embeds "OM3 Label Condensed", a renamed ASCII subset of DejaVu Sans Condensed (Bitstream Vera licence;
-DejaVu changes public domain), to draw profile-name pictures; see looklab/FONT-LICENSE.txt.
+The Control Panel's OM-3 mode loads "OM3 Label Condensed", a renamed ASCII subset of DejaVu Sans Condensed (Bitstream
+Vera licence; DejaVu changes public domain), to draw profile-name pictures; see webapp/public/fonts/FONT-LICENSE.txt.
 
 Developer tools in tools/emulator drive om-emu (github.com/flatpanda/om-emu), which is not included and keeps its
 own licence.

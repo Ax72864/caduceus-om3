@@ -109,8 +109,8 @@ anything (that is how the same updater behaves on the E-P7): make the files agai
    Saturation (All) → **Hue** → **Light** → **WB/BW** → back to **Profiles**. The label under the wheel names the page.
 4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card.
 
-To bring in profiles from the [Look Lab](https://androidfanman.github.io/caduceus-om3/): save `PROFILES.BIN` there,
-put it in the card's `OM3MOD` folder, then on the Profiles page turn the 12 o'clock spot to 1–5. See
+To bring in profiles from the [Control Panel](https://androidfanman.github.io/caduceus-om3/) (OM SYSTEM OM-3 selected at
+the top): save `PROFILES.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD` folder, then on the Profiles page turn the 12 o'clock spot to 1–5. See
 [USING.md](USING.md) for every page.
 
 ## Restore stock firmware
@@ -145,7 +145,7 @@ says 1.1 and that the flash finished (steady, then blinking).
 level. A locked or full card can't be written.
 
 **The Profiles page is missing**: the card's `PROFILES.BIN` failed the camera's check (damaged or edited by hand), so
-the camera ignored it and left it alone. Open it in the Look Lab and save it again, or delete it: with no file, the
+the camera ignored it and left it alone. Open it in the Control Panel and save it again, or delete it: with no file, the
 camera starts a fresh, neutral bank.
 
 **Something else is wrong**: remove the `OM3MOD` folder (copy it to your computer first: your settings are in it) and
@@ -158,11 +158,11 @@ switch on again. If that doesn't help, [restore stock firmware](#restore-stock-f
 
 **Does it change the Monochrome profiles?** No. Only COLOR 1–4. The MONO profiles keep the camera's own editor.
 
-**Can I share profiles?** Yes: send a `PROFILES.BIN`, or open it in the Look Lab and pass on the file it saves.
+**Can I share profiles?** Yes: send a `PROFILES.BIN`, or use **Share profiles** in the Control Panel to send a link.
 Copying one onto a card replaces that camera's whole bank.
 
-**Can I use Caduceus looks?** Yes: the Look Lab's **Import from Caduceus…** takes Caduceus look codes, pack links,
-packs and E-P7 `LOOKS.BIN` files and turns each colour look into an OM-3 profile.
+**Can I use Caduceus looks?** Yes: it's the same Control Panel. In OM-3 mode, **Paste code** takes Caduceus look
+codes and pack links, and **Open…** takes packs and E-P7 `LOOKS.BIN` files; each colour look becomes an OM-3 profile.
 
 **Why do I have to make the file myself?** OM's licence doesn't allow sharing their firmware, so this project only
 publishes its own changes and the patcher applies them to your copy of the official file.

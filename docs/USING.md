@@ -43,24 +43,27 @@ spot picks one, and the label under the wheel shows its name:
 | 1–5 with a profile | that profile | its name, e.g. **Velvia** |
 | 1–5 with no profile | neutral, ready to build a new one | **Empty** |
 
-The names come from `OM3MOD/NAMES.BIN`. The camera can't draw text in that spot, only pictures, so the Look Lab
-draws each name as a small picture in the camera's own label style and saves them in `NAMES.BIN` next to
+The names come from `OM3MOD/NAMES.BIN`. The camera can't draw text in that spot, only pictures, so the Control
+Panel draws each name as a small picture in the camera's own label style and saves them in `NAMES.BIN` next to
 `PROFILES.BIN`. The camera reads both at the first half-press after you switch on. It saves `PROFILES.BIN` itself
-when you change profiles, but it never changes `NAMES.BIN`: names only change when you save from the Look Lab.
+when you change profiles, but it never changes `NAMES.BIN`: names only change when you save from the Control Panel.
 Without `NAMES.BIN` (or with a damaged one) the label just says "Profiles".
 
-### Make profiles in the Look Lab
+### Make profiles in the Control Panel
 
-1. Open the [Look Lab](https://androidfanman.github.io/caduceus-om3/). Pick a COLOR, then **+ New profile**, a
-   starter look, or **Import from Caduceus…**.
-2. Give it a name (up to 15 letters, numbers and symbols; other characters become `?`). Long names are squeezed to
-   fit, and if one COLOR's five names don't fit the camera's space, its lettering is made a little smaller.
-3. **Save to the SD card…** (Chrome or Edge on a computer) writes `PROFILES.BIN` and `NAMES.BIN` into the card's
-   `OM3MOD` folder. Elsewhere, **Save card files (.zip)** downloads both: copy them into `OM3MOD` on the card.
-4. Put the card in the camera, switch on and half-press once. Every COLOR starts at 0; turn the Profiles dial to a
+1. Open the [Caduceus Control Panel](https://androidfanman.github.io/caduceus-om3/) and check **OM SYSTEM OM-3** is
+   selected at the very top (the other choice is the E-P7). The left side lists COLOR 1–4 with profiles 1–5.
+2. Click a number. For one that says **Empty**, choose **Blank profile**, **From the built-in library…** or
+   **Paste a code…** (a Caduceus look code or link). Click a profile to edit it; × empties its number; drag or ↑ ↓
+   moves it to another number.
+3. Give it a name (up to 15 letters, numbers and symbols). Long names are squeezed to fit, and if one COLOR's five
+   names don't fit the camera's space, its lettering is made a little smaller.
+4. **Export › Save to card…** (Chrome or Edge on a computer) writes `PROFILES.BIN` and `NAMES.BIN` into the card's
+   `OM3MOD` folder. Elsewhere, **Card folder (.zip)** downloads both: copy them into `OM3MOD` on the card.
+5. Put the card in the camera, switch on and half-press once. Every COLOR starts at 0; turn the Profiles dial to a
    number to load that profile.
 
-Always copy both files together. Moving or deleting profiles in the Look Lab changes their numbers, and the
+Always copy both files together. Moving or emptying profiles in the Control Panel changes their numbers, and the
 names follow only if `NAMES.BIN` is copied too.
 
 ### Make a profile on the camera
@@ -74,28 +77,27 @@ names follow only if `NAMES.BIN` is copied too.
 It works straight away, but the label still says **Empty**: the camera has no way to type a name, and it doesn't
 change `NAMES.BIN`. To name it:
 
-1. Put the card in your computer and open the card's `OM3MOD/PROFILES.BIN` in the Look Lab (**Open PROFILES.BIN from
-   the card…**). The camera's profiles appear with their numbers; one you made shows as "Profile n".
+1. Put the card in your computer and open the card's `OM3MOD/PROFILES.BIN` in the Control Panel (**Open…**). The camera's profiles appear with their numbers; one you made shows as "Profile n".
 2. Type its name, then save both files back to the card as above.
 
 Don't change profiles on the camera between opening the card's `PROFILES.BIN` and copying the new files back: the
-copy replaces the camera's whole bank. If you save it from the Look Lab without a name, it is labelled "Profile n".
+copy replaces the camera's whole bank. If you save it from the Control Panel without a name, it is labelled "Profile n".
 
 ### Change or rename a profile
 
 - **On the camera:** select it on the Profiles page and change anything; the next half-press saves it. Its name
   stays.
-- **In the Look Lab:** open the card's `PROFILES.BIN`, change or rename it, and save both files back.
+- **In the Control Panel:** open the card's `PROFILES.BIN`, change or rename it, and save both files back.
 
 ## Files on the card (`OM3MOD`)
 
 | File | What it is |
 |---|---|
 | `BUNDLES.BIN` | the wheels' current values (written by the camera; `.NEW` / `.BAK` are its safety copies) |
-| `PROFILES.BIN` | the profile bank: 4 COLORs × 5 profiles. Made by the camera, or by the Look Lab |
+| `PROFILES.BIN` | the profile bank: 4 COLORs × 5 profiles. Made by the camera, or by the Control Panel |
 | `GUIDES.BIN` | the page labels under the wheel (optional; without it the stock label shows) |
-| `NAMES.BIN` | the profile names for the Profiles page, made by the Look Lab with `PROFILES.BIN` (optional; the camera never changes it) |
+| `NAMES.BIN` | the profile names for the Profiles page, made by the Control Panel with `PROFILES.BIN` (optional; the camera never changes it) |
 
-Copying a `PROFILES.BIN` from the Look Lab replaces the camera's bank. To keep profiles made on the camera, open
-the card's `PROFILES.BIN` in the Look Lab first, edit, then save back. A Look Lab file starts every COLOR at 0, so
+Copying a `PROFILES.BIN` from the Control Panel replaces the camera's bank. To keep profiles made on the camera, open
+the card's `PROFILES.BIN` in the Control Panel first, edit, then save back. Its file starts every COLOR at 0, so
 your current camera settings stay until you pick a profile.

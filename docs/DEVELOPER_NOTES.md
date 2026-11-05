@@ -202,3 +202,22 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   children refresh (editor open, each INFO page change; seen with WATCH). pf_cnt (ext10) / pf_vbi (ext8) return 6 /
   index 0..5 for the 12 o'clock id when AXIS 4 (shared check pf_is, ext1, macro PROFID); else stock. Emulator: stops at
   0 and 5, Saturation page still -5..5. Camera: test 16 confirmed working before this change.
+
+## Control Panel (webapp/)
+
+- `webapp/` is cakelesscoder/caduceus-ep7's `webapp/` at de53ffe plus an OM-3 mode, so both cameras share one tool.
+  A camera switch sits above the header (`?camera=om3|ep7`, then localStorage `caduceus.camera`, then the build
+  default `VITE_DEFAULT_CAMERA`; this repo builds with `om3`, upstream's default stays `ep7`). E-P7 mode is upstream
+  unchanged: its LOOKS.BIN export is byte-identical to releases/v0.24 and all upstream tests pass with this webapp in
+  an upstream checkout (they read `../bundles`, `../tools`, `../releases`, so outside that tree they fail).
+- OM-3 additions: `src/om3.ts` (bank 4 x 5 positional, `toOm3` conversion, `profilesBin` / `readProfiles`,
+  validation, first-visit bank of 20 library looks, `fromOldLookLab` for localStorage `om3-looklab` of the old
+  single-page Look Lab), `src/om3names.ts` (NAMES.BIN, ported 1:1 from the old Look Lab, font `public/fonts/
+  om3label.woff2` as a file because the CSP forbids data: fonts), `src/preview.ts` (`camera: 'om3'`: hue negated,
+  no grain / effect, unsharp + shading from Sharpness / Shading), `src/pack.ts` (`advice.sharpness`), and the OM-3
+  section of `src/main.ts`. Storage: `caduceus.om3.bank.v1`. Links: `ob1_` bank, `op1_` one profile
+  (base64url(deflate(JSON))). Names: 15 characters (OM3_NAME_MAX).
+- `tests/om3.test.ts`: PROFILES.BIN round trip and byte check against `card/mkprofiles.py`. Emulator check
+  (out-ed18): a Control Panel PROFILES.BIN + NAMES.BIN load; Profiles 1 and 2 show descriptors of 2604 / 2188 B, the
+  NAMES.BIN entry lengths, and load the profile's wheels.
+- Pages: `looklab/` is the build (`cd webapp && npm ci && VITE_DEFAULT_CAMERA=om3 npm run build`, copy `dist/*`).

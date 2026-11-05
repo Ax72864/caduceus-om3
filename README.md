@@ -4,9 +4,9 @@
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
 the camera's Color Profile wheel into a full colour editor (per-colour Hue and Light, a WB/B·W page with Blacks and
 Whites) and adds a **bank of five complete profiles for each of COLOR 1–4** that you build on the camera, or in the
-browser with the **Look Lab**, and switch between with one dial.
+browser with the **Caduceus Control Panel**, and switch between with one dial.
 
-**Latest: v0.18** ([changelog](CHANGELOG.md)) · **▶ [Look Lab](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
+**Latest: v0.18** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
 **[Using it](#using-it)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]
@@ -31,9 +31,9 @@ browser with the **Look Lab**, and switch between with one dial.
 | **Hue and Light pages** | The Color Profile wheel gains pages, and **INFO** cycles them. Hue turns a colour toward its neighbour; Light brightens or darkens it, for each of the 12 colours. | Camera-tested |
 | **WB/BW page** | Per-profile white balance shift (amber/blue, green/magenta) plus **Blacks** and **Whites**: the two ends of the tone curve (crushed or faded blacks, bright or soft whites). | Camera-tested |
 | **Profile bank** | A **Profiles** page with 0–5: **1–5** load a whole profile (every wheel plus Contrast, Sharpness, Shading and Shadows/Midtones/Highlights), **0** is neutral. Five per COLOR, 20 in all. Changes you make are kept in the selected profile. | Camera-tested |
-| **Profile names** | On the Profiles page, the label under the wheel shows the selected profile's name ("Velvia", "Empty" …) in the camera's own label style, from `NAMES.BIN` made by the Look Lab. | Camera-tested |
+| **Profile names** | On the Profiles page, the label under the wheel shows the selected profile's name ("Velvia", "Empty" …) in the camera's own label style, from `NAMES.BIN` made by the Control Panel. | Camera-tested |
 | **Saved on the card** | Your edits and the bank save to `OM3MOD` on the SD card at the next half-press, written to a new file and read back before the old one is replaced. | Camera-tested |
-| **Look Lab** | A browser tool to make and preview profiles on test photos (or your own), then save them for the card. It starts with 20 Caduceus film looks and imports Caduceus look codes and packs. | Works in any browser |
+| **Control Panel** | The Caduceus Control Panel, shared with Caduceus for the E-P7: a switch at the top picks **OM SYSTEM OM-3** or **Olympus PEN E-P7**. On the OM-3 it makes and previews profiles on test photos (or your own), then saves them for the card. It starts with 20 Caduceus film looks and takes Caduceus look codes and packs. | Works in any browser |
 
 ## Install
 
@@ -98,34 +98,37 @@ it exactly as in step 4. The camera is then completely stock 1.1 again.
 
 More detail, troubleshooting and FAQ: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
-## Make your own profiles: the Look Lab
+## Make your own profiles: the Control Panel
 
-**[Look Lab](https://androidfanman.github.io/caduceus-om3/)** is where you make and edit profiles in your
-browser:
+The **[Caduceus Control Panel](https://androidfanman.github.io/caduceus-om3/)** is where you make and edit profiles
+in your browser. It is the same tool as Caduceus for the E-P7: the switch at the very top picks the camera. With
+**OM SYSTEM OM-3** selected:
 
-- Edit the four wheels (Saturation, Hue, Light, WB/BW), the tone curve (Shadows, Midtones, Highlights) and
-  Contrast, Sharpness and Shading, with a live before/after preview on test photos or your own. Drag the line on the
-  photo to compare.
-- Five profiles for each of COLOR 1–4, numbered as on the camera's Profiles page.
-- **Save to the SD card** (Chrome or Edge on a computer) writes `OM3MOD/PROFILES.BIN` and `NAMES.BIN` (the name
-  pictures for the camera) straight onto the card; elsewhere, **Save card files** downloads them in a zip.
-- **Open PROFILES.BIN from the card** to edit profiles you made on the camera, then save them back.
-- **Import from Caduceus:** paste a look code or pack link from the
-  [Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/), or open a Caduceus pack or E-P7
-  `LOOKS.BIN`. Each colour look becomes an OM-3 profile: Hue, Light, Saturation, WB, Blacks/Whites, the tone curve,
-  Contrast and Vignette (as Shading) carry over; values beyond the OM-3's ±5 are limited; Caduceus-only features
-  (noise filter, bloom, halation, clarity, Art Effects) and monochrome looks are left out, and the import says which.
+- The left side shows COLOR 1–4 with profiles 1–5, numbered as on the camera's Profiles page ("Empty" for an unused
+  number). Drag a profile to another number, or use ↑ ↓; × empties a number.
+- Edit Hue, Lightness and Saturation for each of the 12 colours, the tone (Highlights, Shadows, Midtones, Blacks,
+  Whites), the camera's Contrast, Sharpness and Shading, and the WB shift, with a live preview on test photos or your
+  own (hold **Hold: original** to compare).
+- **Export › Save to card…** (Chrome or Edge on a computer) writes `OM3MOD/PROFILES.BIN` and `NAMES.BIN` (the name
+  pictures for the camera) straight onto the card; **Card folder (.zip)** downloads both.
+- **Open…** the card's `OM3MOD/PROFILES.BIN` to edit profiles you made on the camera, then save them back.
+- **Caduceus looks:** **Paste code** takes a Caduceus look code or pack link, and **Open…** a Caduceus pack or E-P7
+  `LOOKS.BIN`. Each colour look becomes an OM-3 profile: Hue, Light, Saturation, WB, the tone, Contrast and Vignette
+  (as Shading) carry over; values beyond the OM-3's ±5 are limited; E-P7-only features (noise filter, glow,
+  clarity, Art Effects) and monochrome looks are left out, and it says which.
+- **Share profiles** / **Share** make a link to all your profiles or to one.
 
-The preview is an approximation of the camera, good for direction and strength: judge the final look in live view.
-On a Mac, Safari's **File › Add to Dock** makes the Look Lab an app.
+Your work stays in the browser (nothing is uploaded). Profiles from the earlier OM-3 Look Lab are brought over the
+first time you open it. The preview is an approximation of the camera, good for direction and strength: judge the
+final look in live view. On a Mac, Safari's **File › Add to Dock** makes the Control Panel an app.
 
 ## Using it
 
 **On the card** (`OM3MOD` at the card's top level):
 
 ```
-OM3MOD/PROFILES.BIN   the profile bank: 5 profiles for each of COLOR 1–4 (from the Look Lab, or made on the camera)
-OM3MOD/NAMES.BIN      the profile names shown on the Profiles page (from the Look Lab, saved with PROFILES.BIN)
+OM3MOD/PROFILES.BIN   the profile bank: 5 profiles for each of COLOR 1–4 (from the Control Panel, or made on the camera)
+OM3MOD/NAMES.BIN      the profile names shown on the Profiles page (from the Control Panel, saved with PROFILES.BIN)
 OM3MOD/BUNDLES.BIN    the wheels' current values (the camera writes it; .NEW and .BAK are its safety copies)
 OM3MOD/GUIDES.BIN     the page labels under the wheel
 ```
@@ -160,8 +163,8 @@ Green-cyan, Green, Yellow-green.
    half-press.
 4. An empty number (its label says **Empty**) loads neutral, so that's how you make a new profile on the camera.
    Each COLOR has its own five.
-5. The label under the wheel shows the selected profile's name. Names come from the Look Lab (`NAMES.BIN`): to name
-   a profile you made on the camera, open the card's `PROFILES.BIN` in the Look Lab, type the name and save both
+5. The label under the wheel shows the selected profile's name. Names come from the Control Panel (`NAMES.BIN`): to
+   name a profile you made on the camera, open the card's `PROFILES.BIN` in the Control Panel, type the name and save both
    files back. Step by step: [Profiles and their names](docs/USING.md#profiles-and-their-names).
 
 **Reset:** hold **OK** on the wheel, or on the "COLOR n" item of the Picture Mode list, to put that COLOR's wheels
@@ -170,12 +173,12 @@ back to 0. A `*` next to a COLOR means it has been changed.
 **Quick answers**
 - *The new pages don't appear?* Half-press once after switching on, and check `OM3MOD` is at the card's top level.
 - *My changes weren't saved?* They save at the next half-press, and only when the card has an `OM3MOD` folder.
-- *Profiles from the Look Lab replaced mine?* Copying a `PROFILES.BIN` replaces the camera's bank. To keep profiles
-  made on the camera, open the card's `PROFILES.BIN` in the Look Lab first, edit, then save back. A Look Lab file
-  starts every COLOR at 0, so your current camera settings stay until you pick a profile.
-- *Profile names?* They show under the wheel on the Profiles page, from `NAMES.BIN`. The Look Lab saves it with
+- *Profiles from the Control Panel replaced mine?* Copying a `PROFILES.BIN` replaces the camera's bank. To keep
+  profiles made on the camera, open the card's `PROFILES.BIN` in the Control Panel first, edit, then save back. Its
+  file starts every COLOR at 0, so your current camera settings stay until you pick a profile.
+- *Profile names?* They show under the wheel on the Profiles page, from `NAMES.BIN`. The Control Panel saves it with
   `PROFILES.BIN`: copy both. A profile made on the camera shows "Empty" (or "Profile n") until you name it in the
-  Look Lab and save again. Without `NAMES.BIN` the label just says "Profiles".
+  Control Panel and save again. Without `NAMES.BIN` the label just says "Profiles".
 - *Monochrome?* Not supported: the MONO profiles keep the camera's own editor.
 - *Want stock back for good?* Flash the restore file (see [Undo](#undo--go-back-to-stock)).
 
@@ -204,16 +207,18 @@ Full page-by-page guide: [docs/USING.md](docs/USING.md). Card file formats: [doc
 - `firmware/patch.py` + `releases/vX/patch.json`: the user-side patcher (pure Python) and each release's prebuilt patch (only
   the bytes this project writes).
 - `card/`: generators for `GUIDES.BIN` (page labels) and `PROFILES.BIN`.
-- `looklab/`: the Look Lab (one HTML file, `data.js`, CC0 test photos).
+- `webapp/`: the Caduceus Control Panel source (TypeScript + Vite, from cakelesscoder/caduceus-ep7 with the OM-3
+  mode added; see [webapp/README.md](webapp/README.md)). `looklab/` is its build, served by GitHub Pages
+  (`VITE_DEFAULT_CAMERA=om3 npm run build`, then copy `dist/` to `looklab/`).
 - `tools/emulator/`: test harness for [om-emu](https://github.com/flatpanda/om-emu) (E147 model).
 - [docs/DEVELOPER_NOTES.md](docs/DEVELOPER_NOTES.md): addresses, hooks and the test history.
 
 ## Credits
 
 Built on **[Caduceus](https://github.com/cakelesscoder/caduceus-ep7)** by cakelesscoder (Apache-2.0), firmware patches
-for the Olympus PEN E-P7: the on-camera editor design, the bundle-table layout, the Look Lab tone model, the starter
-film looks and the Caduceus importer. Test photos are public domain (CC0); see
-[looklab/samples/CREDITS.md](looklab/samples/CREDITS.md). Camera emulation by
+for the Olympus PEN E-P7: the on-camera editor design, the bundle-table layout, the Caduceus Control Panel (shared by both cameras), its tone
+model and the starter film looks. Test photos are public domain (CC0); see
+[webapp/public/samples/CREDITS.md](webapp/public/samples/CREDITS.md). Camera emulation by
 [om-emu](https://github.com/flatpanda/om-emu).
 
 "OM SYSTEM", "Olympus" and "OM-3" are trademarks of their owners, as are the film names used for the starter looks.

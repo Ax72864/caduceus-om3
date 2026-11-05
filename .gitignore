@@ -9,3 +9,7 @@ __pycache__/
 .DS_Store
 *.omsd
 !releases/*/GUIDES.BIN
+
+# web app (build output is published as looklab/)
+webapp/node_modules/
+webapp/dist/

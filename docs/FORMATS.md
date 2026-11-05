@@ -11,7 +11,7 @@ All multi-byte values little-endian. CRC-32 = zlib/PNG CRC-32. Signed values are
 | 8 | 4 | CRC-32 of bytes 12..1631 |
 | 12 | 2 | version 1 |
 | 14 | 2 | record count 20 |
-| 16 | 4 | selection per COLOR 1..4 (0..5; the camera writes what is selected, the Look Lab writes 0) |
+| 16 | 4 | selection per COLOR 1..4 (0..5; the camera writes what is selected, the Control Panel writes 0) |
 | 20 | 12 | zero |
 | 32 | 20 × 64 | records: COLOR k (0..3) profile v (1..5) at index 5k + v − 1 |
 | 1312 | 20 × 16 | names, ASCII, zero-padded (up to 15 characters) |
@@ -24,7 +24,8 @@ The camera checks size, magic, CRC, version, selection range and every record by
 ignored and left alone (the Profiles page is then hidden). With no file, the camera starts a neutral bank and
 writes the file the first time a profile is used. Writes go to `PROFILES.NEW`, are read back, then to `PROFILES.BIN`.
 
-Generators: `card/mkprofiles.py` (JSON → file) and the Look Lab (`profilesBin` / `readProfiles`), byte-identical.
+Generators: `card/mkprofiles.py` (JSON → file) and the Control Panel (`webapp/src/om3.ts`: `profilesBin` / `readProfiles`), byte-identical
+(`webapp/tests/om3.test.ts`).
 
 ## BUNDLES.BIN (544 bytes)
 
@@ -41,7 +42,7 @@ indices, run-length tokens); see `card/mkguides.py`.
 
 ## NAMES.BIN v1
 
-Pictures of the profile names, shown under the wheel on the Profiles page. Written by the Look Lab (`namesBin`)
+Pictures of the profile names, shown under the wheel on the Profiles page. Written by the Control Panel (`webapp/src/om3names.ts`: `namesBin`)
 together with `PROFILES.BIN`, in the camera's label style (`card/mkguides.py` metrics).
 
 | Offset | Size | Field |

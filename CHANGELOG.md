@@ -3,6 +3,12 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## Control Panel (no new firmware)
+- The OM-3 Look Lab is now the **Caduceus Control Panel**, the same tool as Caduceus for the E-P7, with a camera
+  switch at the very top: **Olympus PEN E-P7** shows cakelesscoder's panel unchanged, **OM SYSTEM OM-3** the version
+  for this firmware (COLOR 1–4 × profiles 1–5, OM-3 ranges, Contrast / Sharpness / Shading, `PROFILES.BIN` +
+  `NAMES.BIN` export, Caduceus looks converted). Profiles from the old Look Lab are brought over. Works with v0.17+.
+
 ## v0.18
 - The Color Profile wheel opens on the **Profiles** page, with the selected profile's name. INFO order unchanged:
   Profiles → Saturation → (All) → Hue → Light → WB/BW → Profiles. Camera-tested.
