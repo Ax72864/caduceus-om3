@@ -17,5 +17,7 @@ want an older one. From a terminal: `python3 firmware/patch.py --release v0.16`.
 
 **Going back to stock:** flash `SD card files/restore/E1479999.BIN`, the official firmware the patcher saved.
 
-The whole project as it was at each version is also on the repo's Releases / Tags page (`v0.16`, `v0.17`).
+Each version is also published on the repo's **Releases** page (tag `v0.16`, `v0.17`, …) with the whole project as
+it was at that version: a GitHub Action (`.github/workflows/releases.yml`) publishes every folder here once, so a
+new version only needs its folder.
 See [CHANGELOG.md](../CHANGELOG.md) for the full history.
