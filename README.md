@@ -4,7 +4,7 @@ On-camera colour editing for the **OM SYSTEM OM-3** (firmware **1.1**): Hue, Lig
 COLOR 1–4, plus a bank of **5 full profiles per COLOR** that you can build on the camera or in the
 **Look Lab** web tool and switch between with one dial.
 
-**▶ Open the Look Lab: https://androidfanman.github.io/om3-color-lab/**
+**▶ [OM-3 Color Lab](https://androidfanman.github.io/om3-color-lab/)**
 
 > [!NOTE]
 > **Color profiles only.** Everything here works on Picture Mode **COLOR 1–4** (the Color Profiles). The
