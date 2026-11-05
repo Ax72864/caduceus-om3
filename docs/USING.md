@@ -24,6 +24,8 @@ Red, Magenta, Violet, Blue, Blue-cyan, Cyan, Green-cyan, Green, Yellow-green.
   - Whatever you change while a profile is selected (wheels or the normal menu items) belongs to that profile.
     Turning to another number keeps it, and the next half-press saves the bank to the card.
   - Each COLOR has its own five profiles.
+  - The label under the wheel shows the selected profile's name ("Empty" for a number with no profile), from
+    `NAMES.BIN`. At 0 it says "Profiles".
 
 Holding **OK** on the wheel, or on the "COLOR n" item of the picture-mode list, resets that COLOR's wheels
 (Saturation, Hue, Light and WB/BW) to 0. A `*` next to a COLOR means it has been changed.
@@ -35,6 +37,7 @@ Holding **OK** on the wheel, or on the "COLOR n" item of the picture-mode list, 
 | `BUNDLES.BIN` | the wheels' current values (written by the camera; `.NEW` / `.BAK` are its safety copies) |
 | `PROFILES.BIN` | the profile bank: 4 COLORs × 5 profiles. Made by the camera, or by the Look Lab |
 | `GUIDES.BIN` | the page labels under the wheel (optional; without it the stock label shows) |
+| `NAMES.BIN` | the profile names for the Profiles page, made by the Look Lab with `PROFILES.BIN` (optional) |
 
 Copying a `PROFILES.BIN` from the Look Lab replaces the camera's bank. To keep profiles made on the camera, open
 the card's `PROFILES.BIN` in the Look Lab first, edit, then save back. A Look Lab file starts every COLOR at 0, so

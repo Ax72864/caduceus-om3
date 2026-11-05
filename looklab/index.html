@@ -347,28 +347,71 @@ function profilesBin(prof) {
 // (COLOR k's pictures, contiguous from 144, each group <= 16384 B) | 20 entries {u16 offset in group, u16 length} at 64
 // | group data. Picture = OM-3 OSD type-11 stream, 175 x 50, palette indices 0 clear, 7 dark edge, 10 white.
 const NM_W = 175, NM_H = 50, NM_GROUP_MAX = 16384;
-function nameIndices(text, cap) {
-  const S = 4, c = document.createElement('canvas'); c.width = NM_W * S; c.height = NM_H * S;
-  const x = c.getContext('2d'), fam = '"Arial Narrow", "Helvetica Neue", Arial, "Liberation Sans", sans-serif';
-  let px = cap * S * 1.38; x.font = '700 ' + px + 'px ' + fam;
-  const m = x.measureText('H'), capPx = (m.actualBoundingBoxAscent || px * 0.72);
-  px = px * (cap * S) / capPx; x.font = '700 ' + px + 'px ' + fam;
-  const maxW = (NM_W - 8) * S, w = x.measureText(text).width, sq = Math.min(1, maxW / Math.max(1, w));
-  x.fillStyle = '#fff'; x.textBaseline = 'alphabetic'; x.textAlign = 'center';
-  x.save(); x.translate(NM_W * S / 2, (13 + cap) * S); x.scale(sq, 1); x.fillText(text, 0, 0); x.restore();
-  const big = x.getImageData(0, 0, c.width, c.height).data, fill = new Uint8Array(NM_W * NM_H);
-  for (let yy = 0; yy < NM_H; yy++) for (let xx = 0; xx < NM_W; xx++) {
-    let a = 0; for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) a += big[(((yy * S + j) * c.width) + xx * S + i) * 4 + 3];
-    fill[yy * NM_W + xx] = a > 127 * S * S ? 1 : 0;
+// The camera's own guide-label look (card/mkguides.py): its condensed sans fitted to the stock metrics (cap height
+// 31 px, 'o' 15 px wide, baseline row 40), white fill with the camera's outline (1-px edge, light corners, 2-px dark
+// line, faint rim). Font: a renamed ASCII subset of DejaVu Sans Condensed (Bitstream Vera licence: looklab/FONT-LICENSE.txt).
+const NM_FONT = 'data:font/woff2;base64,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';
+let nmFontReady = null;
+const nmFont = () => nmFontReady || (nmFontReady = (async () => {
+  const f = new FontFace('OM3 Label Condensed', 'url(' + NM_FONT + ')'); await f.load(); document.fonts.add(f);
+})());
+function nmRaster(txt, fs, sq) {          // grayscale (0..255) rows, cropped to the ink's columns, like mkguides.raster
+  const S = 4, c = document.createElement('canvas'); c.width = fs * S * txt.length + 200; c.height = fs * S * 2;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.font = (fs * S) + 'px "OM3 Label Condensed"'; x.textBaseline = 'top'; x.fillStyle = '#fff'; x.fillText(txt, 50, 20);
+  const d = x.getImageData(0, 0, c.width, c.height).data; let x0 = c.width, x1 = -1;
+  for (let yy = 0; yy < c.height; yy++) for (let xx = 0; xx < c.width; xx++) if (d[(yy * c.width + xx) * 4 + 3]) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; }
+  if (x1 < 0) return { w: 1, h: Math.round(c.height / S), a: new Uint8Array(Math.round(c.height / S)) };
+  const W = Math.max(1, Math.round((x1 - x0 + 1) / S * sq)), H = Math.round(c.height / S);
+  const o = document.createElement('canvas'); o.width = W; o.height = H; const ox = o.getContext('2d', { willReadFrequently: true });
+  ox.imageSmoothingEnabled = true; ox.imageSmoothingQuality = 'high'; ox.drawImage(c, x0, 0, x1 - x0 + 1, c.height, 0, 0, W, H);
+  const od = ox.getImageData(0, 0, W, H).data, a = new Uint8Array(W * H);
+  for (let k = 0; k < W * H; k++) a[k] = od[k * 4 + 3];
+  return { w: W, h: H, a };
+}
+const nmRows = (r, thr) => { const out = []; for (let yy = 0; yy < r.h; yy++) { for (let xx = 0; xx < r.w; xx++) if (r.a[yy * r.w + xx] > thr) { out.push(yy); break; } } return out; };
+const nmCols = (r, thr) => { const out = []; for (let xx = 0; xx < r.w; xx++) for (let yy = 0; yy < r.h; yy++) if (r.a[yy * r.w + xx] > thr) { out.push(xx); break; } return out; };
+let nmMetrics = null;
+function nmFit() {                        // the stock size: 'H' fill 31 rows high, 'o' fill 15 px wide
+  if (nmMetrics) return nmMetrics;
+  let fs = 20, sq = 0.6;
+  for (; fs < 60; fs++) { const r = nmRows(nmRaster('H', fs, 1), 128); if (r.length && r[r.length - 1] - r[0] + 1 >= 31) break; }
+  for (let k = 60; k <= 110; k++) { sq = k / 100; const c = nmCols(nmRaster('o', fs, sq), 128); if (c.length && c[c.length - 1] - c[0] + 1 >= 15) break; }
+  return (nmMetrics = { fs, sq });
+}
+/** A name picture (175 x 50 palette indices) in the camera's label style; the word centred, up to 167 px wide. */
+function nameIndices(text, shrink = 0) {
+  let { fs, sq } = nmFit(); fs -= shrink; let r = nmRaster(text, fs, sq);
+  while (r.w > 167 && sq > 0.6) { sq = Math.round((sq - 0.02) * 100) / 100; r = nmRaster(text, fs, sq); }
+  while (r.w > 167 && fs > 16) { fs--; r = nmRaster(text, fs, sq); }
+  const first = nmRows(nmRaster(text[0], fs, sq), 128), base = first.length ? first[first.length - 1] : 30;
+  const ink = nmRows(r, 40), DESC = 6;
+  let rows = []; for (let yy = 0; yy < r.h; yy++) rows.push(r.a.subarray(yy * r.w, (yy + 1) * r.w));
+  if (ink.length && ink[ink.length - 1] - base > DESC) {      // squeeze a descender's tail into rows 41..46
+    const tail = rows.slice(base + 1, ink[ink.length - 1] + 1), n = tail.length, sq2 = [];
+    for (let k = 0; k < DESC; k++) {
+      const lo = k * n / DESC, hi = (k + 1) * n / DESC, row = new Uint8Array(r.w);
+      for (let xx = 0; xx < r.w; xx++) { let sum = 0, wsum = 0; for (let t = Math.floor(lo); t < Math.ceil(hi); t++) { const wgt = Math.min(hi, t + 1) - Math.max(lo, t); sum += tail[t][xx] * wgt; wsum += wgt; } row[xx] = Math.round(sum / wsum); }
+      sq2.push(row);
+    }
+    rows = [...rows.slice(0, base + 1), ...sq2, ...rows.slice(ink[ink.length - 1] + 1).map(() => new Uint8Array(r.w))];
   }
+  const lay = new Uint8Array(NM_W * NM_H), x0 = Math.floor((NM_W - r.w) / 2), shift = 40 - base;
+  rows.forEach((row, yy) => {
+    const y2 = yy + shift; if (y2 < 0 || y2 >= NM_H) return;
+    for (let xx = 0; xx < r.w; xx++) { const v = row[xx], X = x0 + xx; if (X < 0 || X >= NM_W) continue; if (v > 128) lay[y2 * NM_W + X] = 10; else if (v > 40) lay[y2 * NM_W + X] = 11; }
+  });
   const out = new Uint8Array(NM_W * NM_H);
   for (let yy = 0; yy < NM_H; yy++) for (let xx = 0; xx < NM_W; xx++) {
-    const k = yy * NM_W + xx; if (fill[k]) { out[k] = 10; continue; }
-    let near = false;
-    for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const y2 = yy + dy, x2 = xx + dx; if (y2 >= 0 && y2 < NM_H && x2 >= 0 && x2 < NM_W && fill[y2 * NM_W + x2]) { near = true; break; }
-    }
-    if (near) out[k] = 7;
+    const k = yy * NM_W + xx; if (lay[k] === 10) { out[k] = 10; continue; }
+    let d2 = 99;                                         // squared distance to the nearest white fill pixel (radius 3)
+    for (let dy = -3; dy <= 3; dy++) { const y2 = yy + dy; if (y2 < 0 || y2 >= NM_H) continue;
+      for (let dx = -3; dx <= 3; dx++) { const x2 = xx + dx; if (x2 < 0 || x2 >= NM_W) continue; if (lay[y2 * NM_W + x2] === 10) { const q = dx * dx + dy * dy; if (q < d2) d2 = q; } } }
+    const e = Math.sqrt(d2);
+    if (e <= 1.0) out[k] = lay[k] === 11 ? 11 : 7;         // orthogonal neighbours: dark, or light where the glyph edge is soft
+    else if (e < 1.5) out[k] = 12;                          // diagonal neighbours: light grey
+    else if (e <= 2.0) out[k] = 7;                          // the dark line
+    else if (e <= 2.9) out[k] = 9;                          // faint rim
   }
   return out;
 }
@@ -383,17 +426,18 @@ function encode11(px, w, h) {
   }
   return out;
 }
-/** Picture name for COLOR k profile j (0-based): its name, or "Profile n" for an empty number. */
-const nameText = (prof, k, j) => (prof[k][j] && prof[k][j].name.trim()) || ('Profile ' + (j + 1));
-function namesBin(prof) {
+/** Picture name for COLOR k profile j (0-based): its name; "Empty" for a number with no profile. */
+const nameText = (prof, k, j) => prof[k][j] ? (prof[k][j].name.trim() || 'Profile ' + (j + 1)) : 'Empty';
+async function namesBin(prof) {
+  await nmFont();
   const groups = [];
   for (let k = 0; k < 4; k++) {
-    let cap = 24, pics;
+    let shrink = 0, pics;
     for (;;) {                                           // smaller lettering until COLOR k's five pictures fit 16 KB
-      pics = [0, 1, 2, 3, 4].map((j) => encode11(nameIndices(nameText(prof, k, j), cap), NM_W, NM_H));
+      pics = [0, 1, 2, 3, 4].map((j) => encode11(nameIndices(nameText(prof, k, j), shrink), NM_W, NM_H));
       const tot = pics.reduce((a, b) => a + ((b.length + 3) & ~3), 0);
-      if (tot <= NM_GROUP_MAX || cap <= 12) break;
-      cap -= 2;
+      if (tot <= NM_GROUP_MAX || shrink >= 16) break;
+      shrink += 2;
     }
     groups.push(pics);
   }
@@ -921,7 +965,7 @@ if (window.showDirectoryPicker && window.self === window.top) {
         if (!isCard) { setMsg('That folder does not look like the SD card (no DCIM or OM3MOD in it). Pick the card itself.', true); return; }
         dir = await root.getDirectoryHandle('OM3MOD', { create: true });
       }
-      for (const [fn, data] of [['PROFILES.BIN', profilesBin(state.prof)], ['NAMES.BIN', namesBin(state.prof)]]) {
+      for (const [fn, data] of [['PROFILES.BIN', profilesBin(state.prof)], ['NAMES.BIN', await namesBin(state.prof)]]) {
         const f = await dir.getFileHandle(fn, { create: true }), w = await f.createWritable(); await w.write(data); await w.close();
       }
       setMsg('Saved PROFILES.BIN and NAMES.BIN to the card. Eject it, put it in the camera, and every COLOR starts at 0.');
@@ -929,7 +973,7 @@ if (window.showDirectoryPicker && window.self === window.top) {
   };
 }
 $('b-save').onclick = async () => {
-  const files = [{ name: 'OM3MOD/PROFILES.BIN', data: profilesBin(state.prof) }, { name: 'OM3MOD/NAMES.BIN', data: namesBin(state.prof) }];
+  const files = [{ name: 'OM3MOD/PROFILES.BIN', data: profilesBin(state.prof) }, { name: 'OM3MOD/NAMES.BIN', data: await namesBin(state.prof) }];
   if (!downloads) {                      // a plain web page (GitHub Pages, a local copy): an ordinary browser download
     const url = URL.createObjectURL(new Blob([makeZip(files)], { type: 'application/zip' })), a = document.createElement('a');
     a.href = url; a.download = 'OM3-profiles.zip'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);

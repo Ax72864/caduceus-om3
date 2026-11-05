@@ -115,8 +115,10 @@ def build(defaults, testfile, out):
     lo, span = range_table()
     dflt, test = make_file(defaults), make_file(testfile)
     assert table_ok(dflt, lo, span) and table_ok(test, lo, span)
-    (out / 'data4.inc').write_text('sd_hdr:\n' + db(header(0)) + 'sd_lo:\n' + db(bytes(v & 0xff for v in lo)) +
-                                   'sd_span:\n' + db(bytes(span)) + 'sd_default:\n' + db(dflt))
+    assert dflt == dflt[:16] + dflt[16:20] + header(0)[20:32] + bytes(512) and dflt[:16] == header(0)[:16]
+    def_crc = struct.unpack_from('<I', dflt, 16)[0]      # test 17: sd_def builds the neutral defaults from sd_hdr + this CRC
+    (out / 'data4.inc').write_text(f' .equ DEF_CRC, 0x{def_crc:08x}\n' + 'sd_hdr:\n' + db(header(0)) + 'sd_lo:\n' + db(bytes(v & 0xff for v in lo)) +
+                                   'sd_span:\n' + db(bytes(span)))
     (out / 'BUNDLES.BIN').write_bytes(test)
     subprocess.run([P.AS, '-I', out, '-o', out / 'p.o', HERE / 'src' / 'editor.s'], check=True)
     subprocess.run([P.LD, '-T', HERE / 'src' / 'editor.ld', '-o', out / 'p.elf', out / 'p.o'], check=True)

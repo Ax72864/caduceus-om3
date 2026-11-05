@@ -15,6 +15,9 @@ webapp), the 29 starter colour looks in the Look Lab, the Look Lab's importer fo
 
 Test photos in looklab/samples are public domain (CC0 1.0); see looklab/samples/CREDITS.md.
 
+The Look Lab embeds "OM3 Label Condensed", a renamed ASCII subset of DejaVu Sans Condensed (Bitstream Vera licence;
+DejaVu changes public domain), to draw profile-name pictures; see looklab/FONT-LICENSE.txt.
+
 Developer tools in tools/emulator drive om-emu (github.com/flatpanda/om-emu), which is not included and keeps its
 own licence.
 

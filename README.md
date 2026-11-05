@@ -31,6 +31,7 @@ browser with the **Look Lab**, and switch between with one dial.
 | **Hue and Light pages** | The Color Profile wheel gains pages, and **INFO** cycles them. Hue turns a colour toward its neighbour; Light brightens or darkens it, for each of the 12 colours. | Camera-tested |
 | **WB/BW page** | Per-profile white balance shift (amber/blue, green/magenta) plus **Blacks** and **Whites**: the two ends of the tone curve (crushed or faded blacks, bright or soft whites). | Camera-tested |
 | **Profile bank** | A **Profiles** page with 0–5: **1–5** load a whole profile (every wheel plus Contrast, Sharpness, Shading and Shadows/Midtones/Highlights), **0** is neutral. Five per COLOR, 20 in all. Changes you make are kept in the selected profile. | Camera-tested |
+| **Profile names** | On the Profiles page, the label under the wheel shows the selected profile's name ("Velvia", "Empty" …) in the camera's own label style, from `NAMES.BIN` made by the Look Lab. | Camera-tested |
 | **Saved on the card** | Your edits and the bank save to `OM3MOD` on the SD card at the next half-press, written to a new file and read back before the old one is replaced. | Camera-tested |
 | **Look Lab** | A browser tool to make and preview profiles on test photos (or your own), then save them for the card. It starts with 20 Caduceus film looks and imports Caduceus look codes and packs. | Works in any browser |
 
@@ -100,8 +101,8 @@ browser:
   Contrast, Sharpness and Shading, with a live before/after preview on test photos or your own. Drag the line on the
   photo to compare.
 - Five profiles for each of COLOR 1–4, numbered as on the camera's Profiles page.
-- **Save to the SD card** (Chrome or Edge on a computer) writes `OM3MOD/PROFILES.BIN` straight onto the card;
-  elsewhere, **Save card files** downloads it in a zip.
+- **Save to the SD card** (Chrome or Edge on a computer) writes `OM3MOD/PROFILES.BIN` and `NAMES.BIN` (the name
+  pictures for the camera) straight onto the card; elsewhere, **Save card files** downloads them in a zip.
 - **Open PROFILES.BIN from the card** to edit profiles you made on the camera, then save them back.
 - **Import from Caduceus:** paste a look code or pack link from the
   [Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/), or open a Caduceus pack or E-P7
@@ -118,6 +119,7 @@ On a Mac, Safari's **File › Add to Dock** makes the Look Lab an app.
 
 ```
 OM3MOD/PROFILES.BIN   the profile bank: 5 profiles for each of COLOR 1–4 (from the Look Lab, or made on the camera)
+OM3MOD/NAMES.BIN      the profile names shown on the Profiles page (from the Look Lab, saved with PROFILES.BIN)
 OM3MOD/BUNDLES.BIN    the wheels' current values (the camera writes it; .NEW and .BAK are its safety copies)
 OM3MOD/GUIDES.BIN     the page labels under the wheel
 ```
@@ -140,7 +142,7 @@ Green-cyan, Green, Yellow-green.
 | Hue | −5..+5: + turns that colour toward its clockwise neighbour (Yellow → Orange, Blue → Blue-cyan) |
 | Light | −5..+5: darker or brighter for that colour |
 | WB/BW | 12 o'clock A/B (+ amber, − blue) · 6 o'clock G/M (+ green, − magenta) · 3 o'clock **Blacks** (+ fades, − crushes) · 9 o'clock **Whites** (+ brighter, − softer) |
-| Profiles | 12 o'clock only, 0–5: **1–5** load that COLOR's profile; **0** = everything neutral |
+| Profiles | 12 o'clock only, 0–5: **1–5** load that COLOR's profile, and the label under the wheel shows its name; **0** = everything neutral |
 
 **Profiles:**
 1. On the Profiles page, turn the 12 o'clock spot to a number. The profile loads at once: every wheel, plus Contrast,
@@ -160,7 +162,9 @@ back to 0. A `*` next to a COLOR means it has been changed.
 - *Profiles from the Look Lab replaced mine?* Copying a `PROFILES.BIN` replaces the camera's bank. To keep profiles
   made on the camera, open the card's `PROFILES.BIN` in the Look Lab first, edit, then save back. A Look Lab file
   starts every COLOR at 0, so your current camera settings stay until you pick a profile.
-- *Profile names?* The camera shows numbers only. Names live in `PROFILES.BIN` and show in the Look Lab.
+- *Profile names?* They show under the wheel on the Profiles page, from `NAMES.BIN`. The Look Lab saves it with
+  `PROFILES.BIN`: copy both. A profile made on the camera shows "Empty" (or "Profile n") until you name it in the
+  Look Lab and save again. Without `NAMES.BIN` the label just says "Profiles".
 - *Monochrome?* Not supported: the MONO profiles keep the camera's own editor.
 - *Want stock back for good?* Flash the restore file (see [Undo](#undo--go-back-to-stock)).
 

@@ -38,3 +38,25 @@ u32 payload 512 | u32 CRC-32 over bytes 0..15 + 20..543 | 4 bytes decoded-firmwa
 `OM3G` | u32 total | u32 CRC-32 of bytes 12.. | u16 width 175 | u16 height 50 | u32 length of streams 1..4 |
 streams (Hue, Light, WB/BW, Profiles), each padded to 4 bytes. Streams are OM-3 OSD type-11 pictures (palette
 indices, run-length tokens); see `card/mkguides.py`.
+
+## NAMES.BIN v1
+
+Pictures of the profile names, shown under the wheel on the Profiles page. Written by the Look Lab (`namesBin`)
+together with `PROFILES.BIN`, in the camera's label style (`card/mkguides.py` metrics).
+
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 4 | magic `OM3N` |
+| 4 | 4 | total length |
+| 8 | 4 | CRC-32 of bytes 12..end |
+| 12 | 2 | version 1 |
+| 14 | 2 | entry count 20 |
+| 16 | 2 | picture width 175 |
+| 18 | 2 | picture height 50 |
+| 20 | 12 | zero |
+| 32 | 4 × 8 | groups {u32 offset, u32 length}: COLOR k's five pictures, contiguous from 144, each group ≤ 16384 bytes |
+| 64 | 20 × 4 | entries {u16 offset in its group, u16 length}: COLOR k profile v at 5k + v − 1 (length 0 = none) |
+| 144 | … | group data: OSD type-11 pictures, 175 × 50, each 4-byte aligned |
+
+The camera loads each group into its own buffer at the first half-press and checks the CRC and every picture's
+header; a file that fails is ignored (the label then says "Profiles").

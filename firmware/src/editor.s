@@ -649,6 +649,7 @@ sd_pub:
  movhu d0,(STATE)                 /* publish: the colour hook switches to the block */
  call gd_load,[d2,d3,a2,a3],28    /* editor guide pictures from C:\OM3MOD\GUIDES.BIN (optional) */
  call pf_load,[d2,d3,a2,a3],28    /* profile bank from C:\OM3MOD\PROFILES.BIN (test 16) */
+ call nm_load,[d2,d3,a2,a3],36    /* profile name pictures from C:\OM3MOD\NAMES.BIN (test 17) */
  bra sd_out                       /* block kept for the rest of the power-on */
 sd_free:
  mov a2,a0
@@ -656,15 +657,21 @@ sd_free:
 sd_out:
  ret [d2,d3,a2,a3],36
 
-sd_def:                           /* a2 = block: copy FILE_LEN bytes of built-in defaults */
- mov sd_default,a0
+sd_def:                           /* a2 = block: the built-in defaults (neutral): the header with its CRC, then 512 zero */
+ mov sd_hdr,a0                    /* test 17: made here instead of copied from a 544-byte table (frees code space) */
  clr d2
 sd_d1:
+ clr d0
+ cmp HDR_LEN,d2
+ bcc 1f
  movbu (d2,a0),d0
+1:
  movbu d0,(d2,a2)
  inc d2
  cmp FILE_LEN,d2
  bne sd_d1
+ mov DEF_CRC,d0
+ mov d0,(16,a2)
  ret [d2],8
 
 /* sd_check (Caduceus v1): a0 = buffer -> d0 = 0 valid, 1 invalid. */
@@ -897,7 +904,7 @@ sd_path:
 sd_mode:
  .asciz "r"
 .balign 4
- .include "data4.inc"            /* sd_hdr (32), sd_lo (64), sd_span (64), sd_default (544) */
+ .include "data4.inc"            /* sd_hdr (32), sd_lo (64), sd_span (64); DEF_CRC (test 17) */
 ext4_end:
 
 /* ------------------------------------------------------------------ section-6 tail: editor INFO cycle, cursor read,
@@ -1252,6 +1259,10 @@ gd_set:
  bne 9f
  mov (GPTR,a2),a1
  mov (16,a0),d1
+ add -4,sp
+ call nm_own,[],0                 /* a name picture of ours: d1 = GSTOCK_P */
+ add 4,sp
+ mov (GPTR,a2),a1
  cmp GSTOCK_P,d1
  beq 1f
  cmp 0,a1
@@ -1260,6 +1271,16 @@ gd_set:
  sub d2,d1                        /* payload - G */
  cmp 24576,d1
  bcc 9f
+1:
+ cmp 4,d0
+ bne 1f
+ add -4,sp
+ call nm_pick,[],0                /* Profiles page: the selected profile's name picture, if NAMES.BIN has one */
+ add 4,sp
+ cmp 0,d0
+ beq 9f
+ mov 4,d0
+ mov (GPTR,a2),a1
 1:
  cmp 0,a1
  beq 4f
@@ -1535,8 +1556,6 @@ ed_isdef:
  call stock_isdef,[d2,d3,a2],24
  ret [d2,d3,a2],24
 
-gd_path:
- .asciz "C:\\OM3MOD\\GUIDES.BIN"
 gd_mode:
  .asciz "r"
 ext10_end:
@@ -1805,6 +1824,8 @@ s_look:                           /* after WHERE (a2 = P, d2 = 64k + slice, d3 =
  mov (8,sp),a0
  mov (12,sp),a1
  call pf_put,[d2,d3,a2,a3],40
+ mov 4,d0
+ call gd_set,[d2,a2],8            /* test 17: the name picture of the new profile (redrawn with the dial step) */
 7:
  mov (4,sp),d0
  mov (8,sp),a0
@@ -2351,3 +2372,270 @@ pf_vbi:
 v_miss:
  movm (sp),[d2,d3,a2]
  jmp stock_vbi
+
+/* ------------------------------------------------------------------ profile names (test 17)
+ * NAMES.BIN v1 (written by the Look Lab with PROFILES.BIN): 'OM3N' | u32 total | u32 crc32(bytes 12..) | u16 1 |
+ * u16 20 | u16 175 | u16 50 | 12 zero | 4 groups {u32 offset, u32 length} at 32 (group k = COLOR k's pictures,
+ * contiguous from 144, each <= 16384 B) | 20 entries {u16 offset in its group, u16 length} at 64 (COLOR k profile v
+ * at 5k + v - 1; length 0 = none) | group data. A picture = an OSD type-11 stream 175 x 50 (header GHDR).
+ * P+NENT = the 20 entries, P+NPTR+4k = group k's heap copy (0 = none). */
+.section .ext4,"ax"
+/* nm_load: `call nm_load,[d2,d3,a2,a3],36` from sd_load (HLS task), a2 = P. Locals (4) handle, (8) CRC, (12) k,
+ * (16) next offset. The 64-byte header is read into P+TBUF (the title buffers, not yet in use). Stores: P+NENT,
+ * P+NPTR, heap buffers, own frame. */
+nm_load:
+ clr d0
+ mov d0,(NPTR,a2)
+ mov d0,(NPTR+4,a2)
+ mov d0,(NPTR+8,a2)
+ mov d0,(NPTR+12,a2)
+ mov nm_path,a0
+ mov gd_mode,a1
+ call fopen,[],4
+ cmp 0,a0
+ beq 9f
+ mov a0,(4,sp)
+ mov a2,a0
+ add TBUF,a0
+ mov 1,d0
+ mov 64,d1
+ mov (4,sp),a1
+ call fread,[d2,d3,a2,a3],24
+ cmp 64,d0
+ bne 7f
+ mov (TBUF,a2),d0
+ cmp NMAGIC,d0
+ bne 7f
+ mov (TBUF+12,a2),d0              /* u16 1 | u16 20 */
+ cmp 0x00140001,d0
+ bne 7f
+ mov (TBUF+16,a2),d0              /* u16 175 | u16 50 */
+ cmp 0x003200af,d0
+ bne 7f
+ mov a2,a0
+ add NENT,a0
+ mov 1,d0
+ mov 80,d1
+ mov (4,sp),a1
+ call fread,[d2,d3,a2,a3],24
+ cmp 80,d0
+ bne 7f
+ mov -1,d0
+ mov a2,a0
+ add TBUF+12,a0
+ mov 52,d1
+ call sd_crc,[d2,d3],12
+ mov a2,a0
+ add NENT,a0
+ mov 80,d1
+ call sd_crc,[d2,d3],12
+ mov d0,(8,sp)
+ mov 144,d0
+ mov d0,(16,sp)
+ clr d3
+1:
+ mov d3,(12,sp)
+ mov a2,a0
+ asl2 d3
+ asl d3
+ add d3,a0                        /* a0 = P + 8k */
+ mov (TBUF+32,a0),d0
+ mov (16,sp),d1
+ cmp d1,d0
+ bne 7f                           /* groups must follow each other */
+ mov (TBUF+36,a0),d2              /* length */
+ cmp 0,d2
+ beq 3f
+ cmp 16385,d2
+ bcc 7f
+ mov d2,d0
+ call malloc,[],4
+ cmp 0,a0
+ beq 7f
+ mov (12,sp),d3
+ mov a2,a1
+ asl2 d3
+ add d3,a1
+ mov a0,(NPTR,a1)                 /* kept at once, so the failure path frees it */
+ mov 1,d0
+ mov d2,d1
+ mov (4,sp),a1
+ call fread,[d2,d3,a2,a3],24
+ cmp d2,d0
+ bne 7f
+ mov (12,sp),d3
+ mov a2,a1
+ asl2 d3
+ add d3,a1
+ mov (NPTR,a1),a0
+ mov (8,sp),d0
+ mov d2,d1
+ call sd_crc,[d2,d3],12
+ mov d0,(8,sp)
+ mov (16,sp),d0
+ add d2,d0
+ mov d0,(16,sp)
+3:
+ mov (12,sp),d3
+ inc d3
+ cmp 4,d3
+ bne 1b
+ mov (4,sp),a0
+ call fclose,[d2,a2,a3],16
+ mov (TBUF+4,a2),d0
+ mov (16,sp),d1
+ cmp d1,d0
+ bne 8f
+ mov (8,sp),d0
+ not d0
+ mov (TBUF+8,a2),d1
+ cmp d1,d0
+ bne 8f
+ clr d3                           /* entries: in their group, 4-aligned, and a 175 x 50 picture */
+5:
+ mov a2,a1
+ mov d3,d0
+ asl2 d0
+ add d0,a1                        /* a1 = P + 4i */
+ movhu (NENT+2,a1),d2
+ cmp 0,d2
+ beq 6f
+ movhu (NENT,a1),d1
+ mov d3,d0                        /* k = i / 5 */
+ mov 0,a0
+4:
+ cmp 5,d0
+ bcs 2f
+ add -5,d0
+ inc a0
+ bra 4b
+2:
+ mov a0,d0
+ mov a2,a0
+ asl2 d0
+ add d0,a0                        /* a0 = P + 4k */
+ asl d0                           /* 8k */
+ mov a2,a3
+ add d0,a3
+ mov (TBUF+36,a3),d0              /* group length */
+ btst 3,d1
+ bne 4f
+ add d1,d2
+ cmp d0,d2
+ bhi 4f
+ mov (NPTR,a0),a0
+ cmp 0,a0
+ beq 4f
+ add d1,a0
+ mov (a0),d0
+ cmp GHDR,d0
+ beq 6f
+4:
+ clr d0
+ movhu d0,(NENT+2,a1)             /* not usable: none */
+6:
+ inc d3
+ cmp 20,d3
+ bne 5b
+ bra 9f
+7:
+ mov (4,sp),a0
+ call fclose,[d2,a2,a3],16
+8:
+ clr d3                           /* free whatever was kept */
+1:
+ mov a2,a1
+ mov d3,d0
+ asl2 d0
+ add d0,a1
+ mov (NPTR,a1),a0
+ cmp 0,a0
+ beq 2f
+ clr d0
+ mov d0,(NPTR,a1)
+ call free,[],4
+2:
+ inc d3
+ cmp 4,d3
+ bne 1b
+9:
+ ret [d2,d3,a2,a3],36
+
+/* nm_pick: `add -4,sp; call nm_pick,[],0; add 4,sp` from gd_set, a2 = P, a0 = GDESC: the name picture of the open
+ * editor's COLOR (EDK) and its profile (LIDX) -> descriptor (12) size, (16) payload, d0 0; else d0 1, descriptor
+ * untouched. Keeps a0, a2, a3, d3; uses d1, d2, a1. Returns through MDR. */
+nm_pick:
+ movm [d3],(sp)
+ movbu (EDK,a2),d3
+ cmp 4,d3
+ bcc 9f
+ mov a2,a1
+ add d3,a1
+ movbu (LIDX,a1),d2
+ extb d2
+ cmp 1,d2
+ blt 9f
+ cmp 5,d2
+ bgt 9f
+ mov d3,d1                        /* 4 * (5k + v - 1) */
+ asl2 d1
+ add d3,d1
+ add d2,d1
+ add -1,d1
+ asl2 d1
+ mov a2,a1
+ add d1,a1
+ movhu (NENT+2,a1),d2             /* length */
+ cmp 0,d2
+ beq 9f
+ movhu (NENT,a1),d1               /* offset */
+ asl2 d3
+ mov a2,a1
+ add d3,a1
+ mov (NPTR,a1),d3
+ cmp 0,d3
+ beq 9f
+ add d3,d1
+ mov d2,(12,a0)
+ mov d1,(16,a0)
+ clr d0
+ movm (sp),[d3]
+ retf [],0
+9:
+ mov 1,d0
+ movm (sp),[d3]
+ retf [],0
+
+.section .ext8,"ax"
+/* nm_own: `add -4,sp; call nm_own,[],0; add 4,sp` from gd_set, a2 = P, d1 = the descriptor's payload: inside one of
+ * our name buffers -> d1 = GSTOCK_P (so gd_set may switch it). Keeps d0, a0, a1, d3; uses d2. */
+nm_own:
+ movm [d3],(sp)
+ clr d3
+1:
+ mov a2,a1                        /* a1 is reloaded by gd_set after this call */
+ add d3,a1
+ mov (NPTR,a1),d2
+ cmp 0,d2
+ beq 2f
+ sub d1,d2                        /* d2 = buffer - payload ... */
+ not d2
+ inc d2                           /* ... negated: payload - buffer */
+ cmp 16384,d2
+ bcs 8f
+2:
+ add 4,d3
+ cmp 16,d3
+ bne 1b
+ movm (sp),[d3]
+ retf [],0
+8:
+ mov GSTOCK_P,d1
+ movm (sp),[d3]
+ retf [],0
+
+.section .ext9,"ax"
+gd_path:                          /* test 17: moved here from the section-10 tail (room for the name pictures) */
+ .asciz "C:\\OM3MOD\\GUIDES.BIN"
+nm_path:
+ .asciz "C:\\OM3MOD\\NAMES.BIN"
