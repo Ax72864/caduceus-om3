@@ -6,7 +6,7 @@
   half-press save writes `LOOKS.BIN`. The old `PROFILES.BIN` is left on the card (delete it whenever you like).
 - Copy the new `GUIDES.BIN` too (the "Looks" label). `NAMES.BIN` is unchanged.
 - Everything in v0.18: Hue, Light, WB/BW and Looks pages, 5 looks per COLOR with names, the wheel opens on Looks.
-- Emulator-tested (old `PROFILES.BIN` loads and saves to `LOOKS.BIN`; `LOOKS.BIN` wins when both exist).
+- Camera-tested (and in the emulator: old `PROFILES.BIN` loads and saves to `LOOKS.BIN`; `LOOKS.BIN` wins when both exist).
 
 Make it: run the launcher and press Return (or `python3 firmware/patch.py --release v0.19`). The files here are the
 patch (only the bytes Caduceus for OM-3 adds; no OM firmware), the page labels and the expected checksums.
