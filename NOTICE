@@ -4,7 +4,7 @@ Copyright 2026 androidfanman
 Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 This repository contains no OM Digital Solutions / Olympus firmware. The patcher (firmware/patch.py) works on the
-official firmware file that each user downloads themselves; patches/*.json hold only the bytes this project writes
+official firmware file that each user downloads themselves; releases/*/patch.json hold only the bytes this project writes
 (its own code, hooks and pointers to that code).
 
 Based on Caduceus (cakelesscoder/caduceus-ep7, Apache-2.0, Copyright 2026 cakelesscoder), firmware patches for the

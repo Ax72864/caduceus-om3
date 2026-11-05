@@ -56,7 +56,8 @@ Caduceus for OM-3 changes and checks the result.
 - **Or from a terminal** in that folder: `python3 firmware/patch.py` (Windows: `py firmware\patch.py`).
 
 If the official file is in the folder or in Downloads, the patcher uses it; otherwise it asks OM's update server for
-it. It refuses any other file or firmware version. It creates a folder **`SD card files`** with:
+it. It refuses any other file or firmware version. It makes the newest version; press Return, or type an older
+version (for example `v0.16`) to go back to it. Every version is in [releases](releases/README.md). It creates a folder **`SD card files`** with:
 
 ```
 DCOLYMP/E1479999.BIN   the patched firmware update      → goes on the SD card
@@ -84,6 +85,11 @@ the card (next to the `DCIM` folder). Eject the card properly.
 
 Switch on, **half-press the shutter once** (that loads your settings from the card), then open a COLOR profile's
 wheel and press **INFO** to reach the new pages. See [Using it](#using-it).
+
+### Go back to an earlier version
+
+Run the launcher again and type the version you want (see [releases](releases/README.md)), then copy `DCOLYMP` to
+the card and flash as in step 4. Keep `OM3MOD`: every version reads your `PROFILES.BIN` and `BUNDLES.BIN`.
 
 ### Undo / go back to stock
 
@@ -194,7 +200,7 @@ Full page-by-page guide: [docs/USING.md](docs/USING.md). Card file formats: [doc
 - `firmware/src/editor.s`, `editor.ld`: the patch source (MN10300 / AM33 assembly).
 - `firmware/build.py`: builds the update file from source (needs binutils built for `--target=mn10300-elf`):
   `python3 firmware/build.py --stock OLY_E_147_1100_0000_0000_3.BIN --toolchain BINUTILS_BUILD --out NEW_DIR`.
-- `firmware/patch.py` + `firmware/patches/*.json`: the user-side patcher (pure Python) and the prebuilt patch (only
+- `firmware/patch.py` + `releases/vX/patch.json`: the user-side patcher (pure Python) and each release's prebuilt patch (only
   the bytes this project writes).
 - `card/`: generators for `GUIDES.BIN` (page labels) and `PROFILES.BIN`.
 - `looklab/`: the Look Lab (one HTML file, `data.js`, CC0 test photos).

@@ -45,15 +45,18 @@ Double-click the launcher in the unzipped folder:
   that, **right-click › Open**, then **Open** again. A Terminal window shows the progress.
 - **Windows:** `Make SD card files (Windows).bat`. If Windows SmartScreen warns, click **More info › Run anyway**.
 - **Terminal / command prompt** (any system), in the unzipped folder: `python3 firmware/patch.py`
-  (Windows: `py firmware\patch.py`). Options: `--stock FILE` to use a firmware file you have, `--out DIR` for
-  another output folder.
+  (Windows: `py firmware\patch.py`). Options: `--release v0.16` for an earlier version, `--stock FILE` to use a
+  firmware file you have, `--out DIR` for another output folder.
+
+The launcher asks which version to make: press Return for the newest, or type an older one (for example `v0.16`).
+All versions are listed in [releases](../releases/README.md); `SD card files/VERSION.txt` says which one you made.
 
 What it does:
 
 1. Finds the official file: next to the launcher, in the project folder or in Downloads. If it isn't there, it asks
    OM's update server for it, the way OM Workspace does, and keeps a copy in the project folder for next time.
 2. Checks the file's size and SHA-256 against the official OM-3 1.1 firmware. **Any other file is refused.**
-3. Applies the patch (`firmware/patches/*.json`: only the bytes this project adds, nothing of OM's), rebuilds the
+3. Applies the chosen release's patch (`releases/vX/patch.json`: only the bytes this project adds, nothing of OM's), rebuilds the
    update package and checks the result against its expected SHA-256.
 4. Writes the folder **`SD card files`** next to the launcher:
 

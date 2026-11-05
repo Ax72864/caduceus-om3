@@ -2,9 +2,10 @@
 """Make the OM-3 colour editor SD-card update file from OM's official OM-3 firmware 1.1.
 
 The repository holds no OM Digital Solutions firmware. You supply the official file (or let this script ask OM's
-own update server for it with --download); the script checks it byte for byte, applies the prebuilt patch
-(patches/*.json: only the bytes this project changes, all of them its own code and hooks), re-encodes the update
-package and checks the result against the expected checksum. Pure Python 3.8+, no extra packages.
+own update server for it with --download); the script checks it byte for byte, applies a release's prebuilt patch
+(releases/vX/patch.json: only the bytes this project changes, all of them its own code and hooks), re-encodes the
+update package and checks the result against the expected checksum. Pure Python 3.8+, no extra packages.
+Without --release it makes the newest version, and when run from a terminal it offers the older ones.
 
 Output (in --out, default "SD card files" next to this script):
   DCOLYMP/E1479999.BIN   the modified firmware: copy the DCOLYMP folder to the top of the SD card
@@ -14,7 +15,7 @@ Output (in --out, default "SD card files" next to this script):
 With no --stock, it looks for the official file next to this script, in the project folder and in Downloads, and
 otherwise asks OM's update server for it (the download is checked byte for byte like a local file).
 
-usage: patch.py [--stock OLY_E_147_1100_0000_0000_3.BIN | --download] [--patch FILE.json] [--out DIR]
+usage: patch.py [--stock OLY_E_147_1100_0000_0000_3.BIN | --download] [--release v0.17] [--out DIR]
 """
 import argparse, hashlib, json, shutil, struct, sys, time
 from pathlib import Path
@@ -148,10 +149,27 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--stock', help=f'the official {STOCK_NAME}')
     ap.add_argument('--download', action='store_true', help="ask OM's update server for the official file")
-    ap.add_argument('--patch', default=str(max((HERE / 'patches').glob('*.json'))), help='patch file (default: newest)')
+    rels = sorted((d.name for d in (ROOT / 'releases').iterdir() if (d / 'patch.json').is_file()),
+                  key=lambda v: [int(x) for x in v.lstrip('v').split('.')])
+    ap.add_argument('--release', choices=rels, help='version to make (default: the newest, ' + rels[-1] + ')')
     ap.add_argument('--out', default=str(ROOT / 'SD card files'))
     a = ap.parse_args()
-    patch = json.loads(Path(a.patch).read_text())
+    rel = a.release
+    if not rel:
+        rel = rels[-1]
+        if len(rels) > 1 and sys.stdin.isatty():
+            try:
+                ans = input(f'Version to make [{rel}; older: {", ".join(reversed(rels[:-1]))}]: ').strip()
+            except EOFError:
+                ans = ''
+            if ans:
+                ans = ans if ans.startswith('v') else 'v' + ans
+                if ans not in rels:
+                    print(f'Stopped: there is no release {ans} (choose from {", ".join(rels)}).')
+                    return 1
+                rel = ans
+    rdir = ROOT / 'releases' / rel
+    patch = json.loads((rdir / 'patch.json').read_text())
     print(f'{patch["name"]} ({patch["version"]})')
     try:
         if a.stock:
@@ -183,10 +201,11 @@ def main():
         (out / sub).mkdir(parents=True, exist_ok=True)
     (out / 'DCOLYMP' / 'E1479999.BIN').write_bytes(pkg)
     (out / 'restore' / 'E1479999.BIN').write_bytes(raw)
-    g = ROOT / 'card' / 'GUIDES.BIN'
+    g = rdir / 'GUIDES.BIN'
     if g.is_file():
         shutil.copyfile(g, out / 'OM3MOD' / 'GUIDES.BIN')
-    print(f'Done: {out}')
+    (out / 'VERSION.txt').write_text(f'{patch["name"]} {patch["version"]}\n')
+    print(f'Done ({patch["version"]}): {out}')
     print('  Copy DCOLYMP and OM3MOD to the top of the SD card, then hold OK while turning the camera on.')
     print('  restore/E1479999.BIN is the official firmware: put it in DCOLYMP instead to go back to stock.')
     return 0
