@@ -2,9 +2,10 @@
 
 > **Color profiles only:** this is for Picture Mode COLOR 1–4. The Monochrome profiles keep the camera's own editor.
 
-Picture Mode › **COLOR 1–4** › press **▼** to open the Color Profile wheel. **INFO** changes the page:
+Picture Mode › **COLOR 1–4** › press **▼** to open the Color Profile wheel. It opens on the **Profiles** page (v0.18;
+on a card without a usable `PROFILES.BIN`, on Saturation). **INFO** changes the page:
 
-Saturation → (Saturation ALL) → **Hue** → **Light** → **WB/BW** → **Profiles** → Saturation
+**Profiles** → Saturation → (Saturation ALL) → **Hue** → **Light** → **WB/BW** → **Profiles**
 
 The label under the wheel shows the page. The rear dial picks a colour slice and the front dial changes the value,
 the same as the stock Saturation wheel. Slices run clockwise from Yellow at 12 o'clock: Yellow, Orange, Orange-red,

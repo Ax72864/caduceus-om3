@@ -6,7 +6,7 @@ the camera's Color Profile wheel into a full colour editor (per-colour Hue and L
 Whites) and adds a **bank of five complete profiles for each of COLOR 1–4** that you build on the camera, or in the
 browser with the **Look Lab**, and switch between with one dial.
 
-**Latest: v0.17** ([changelog](CHANGELOG.md)) · **▶ [Look Lab](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
+**Latest: v0.18** ([changelog](CHANGELOG.md)) · **▶ [Look Lab](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
 **[Using it](#using-it)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]
@@ -84,7 +84,7 @@ the card (next to the `DCIM` folder). Eject the card properly.
 ### 5. Shoot
 
 Switch on, **half-press the shutter once** (that loads your settings from the card), then open a COLOR profile's
-wheel and press **INFO** to reach the new pages. See [Using it](#using-it).
+wheel: it opens on the Profiles page, and **INFO** steps through the other pages. See [Using it](#using-it).
 
 ### Go back to an earlier version
 
@@ -133,10 +133,11 @@ OM3MOD/GUIDES.BIN     the page labels under the wheel
 **Every time you switch on:** **half-press the shutter once.** That loads your settings from the card (nothing is
 read at power-on). Until then the wheel works as stock.
 
-**Open the editor:** Picture Mode › **COLOR 1–4** › press **▼** to open the Color Profile wheel. **INFO** cycles the
-pages; the label under the wheel shows which one:
+**Open the editor:** Picture Mode › **COLOR 1–4** › press **▼** to open the Color Profile wheel. It opens on the
+**Profiles** page, with the selected profile's name under the wheel. **INFO** cycles the pages; the label under the
+wheel shows which one:
 
-Saturation → Saturation (All) → **Hue** → **Light** → **WB/BW** → **Profiles** → Saturation
+**Profiles** → Saturation → Saturation (All) → **Hue** → **Light** → **WB/BW** → **Profiles**
 
 One dial picks the colour slice, the other changes the value, as on the stock Saturation wheel. Slices run
 clockwise from Yellow at 12 o'clock: Yellow, Orange, Orange-red, Red, Magenta, Violet, Blue, Blue-cyan, Cyan,

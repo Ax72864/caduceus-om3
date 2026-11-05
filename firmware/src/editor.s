@@ -468,27 +468,19 @@ s_bad:
 s_stock:
  jmp manager
 
-/* ed_init <- COLOR1-4 editor records +4 (stock 0x6122393a, CALLS, a0 parent): a new editor starts on Saturation. */
+/* ed_init <- COLOR1-4 editor records +4 (stock 0x6122393a, CALLS, d0 = the editor key 0x1540..0x1543, a0 parent).
+ * Test 18: with a profile bank, a new editor starts on the Profiles page (axis 4), else on Saturation. The page,
+ * EDK (this editor's COLOR, from d0) and the first-use marker are set before the stock init, so the children build
+ * their value lists for that page (count / value-by-index: Profiles 0..5). INFO order unchanged:
+ * Profiles -> Saturation -> (All) -> Hue -> Light -> WB/BW -> Profiles. Registers as at entry for the stock init. */
 ed_init:
  movm [d3,a2],(sp)
  PVAL i_out
- mov (EMARK,a2),d3
- cmp EMAGIC,d3
- bne i_out
- clr d3
- movbu d3,(AXIS,a2)
- add -20,sp
- mov d0,(4,sp)
- mov d1,(8,sp)
- mov a0,(12,sp)
- mov a1,(16,sp)
- clr d0
- call gd_set,[d2,a2],8
- mov (4,sp),d0
- mov (8,sp),d1
- mov (12,sp),a0
- mov (16,sp),a1
- add 20,sp
+ movm [other],(sp)                /* d0 (the key), d1, a0, a1 for the stock init */
+ add -4,sp
+ call ei_page,[],4
+ add 4,sp
+ movm (sp),[other]
 i_out:
  movm (sp),[d3,a2]
  jmp stock_init
@@ -2019,7 +2011,18 @@ pf_check:
  movbu (a1),d3
  extb d3
  sub d3,d0
- movbu (64,a1),d3
+ cmp 0,d3
+ blt 4f
+ clr d3                           /* lo >= 0: span 1 for byte 36, else 0 */
+ cmp 36,d2
+ bne 5f
+ mov 1,d3
+ bra 5f
+4:
+ not d3                           /* lo < 0: span = -2 lo */
+ inc d3
+ add d3,d3
+5:
  cmp d3,d0
  bhi 9f
  inc a0
@@ -2308,11 +2311,10 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
  .hword 976
  .byte 3, 46                      /* Highlights */
 .section .ext3,"ax"
-pf_lo:                            /* record byte i: lo, then span (value - lo <= span, unsigned) */
+pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
+                                     (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
  .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
- .byte 10,10,10,10,10,10,10,10,10,10,10,10, 10,10,10,10,10,10,10,10,10,10,10,10, 10,10,10,10,10,10,10,10,10,10,10,10
- .byte 1, 10,10,10,10, 4,4,10, 14,14,14, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 pf_pnew:
  .asciz "C:\\OM3MOD\\PROFILES.NEW"
 pf_pbin:
@@ -2639,3 +2641,34 @@ gd_path:                          /* test 17: moved here from the section-10 tai
  .asciz "C:\\OM3MOD\\GUIDES.BIN"
 nm_path:
  .asciz "C:\\OM3MOD\\NAMES.BIN"
+
+.section .ext3,"ax"
+/* ei_page: `call ei_page,[],4` from ed_init (test 18), d0 = editor key 0x1540 + k, a2 = P: EDK = k, first-use
+ * marker, page = Profiles (4) with a bank, else Saturation (0), and that page's guide picture. Uses d0..d3, a0, a1
+ * (ed_init saved them). Stores: P+EDK, P+EMARK/DIRTY/STATUS (first use), P+AXIS, the guide descriptor (gd_set). */
+ei_page:
+ mov d0,d3
+ exthu d3
+ add -0x1540,d3
+ cmp 4,d3
+ bcc 9f                           /* not a COLOR editor key: leave it all */
+ movbu d3,(EDK,a2)
+ mov (EMARK,a2),d3
+ cmp EMAGIC,d3
+ beq 2f
+ clr d3
+ movbu d3,(DIRTY,a2)
+ movbu d3,(STATUS,a2)
+ mov EMAGIC,d3
+ mov d3,(EMARK,a2)
+2:
+ mov (LPTR,a2),d3
+ cmp 0,d3
+ beq 3f
+ mov 4,d3
+3:
+ movbu d3,(AXIS,a2)
+ mov d3,d0
+ call gd_set,[d2,a2],8
+9:
+ ret [],4

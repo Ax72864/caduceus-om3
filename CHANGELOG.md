@@ -3,9 +3,9 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
-## v0.18 (in testing)
+## v0.18
 - The Color Profile wheel opens on the **Profiles** page, with the selected profile's name. INFO order unchanged:
-  Profiles → Saturation → (All) → Hue → Light → WB/BW → Profiles.
+  Profiles → Saturation → (All) → Hue → Light → WB/BW → Profiles. Camera-tested.
 
 ## v0.17
 - **Profile names** under the wheel on the Profiles page ("Velvia", "Empty" …), from `OM3MOD/NAMES.BIN`, drawn by

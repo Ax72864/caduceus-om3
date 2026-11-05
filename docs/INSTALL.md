@@ -13,7 +13,8 @@
 4. Camera off, full battery: **hold OK and switch on**. Steady light = writing (about two minutes, don't touch
    anything); blinking = done. Switch off and on again.
 5. Delete `DCOLYMP/E1479999.BIN` from the card, keep `OM3MOD`.
-6. **Half-press once** after every power-on, then Picture Mode › COLOR 1–4 › **▼** › **INFO** for the new pages.
+6. **Half-press once** after every power-on, then Picture Mode › COLOR 1–4 › **▼**: the wheel opens on the Profiles
+   page, and **INFO** steps through the others.
 
 To undo: flash `SD card files/restore/E1479999.BIN` the same way.
 
@@ -104,8 +105,8 @@ anything (that is how the same updater behaves on the E-P7): make the files agai
 1. Switch on and **half-press the shutter once**. That loads your settings from the card. Nothing is read at power-on,
    so until the first half-press the wheel works exactly as stock.
 2. Picture Mode › **COLOR 1** (or 2–4) › press **▼** to open the Color Profile wheel.
-3. Press **INFO**: Saturation → Saturation (All) → **Hue** → **Light** → **WB/BW** → **Profiles**. The label under
-   the wheel names the page.
+3. It opens on the **Profiles** page with the selected profile's name. Press **INFO** for the others: Saturation →
+   Saturation (All) → **Hue** → **Light** → **WB/BW** → back to **Profiles**. The label under the wheel names the page.
 4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card.
 
 To bring in profiles from the [Look Lab](https://androidfanman.github.io/caduceus-om3/): save `PROFILES.BIN` there,
