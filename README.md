@@ -6,7 +6,7 @@ the camera's Color Profile wheel into a full colour editor (per-colour Hue and L
 Whites) and adds a **bank of five complete profiles for each of COLOR 1–4** that you build on the camera, or in the
 browser with the **Look Lab**, and switch between with one dial.
 
-**▶ [Look Lab](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
+**Latest: v0.17** ([changelog](CHANGELOG.md)) · **▶ [Look Lab](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
 **[Using it](#using-it)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PROFILES.BIN v1 (test 16 profile bank), 1632 B:
+"""PROFILES.BIN v1 (v0.16 profile bank), 1632 B:
 'OM3P' | u32 1632 | u32 crc32(bytes 12..) | u16 1 | u16 20 | sel[4] (0..5) | 12 zero |
 20 x 64-B records at 32 (COLOR k profile v at 5k + v - 1) | 20 x 16-B names at 1312.
 Record: hue[12] +0, light[12] +12, sat[12] +24 (all -5..5, 12 o'clock clockwise), +36 wb on (0/1), +37 A-B, +38 G-M,

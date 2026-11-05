@@ -213,7 +213,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       <button class="btn" id="b-copy">Copy profiles as text</button>
     </div>
     <p class="msg" id="msg" role="status"></p>
-    <p class="hint">Unzip and copy the OM3MOD folder to the top of the SD card, replacing the files. Needs OM-3 firmware test 16 or later. Older LOOKS.BIN and BUNDLES.BIN files can still be opened: their entries are added as profiles.</p>
+    <p class="hint">Unzip and copy the OM3MOD folder to the top of the SD card, replacing the files. Needs Caduceus for OM-3 v0.16 or later (v0.17 or later shows the profile names). Older LOOKS.BIN and BUNDLES.BIN files can still be opened: their entries are added as profiles.</p>
   </section>
 </main>
 
@@ -323,7 +323,7 @@ function readBundles(b) {
     return mkLook({ name: 'Card COLOR' + (k + 1), src: 'Card', blurb: 'COLOR ' + (k + 1) + ' as it was on the card.', hue: [...Array(12)].map((_, i) => s(i)), light: [...Array(12)].map((_, i) => s(12 + i)), ab: on ? s(26) : 0, gm: on ? s(27) : 0, blacks: s(47), whites: s(48) });
   });
 }
-// PROFILES.BIN v1 (firmware test 16): 'OM3P' | 1632 | crc32(12..) | u16 1 | u16 20 | sel[4] | 12 zero | 20 x 64-B records
+// PROFILES.BIN v1 (firmware v0.16): 'OM3P' | 1632 | crc32(12..) | u16 1 | u16 20 | sel[4] | 12 zero | 20 x 64-B records
 // (COLOR k profile v at 5k + v - 1: hue[12], light[12], sat[12], +36 wb on, +37 A-B, +38 G-M, +39 Blacks, +40 Whites,
 // +41 Contrast, +42 Sharpness, +43 Shading, +44 Shadows, +45 Midtones, +46 Highlights) | 20 x 16-B names at 1312.
 // The selection is written as 0 for every COLOR, so the camera never saves its own settings over these profiles.
@@ -342,7 +342,7 @@ function profilesBin(prof) {
   v.setUint32(8, crc32(b.subarray(12)), true);
   return b;
 }
-// NAMES.BIN v1 (firmware test 17): the picture of each profile's name, shown under the wheel on the Profiles page.
+// NAMES.BIN v1 (firmware v0.17): the picture of each profile's name, shown under the wheel on the Profiles page.
 // 'OM3N' | total | crc32(12..) | u16 1 | u16 20 | u16 175 | u16 50 | 12 zero | 4 groups {u32 offset, u32 length} at 32
 // (COLOR k's pictures, contiguous from 144, each group <= 16384 B) | 20 entries {u16 offset in group, u16 length} at 64
 // | group data. Picture = OM-3 OSD type-11 stream, 175 x 50, palette indices 0 clear, 7 dark edge, 10 white.
