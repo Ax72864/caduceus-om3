@@ -240,7 +240,7 @@ function mkLook(o = {}) {
     contrast: cN(o.contrast, 2), sharp: cN(o.sharp, 2), shading: cN(o.shading, 5), hl: cN(o.hl, 7), mid: cN(o.mid, 7), sh: cN(o.sh, 7),
     ev: clamp(Math.round((+o.ev || 0) * 3) / 3, -3, 3) };
 }
-const state = { photos: [], prof: [[], [], [], []], cp: 0, cj: 0, sel: { sat: 0, hue: 0, light: 0, wb: 0 }, photo: 'portrait', own: [null, null, null, null], base: null };
+const state = { photos: [], prof: [[], [], [], []], cp: 0, cj: 0, sel: { sat: 0, hue: 0, light: 0, wb: 0 }, photo: 'frames', own: [null, null, null, null], base: null };
 function defaults() {
   state.prof = typeof DEFAULT_BANK !== 'undefined'
     ? DEFAULT_BANK.map((list) => list.map((n) => STARTERS.find((S) => S.name === n)).filter(Boolean).map((S) => mkLook({ ...S, src: 'Caduceus' })))
@@ -712,7 +712,7 @@ function renderInfo() {
 function renderCard() {}
 function renderPhotos() {
   const g = $('photos'); g.textContent = '';
-  if (!photoOk(state.photo)) state.photo = 'portrait';
+  if (!photoOk(state.photo)) state.photo = 'frames';
   for (const [key, label] of [...PHOTOS, ...(own ? [['own', 'This photo (not kept)']] : [])]) {
     const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', state.photo === key ? 'true' : 'false');
     b.onclick = () => { state.photo = key; renderPhotos(); schedule(); save(); }; g.append(b);
@@ -843,7 +843,7 @@ $('b-copy').onclick = async () => {
 
 // ---------- persistence: the artifact's db when available, else this browser ----------
 let db = null, saveTimer = null, loaded = false;
-const snapshot = () => ({ v: 3, prof: state.prof, own: state.own, photos: state.photos, photo: state.photo === 'own' ? 'portrait' : state.photo, base: state.base ? Array.from(state.base) : null });
+const snapshot = () => ({ v: 3, prof: state.prof, own: state.own, photos: state.photos, photo: state.photo === 'own' ? 'frames' : state.photo, base: state.base ? Array.from(state.base) : null });
 function restore(s) {
   if (!s) return false;
   if (s.v === 3 && Array.isArray(s.prof) && s.prof.length === 4) {
