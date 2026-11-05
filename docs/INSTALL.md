@@ -1,4 +1,4 @@
-# Installing OM-3 Color Lab
+# Installing Caduceus for OM-3
 
 > [!WARNING]
 > Unofficial, experimental firmware modification: use at your own risk (see [Safety](../README.md#safety)). Read this
@@ -105,7 +105,7 @@ anything (that is how the same updater behaves on the E-P7): make the files agai
    the wheel names the page.
 4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card.
 
-To bring in profiles from the [Look Lab](https://androidfanman.github.io/om3-color-lab/): save `PROFILES.BIN` there,
+To bring in profiles from the [Look Lab](https://androidfanman.github.io/caduceus-om3/): save `PROFILES.BIN` there,
 put it in the card's `OM3MOD` folder, then on the Profiles page turn the 12 o'clock spot to 1–5. See
 [USING.md](USING.md) for every page.
 
@@ -117,7 +117,7 @@ put it in the card's `OM3MOD` folder, then on the Profiles page turn the 12 o'cl
 3. Optionally remove the `OM3MOD` folder: stock firmware ignores it.
 
 The camera is then completely stock 1.1. Your COLOR profiles keep the camera's own settings (Saturation, Contrast and
-so on); the Hue, Light and WB/BW values only exist while OM-3 Color Lab is installed.
+so on); the Hue, Light and WB/BW values only exist while Caduceus for OM-3 is installed.
 
 ## Troubleshooting
 

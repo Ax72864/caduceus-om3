@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OM-3 Look Lab</title>
+<title>Caduceus for OM-3 · Look Lab</title>
 <style>
 :root{
   /* Layout: the recipe-card style. Look pills on top; one editable card: sticky preview left, four wheels + tone + settings right. */
@@ -144,7 +144,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 <div class="wrap">
 <header class="top">
   <div>
-    <div class="eyebrow">OM-3 · Look Lab</div>
+    <div class="eyebrow">Caduceus for OM-3 · Look Lab</div>
     <h1>Profiles for the camera's Profiles page</h1>
     <div class="status"><span class="dot" id="sdot"></span><span id="stext">Loading…</span></div>
   </div>
@@ -339,6 +339,74 @@ function profilesBin(prof) {
     const nm = L.name.replace(/[^\x20-\x7e]/g, '?').slice(0, 15);
     for (let i = 0; i < nm.length; i++) b[1312 + 16 * r + i] = nm.charCodeAt(i);
   }));
+  v.setUint32(8, crc32(b.subarray(12)), true);
+  return b;
+}
+// NAMES.BIN v1 (firmware test 17): the picture of each profile's name, shown under the wheel on the Profiles page.
+// 'OM3N' | total | crc32(12..) | u16 1 | u16 20 | u16 175 | u16 50 | 12 zero | 4 groups {u32 offset, u32 length} at 32
+// (COLOR k's pictures, contiguous from 144, each group <= 16384 B) | 20 entries {u16 offset in group, u16 length} at 64
+// | group data. Picture = OM-3 OSD type-11 stream, 175 x 50, palette indices 0 clear, 7 dark edge, 10 white.
+const NM_W = 175, NM_H = 50, NM_GROUP_MAX = 16384;
+function nameIndices(text, cap) {
+  const S = 4, c = document.createElement('canvas'); c.width = NM_W * S; c.height = NM_H * S;
+  const x = c.getContext('2d'), fam = '"Arial Narrow", "Helvetica Neue", Arial, "Liberation Sans", sans-serif';
+  let px = cap * S * 1.38; x.font = '700 ' + px + 'px ' + fam;
+  const m = x.measureText('H'), capPx = (m.actualBoundingBoxAscent || px * 0.72);
+  px = px * (cap * S) / capPx; x.font = '700 ' + px + 'px ' + fam;
+  const maxW = (NM_W - 8) * S, w = x.measureText(text).width, sq = Math.min(1, maxW / Math.max(1, w));
+  x.fillStyle = '#fff'; x.textBaseline = 'alphabetic'; x.textAlign = 'center';
+  x.save(); x.translate(NM_W * S / 2, (13 + cap) * S); x.scale(sq, 1); x.fillText(text, 0, 0); x.restore();
+  const big = x.getImageData(0, 0, c.width, c.height).data, fill = new Uint8Array(NM_W * NM_H);
+  for (let yy = 0; yy < NM_H; yy++) for (let xx = 0; xx < NM_W; xx++) {
+    let a = 0; for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) a += big[(((yy * S + j) * c.width) + xx * S + i) * 4 + 3];
+    fill[yy * NM_W + xx] = a > 127 * S * S ? 1 : 0;
+  }
+  const out = new Uint8Array(NM_W * NM_H);
+  for (let yy = 0; yy < NM_H; yy++) for (let xx = 0; xx < NM_W; xx++) {
+    const k = yy * NM_W + xx; if (fill[k]) { out[k] = 10; continue; }
+    let near = false;
+    for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const y2 = yy + dy, x2 = xx + dx; if (y2 >= 0 && y2 < NM_H && x2 >= 0 && x2 < NM_W && fill[y2 * NM_W + x2]) { near = true; break; }
+    }
+    if (near) out[k] = 7;
+  }
+  return out;
+}
+function encode11(px, w, h) {
+  const toks = []; for (let i = 0; i < px.length;) { const v = px[i]; let r = 1; while (r < 16 && i + r < px.length && px[i + r] === v) r++; toks.push(v << 4 | (r - 1)); i += r; }
+  const out = new Uint8Array(4 + 8 * Math.ceil(toks.length / 5));
+  out.set([(h - 1) & 255, ((h - 1) >> 8 & 3) | (((w - 1) & 15) << 4), ((w - 1) >> 4) & 63, 11]);
+  for (let k = 0; k < toks.length; k += 5) {
+    let lo = 0, hi = 0;                                  // 5 x 12 bits = 60 bits: tokens 0..1 and part of 2 in the low word
+    for (let s = 0; s < 5 && k + s < toks.length; s++) { const t = BigInt(toks[k + s]) << BigInt(12 * s); lo |= Number(t & 0xffffffffn); hi |= Number(t >> 32n); }
+    const v = new DataView(out.buffer, 4 + 8 * (k / 5), 8); v.setUint32(0, lo >>> 0, true); v.setUint32(4, hi >>> 0, true);
+  }
+  return out;
+}
+/** Picture name for COLOR k profile j (0-based): its name, or "Profile n" for an empty number. */
+const nameText = (prof, k, j) => (prof[k][j] && prof[k][j].name.trim()) || ('Profile ' + (j + 1));
+function namesBin(prof) {
+  const groups = [];
+  for (let k = 0; k < 4; k++) {
+    let cap = 24, pics;
+    for (;;) {                                           // smaller lettering until COLOR k's five pictures fit 16 KB
+      pics = [0, 1, 2, 3, 4].map((j) => encode11(nameIndices(nameText(prof, k, j), cap), NM_W, NM_H));
+      const tot = pics.reduce((a, b) => a + ((b.length + 3) & ~3), 0);
+      if (tot <= NM_GROUP_MAX || cap <= 12) break;
+      cap -= 2;
+    }
+    groups.push(pics);
+  }
+  const glen = groups.map((pics) => pics.reduce((a, b) => a + ((b.length + 3) & ~3), 0));
+  const total = 144 + glen.reduce((a, b) => a + b, 0), b = new Uint8Array(total), v = new DataView(b.buffer);
+  b.set([0x4f, 0x4d, 0x33, 0x4e]); v.setUint32(4, total, true); v.setUint16(12, 1, true); v.setUint16(14, 20, true); v.setUint16(16, NM_W, true); v.setUint16(18, NM_H, true);
+  let at = 144;
+  groups.forEach((pics, k) => {
+    v.setUint32(32 + 8 * k, at, true); v.setUint32(36 + 8 * k, glen[k], true);
+    let off = 0;
+    pics.forEach((pic, j) => { v.setUint16(64 + 4 * (5 * k + j), off, true); v.setUint16(66 + 4 * (5 * k + j), pic.length, true); b.set(pic, at + off); off += (pic.length + 3) & ~3; });
+    at += glen[k];
+  });
   v.setUint32(8, crc32(b.subarray(12)), true);
   return b;
 }
@@ -853,20 +921,21 @@ if (window.showDirectoryPicker && window.self === window.top) {
         if (!isCard) { setMsg('That folder does not look like the SD card (no DCIM or OM3MOD in it). Pick the card itself.', true); return; }
         dir = await root.getDirectoryHandle('OM3MOD', { create: true });
       }
-      const f = await dir.getFileHandle('PROFILES.BIN', { create: true }), w = await f.createWritable();
-      await w.write(profilesBin(state.prof)); await w.close();
-      setMsg('Saved PROFILES.BIN to the card. Eject it, put it in the camera, and every COLOR starts at 0.');
+      for (const [fn, data] of [['PROFILES.BIN', profilesBin(state.prof)], ['NAMES.BIN', namesBin(state.prof)]]) {
+        const f = await dir.getFileHandle(fn, { create: true }), w = await f.createWritable(); await w.write(data); await w.close();
+      }
+      setMsg('Saved PROFILES.BIN and NAMES.BIN to the card. Eject it, put it in the camera, and every COLOR starts at 0.');
     } catch (err) { setMsg('Could not write to the card (' + ((err && err.name) || 'error') + ').', true); }
   };
 }
 $('b-save').onclick = async () => {
-  const files = [{ name: 'OM3MOD/PROFILES.BIN', data: profilesBin(state.prof) }];
+  const files = [{ name: 'OM3MOD/PROFILES.BIN', data: profilesBin(state.prof) }, { name: 'OM3MOD/NAMES.BIN', data: namesBin(state.prof) }];
   if (!downloads) {                      // a plain web page (GitHub Pages, a local copy): an ordinary browser download
     const url = URL.createObjectURL(new Blob([makeZip(files)], { type: 'application/zip' })), a = document.createElement('a');
     a.href = url; a.download = 'OM3-profiles.zip'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
-    setMsg('Downloaded OM3-profiles.zip with PROFILES.BIN. Unzip it and copy its OM3MOD folder to the SD card.'); return;
+    setMsg('Downloaded OM3-profiles.zip with PROFILES.BIN and NAMES.BIN. Unzip it and copy its OM3MOD folder to the SD card.'); return;
   }
-  try { await downloads.save({ filename: 'OM3-profiles.zip', data: makeZip(files) }); setMsg('Saved OM3-profiles.zip with PROFILES.BIN. Copy its OM3MOD folder to the SD card.'); }
+  try { await downloads.save({ filename: 'OM3-profiles.zip', data: makeZip(files) }); setMsg('Saved OM3-profiles.zip with PROFILES.BIN and NAMES.BIN. Copy its OM3MOD folder to the SD card.'); }
   catch (err) { const c = err && err.code; setMsg(c === 'declined' ? 'Save cancelled.' : 'The file could not be saved (' + (c || 'error') + ').', c !== 'declined'); }
 };
 $('b-copy').onclick = async () => {
@@ -985,7 +1054,7 @@ function cadToOm3(c) {
 /** Add imported looks: colour looks to the "Imported from Caduceus" list (and a single look straight into this COLOR). */
 function cadImport(looks, from) {
   const mono = looks.filter((l) => l.kind === 'mono'), colour = looks.filter((l) => l.kind !== 'mono');
-  if (!colour.length) return from + ': no colour looks' + (mono.length ? ' (' + mono.length + ' monochrome left out: the OM-3 Color Lab is for COLOR 1–4 only).' : '.');
+  if (!colour.length) return from + ': no colour looks' + (mono.length ? ' (' + mono.length + ' monochrome left out: Caduceus for OM-3 is for COLOR 1–4 only).' : '.');
   const res = colour.map(cadToOm3), lim = res.filter((r) => r.changed.length), drop = res.filter((r) => r.dropped.length);
   const names = new Set(res.map((r) => r.L.name));          // a look imported again replaces the older copy
   state.imported = [...res.map((r) => r.L), ...state.imported.filter((L) => !names.has(L.name))].slice(0, 60);

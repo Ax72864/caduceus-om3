@@ -1,12 +1,13 @@
-# OM-3 Color Lab
+# Caduceus for OM-3
 
-**OM-3 Color Lab** is a set of open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
+**Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
+family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
 the camera's Color Profile wheel into a full colour editor (per-colour Hue and Light, a WB/B·W page with Blacks and
 Whites) and adds a **bank of five complete profiles for each of COLOR 1–4** that you build on the camera, or in the
 browser with the **Look Lab**, and switch between with one dial.
 
-**▶ [OM-3 Color Lab](https://androidfanman.github.io/om3-color-lab/)** · **[Install guide](docs/INSTALL.md)** ·
-**[Using it](#using-it)** · Built on [Caduceus](https://github.com/cakelesscoder/caduceus-ep7) for the E-P7.
+**▶ [Look Lab](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
+**[Using it](#using-it)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]
 > **Early development, use at your own risk.** This is an unofficial, experimental firmware modification. Bugs will
@@ -38,7 +39,7 @@ browser with the **Look Lab**, and switch between with one dial.
 You need: an OM-3 on firmware **1.1** (check *Setup › Firmware*), a **fully charged battery**, an SD card, and a
 computer with [Python 3.8+](https://www.python.org/downloads/) (Windows, macOS or Linux; a Mac offers to install it).
 
-### 1. Get OM-3 Color Lab
+### 1. Get Caduceus for OM-3
 
 On this page click **Code › Download ZIP** and unzip it (or `git clone` the repo).
 
@@ -46,7 +47,7 @@ On this page click **Code › Download ZIP** and unzip it (or `git clone` the re
 
 OM's licence doesn't allow anyone to share their firmware, so the update file is made on your own computer from OM's
 official OM-3 1.1 firmware (`OLY_E_147_1100_0000_0000_3.BIN`). The patcher checks it byte for byte, applies the
-OM-3 Color Lab changes and checks the result.
+Caduceus for OM-3 changes and checks the result.
 
 - **Easiest:** in the unzipped folder, double-click the launcher for your system:
   - macOS: `Make SD card files (Mac).command` (the first time: right-click › **Open**)
@@ -59,7 +60,7 @@ it. It refuses any other file or firmware version. It creates a folder **`SD car
 ```
 DCOLYMP/E1479999.BIN   the patched firmware update      → goes on the SD card
 OM3MOD/                the page labels; your edits and profiles are saved here → goes on the SD card
-restore/E1479999.BIN   the original OM firmware 1.1     → keep on your computer (to undo OM-3 Color Lab)
+restore/E1479999.BIN   the original OM firmware 1.1     → keep on your computer (to undo Caduceus for OM-3)
 ```
 
 ### 3. Copy to the SD card
@@ -92,7 +93,7 @@ More detail, troubleshooting and FAQ: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 ## Make your own profiles: the Look Lab
 
-**[OM-3 Color Lab](https://androidfanman.github.io/om3-color-lab/)** is where you make and edit profiles in your
+**[Look Lab](https://androidfanman.github.io/caduceus-om3/)** is where you make and edit profiles in your
 browser:
 
 - Edit the four wheels (Saturation, Hue, Light, WB/BW), the tone curve (Shadows, Midtones, Highlights) and
