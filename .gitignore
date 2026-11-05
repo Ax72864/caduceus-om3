@@ -1,0 +1,10 @@
+# never commit firmware: official or modified
+*.BIN
+*.bin
+!card/GUIDES.BIN
+SD card files/
+out*/
+__pycache__/
+*.pyc
+.DS_Store
+*.omsd

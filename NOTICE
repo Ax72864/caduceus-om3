@@ -1,0 +1,20 @@
+OM-3 Color Lab — on-camera colour editing for the OM SYSTEM OM-3 (firmware 1.1)
+Copyright 2026 androidfanman
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This repository contains no OM Digital Solutions / Olympus firmware. The patcher (firmware/patch.py) works on the
+official firmware file that each user downloads themselves; patches/*.json hold only the bytes this project writes
+(its own code, hooks and pointers to that code).
+
+Based on Caduceus (cakelesscoder/caduceus-ep7, Apache-2.0, Copyright 2026 cakelesscoder), firmware patches for the
+Olympus PEN E-P7: the on-camera look editor design, the BUNDLES.BIN slot layout (firmware/vendor/
+caduceus-bundles-layout.json), the tone-curve model and base LUT in the Look Lab (looklab/data.js, ported from its
+webapp), the 29 starter colour looks in the Look Lab, and the official-firmware download request in patch.py.
+
+Test photos in looklab/samples are public domain (CC0 1.0); see looklab/samples/CREDITS.md.
+
+Developer tools in tools/emulator drive om-emu (github.com/flatpanda/om-emu), which is not included and keeps its
+own licence.
+
+"OM SYSTEM", "Olympus" and "OM-3" are trademarks of their owners. Not affiliated with OM Digital Solutions.

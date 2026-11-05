@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""GUIDES.BIN for the OM-3 colour editor: the guide pictures shown under the wheel ("Hue [INFO]", "Light [INFO]",
+"WB/BW [INFO]", "Profiles [INFO]"), drawn from scratch (no camera graphics are copied).
+
+Picture: 175 x 50 px, OM-3 OSD palette indices (0 clear, 7 dark edge, 9 faint rim, 10 white fill, 11 light edge,
+12 grey). The word is fitted to the camera's own guide metrics (cap height 31 px, baseline row 40, right edge col 102);
+the INFO box sits at cols 107..172.
+Stream format: OSD type 11 (header 4 B: h-1 | w-1 << 12 | 11 << 24, then 64-bit groups of five 12-bit tokens,
+token = index << 4 | run - 1).
+GUIDES.BIN v4: 'OM3G' | u32 total | u32 crc32(bytes 12..) | u16 w | u16 h | u32 len1..len4 | streams, each padded to 4 B.
+usage: mkguides.py OUT.BIN [--preview PNG]"""
+import argparse, struct, zlib
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+from scipy import ndimage
+
+W, H, BOX = 175, 50, 109
+CAP, OW, DESC = 31, 15, 6
+FONTS = ['/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf', '/Library/Fonts/Arial Narrow.ttf',
+         '/System/Library/Fonts/Supplemental/Arial Narrow.ttf']
+BOLD = ['/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf', '/System/Library/Fonts/Supplemental/Arial Narrow Bold.ttf']
+
+
+def font(paths, size):
+    for p in paths:
+        try: return ImageFont.truetype(p, size)
+        except OSError: pass
+    raise SystemExit('no usable font found (install DejaVu fonts)')
+
+
+def raster(txt, fs, sq, paths=FONTS):
+    S = 4
+    f = font(paths, fs * S)
+    im = Image.new('L', (fs * S * len(txt) + 200, fs * S * 2), 0); ImageDraw.Draw(im).text((50, 20), txt, font=f, fill=255)
+    a = np.array(im); ys, xs = np.nonzero(a > 0)
+    im = im.crop((xs.min(), 0, xs.max() + 1, a.shape[0]))
+    return np.array(im.resize((max(1, round(im.width / S * sq)), round(im.height / S)), Image.LANCZOS)).astype(int)
+
+
+def fit(txt):
+    for fs in range(20, 60):
+        r = np.nonzero((raster('H', fs, 1.0) > 128).any(axis=1))[0]
+        if r.max() - r.min() + 1 >= CAP: break
+    for sq in [x / 100 for x in range(60, 111)]:
+        c = np.nonzero((raster('o', fs, sq) > 128).any(axis=0))[0]
+        if c.max() - c.min() + 1 >= OW: break
+    a = raster(txt, fs, sq)
+    while a.shape[1] > 100 and sq > 0.5:
+        sq = round(sq - 0.02, 2); a = raster(txt, fs, sq)
+    return a, fs, sq
+
+
+def edge(fillm, soft=None):
+    """The camera's outline style around a white fill: 1-px edge, light corners, 2-px dark line, faint rim."""
+    e = ndimage.distance_transform_edt(~fillm)
+    out = np.zeros(fillm.shape, dtype=np.uint8)
+    out[(e > 0) & (e <= 1.0)] = 7
+    if soft is not None: out[(e > 0) & (e <= 1.0) & soft] = 11
+    out[(e > 1.0) & (e < 1.5)] = 12
+    out[(e >= 1.5) & (e <= 2.0)] = 7
+    out[(e > 2.0) & (e <= 2.9)] = 9
+    out[fillm] = 10
+    return out
+
+
+def info_box():
+    """A rounded white key with a dark 'INFO' inside, 66 x 40 px, placed at cols 107..172, rows 5..44."""
+    img = np.zeros((H, W), dtype=np.uint8)
+    S = 4
+    im = Image.new('L', (66 * S, 40 * S), 0); d = ImageDraw.Draw(im)
+    d.rounded_rectangle((0, 0, 66 * S - 1, 40 * S - 1), radius=3 * S, fill=255)
+    box = np.array(im.resize((66, 40), Image.LANCZOS)) > 128
+    # 1 px faint rim + dark 1 px line round the key, white inside
+    full = np.zeros((H, W), dtype=bool); full[5:45, 107:173] = box
+    e = ndimage.distance_transform_edt(~full)
+    img[(e > 0) & (e <= 1.0)] = 9
+    inner = ndimage.binary_erosion(full, iterations=2)
+    img[full] = 7; img[inner] = 10
+    corner = full & ~inner & ndimage.binary_erosion(full, iterations=1) & ~ndimage.binary_erosion(full, structure=np.ones((3, 3)), iterations=1)
+    img[corner & (img == 7)] = 12
+    # 'INFO', bold, 27 px cap height, centred
+    for fs in range(14, 50):
+        a = raster('INFO', fs, 1.0, BOLD)
+        r = np.nonzero((a > 128).any(axis=1))[0]
+        if r.max() - r.min() + 1 >= 26: break
+    sq = 1.0
+    while a.shape[1] > 50 and sq > 0.4:                   # narrow until it fits the key like the camera's (50 px)
+        sq = round(sq - 0.02, 2); a = raster('INFO', fs, sq, BOLD)
+    rows = np.nonzero((a > 40).any(axis=1))[0]; a = a[rows.min():rows.max() + 1]
+    h, w = a.shape; y0 = 25 - h // 2; x0 = 140 - w // 2
+    reg = img[y0:y0 + h, x0:x0 + w]
+    reg[(a > 128)] = 7
+    reg[(a > 40) & (a <= 128) & (reg == 10)] = 11
+    return img
+
+
+def build(txt):
+    a, fs, sq = fit(txt)
+    a0 = raster(txt[0], fs, sq); base_row = np.nonzero((a0 > 128).any(axis=1))[0].max()
+    ink = np.nonzero((a > 40).any(axis=1))[0]
+    if ink.max() - base_row > DESC:                       # squeeze only a descender's tail into rows 41..46
+        tail = Image.fromarray(a[base_row + 1:ink.max() + 1].astype(np.uint8))
+        tail = np.array(tail.resize((tail.width, DESC), Image.LANCZOS)).astype(int)
+        a = np.vstack([a[:base_row + 1], tail, np.zeros((a.shape[0] - base_row - 1 - DESC, a.shape[1]), dtype=int)])
+    fill = a > 128; soft = (a > 40) & ~fill
+    lay = np.zeros((H, W), dtype=np.uint8); h, w = fill.shape; x0 = 102 - w + 1; shift = 40 - base_row
+    assert x0 >= 2, (txt, w)
+    for y in range(h):
+        yy = y + shift
+        if 0 <= yy < H:
+            lay[yy, x0:x0 + w][fill[y]] = 10
+            lay[yy, x0:x0 + w][soft[y] & ~fill[y]] = 11
+    word = edge(lay == 10, lay == 11); word[:, BOX - 2:] = 0
+    img = info_box(); img[:, :BOX - 2] = word[:, :BOX - 2]
+    return img
+
+
+def encode11(px, w, h):
+    toks = []; i = 0
+    while i < len(px):
+        v = px[i]; r = 1
+        while r < 16 and i + r < len(px) and px[i + r] == v: r += 1
+        toks.append(v << 4 | (r - 1)); i += r
+    out = bytearray([(h - 1) & 255, ((h - 1) >> 8 & 3) | (((w - 1) & 15) << 4), ((w - 1) >> 4) & 63, 11])
+    for k in range(0, len(toks), 5):
+        word = 0
+        for s, t in enumerate(toks[k:k + 5]): word |= t << (12 * s)
+        out += word.to_bytes(8, 'little')
+    return bytes(out)
+
+
+PAGES = ['Hue', 'Light', 'WB/BW', 'Profiles']             # streams 1..4 = pages Hue, Light, WB/BW, Profiles
+
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--preview')
+    a = ap.parse_args()
+    imgs = [build(t) for t in PAGES]
+    st = [encode11(bytes(i.flatten()), W, H) for i in imgs]
+    body = struct.pack('<HHIIII', W, H, *map(len, st))
+    for s in st: body += s + bytes((-len(s)) % 4)
+    body += bytes((-len(body)) % 4)
+    out = b'OM3G' + struct.pack('<II', 12 + len(body), zlib.crc32(body) & 0xffffffff) + body
+    open(a.out, 'wb').write(out); print(a.out, len(out), 'bytes')
+    if a.preview:
+        pal = {0: (30, 30, 60), 7: (20, 20, 20), 9: (60, 60, 60), 10: (255, 255, 255), 11: (200, 200, 200), 12: (160, 160, 160)}
+        sheet = Image.new('RGB', (W * 3, H * 3 * len(imgs)))
+        for k, i in enumerate(imgs):
+            rgb = Image.new('RGB', (W, H)); rgb.putdata([pal.get(int(v), (255, 0, 255)) for v in i.flatten()])
+            sheet.paste(rgb.resize((W * 3, H * 3), Image.NEAREST), (0, k * H * 3))
+        sheet.save(a.preview)

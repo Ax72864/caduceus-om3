@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OM-3 Look Lab</title>
+<style>
+:root{
+  /* Layout: the recipe-card style. Look pills on top; one editable card: sticky preview left, four wheels + tone + settings right. */
+  --page:#efeeea;
+  --card:#ffffff;
+  --panel:#2f2f2f;
+  --panel-2:#4a4a4a;
+  --ink:#232323;
+  --muted:#7a7873;
+  --rule:#dddbd5;
+  --accent:#8fb3f0;
+  --warn:#a15c00;
+  --font-display:-apple-system, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body:-apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.45;padding:0 16px 48px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto}
+header.top{padding:28px 4px 18px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--rule)}
+.eyebrow{font-family:var(--font-display);letter-spacing:.28em;text-transform:uppercase;font-size:13px;color:var(--muted)}
+h1{font-family:var(--font-display);font-size:26px;font-weight:600;margin:4px 0 0;text-wrap:balance}
+.shared{font-size:14px;color:var(--muted);max-width:560px;margin:0}
+.shared b{color:var(--ink);font-weight:600}
+.status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:#b9b6ae}.dot.ok{background:#3f9a5a}.dot.warn{background:var(--warn)}
+
+/* look pills */
+nav.profiles{margin:14px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:10px}
+.prof{background:var(--card);border-radius:14px;padding:10px 12px;display:grid;gap:6px;align-content:start}
+.prof h2{margin:0;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.prof .pl{display:flex;flex-wrap:wrap;gap:6px}
+.pill.add{color:var(--muted);border-style:dashed}
+.pill{font-size:14px;color:var(--ink);border:1px solid var(--rule);background:var(--card);padding:6px 12px;border-radius:999px;display:inline-flex;gap:6px;align-items:center}
+.pill:hover{border-color:var(--ink)}
+.pill[aria-current="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pill .n{font-variant-numeric:tabular-nums;color:var(--muted)}
+.pill[aria-current="true"] .n{color:#bdb9b0}
+.pill .c{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pill[aria-current="true"] .c{color:var(--accent)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.btn{font-size:14px;border:1px solid var(--rule);background:var(--card);padding:6px 12px;border-radius:10px}
+.btn:hover{border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default;border-color:var(--rule)}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.tools select{font-size:14px;border:1px solid var(--rule);background:var(--card);padding:6px 8px;border-radius:10px;max-width:180px}
+.count{font-size:13px;color:var(--muted);margin-left:auto}.count.full{color:var(--warn)}
+
+/* the card */
+main{display:grid;gap:28px;padding-top:22px}
+.card{background:var(--card);border-radius:22px;padding:26px 26px 22px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.card-head{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.name{font-family:var(--font-display);font-size:24px;font-weight:600;margin:0;border:0;border-bottom:1px dashed transparent;background:none;padding:0;min-width:0;width:16ch;max-width:100%}
+.name:hover,.name:focus{border-bottom-color:var(--rule);outline:none}
+.slot{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.blurb{color:#4a4945;margin:0 0 18px;width:100%;max-width:80ch;border:0;resize:none;background:none;padding:0;line-height:1.45;overflow:hidden}
+.blurb:hover,.blurb:focus{outline:none;box-shadow:0 1px 0 var(--rule)}
+.body{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:960px){.body{grid-template-columns:1fr}}
+.left{position:sticky;top:12px;display:grid;gap:10px}
+@media (max-width:960px){.left{position:static}}
+.stage{position:relative;background:#111;border-radius:12px;overflow:hidden;line-height:0}
+.stage canvas{max-width:100%;max-height:68vh;width:auto;height:auto;display:block;margin:0 auto}
+.tag{position:absolute;top:8px;font:600 11px/1 var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.45);padding:5px 7px;border-radius:5px}
+.tag.l{left:8px}.tag.r{right:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:13px;border:1px solid var(--rule);background:var(--card);padding:4px 11px;border-radius:999px}
+.chip[aria-pressed="true"]{background:var(--panel);color:#fff;border-color:var(--panel)}
+.chipx{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:999px;background:var(--card)}
+.chipx .chip{border:0;padding-right:4px;background:none}
+.chipx[data-on="true"]{background:var(--panel);border-color:var(--panel)}.chipx[data-on="true"] .chip,.chipx[data-on="true"] .x{color:#fff}
+.chipx .x{border:0;background:none;color:var(--muted);padding:2px 9px 2px 4px;font-size:15px;line-height:1}
+.compare{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+
+.wheels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:520px){.wheels{grid-template-columns:1fr}}
+.panel{background:var(--panel);border-radius:12px;padding:10px 10px 8px;color:#e9e6df}
+.panel h3{margin:0 0 2px;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#cfcac0;text-align:center}
+.panel svg{display:block;width:100%;height:auto;touch-action:none;cursor:pointer;border-radius:8px}
+.panel svg:focus-visible{outline:2px solid var(--accent)}
+.readout{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px;padding:2px 4px 0;font-variant-numeric:tabular-nums;color:#cfcac0}
+.readout b{color:#fff;font-weight:600}
+.step{display:inline-flex;gap:4px}
+.step button{width:26px;height:24px;border-radius:6px;border:1px solid #5d5b57;background:#3b3b3b;color:#fff;line-height:1;padding:0}
+.lower{display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:20px;margin-top:16px;align-items:start}
+@media (max-width:620px){.lower{grid-template-columns:1fr}}
+.tone-labels{display:flex;justify-content:space-between;font-size:15px;padding:0 4px 6px;font-variant-numeric:tabular-nums}
+.tone-sub{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:6px 4px 0;font-variant-numeric:tabular-nums}
+.settings h4{margin:0 0 4px;font-size:17px;font-weight:500}
+.settings .wbline{color:#4a4945;font-size:14px;margin:0 0 10px}
+.slider{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;margin:9px 0;font-variant-numeric:tabular-nums;font-size:15px}
+@media (max-width:720px){.slider{grid-template-columns:120px 1fr}}
+.slider .sub{font-size:12px;color:var(--muted)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;margin:0;--f:50%}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:linear-gradient(to right,var(--accent) var(--f),#e9e8e4 var(--f))}
+input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:#e9e8e4}
+input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:var(--accent)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-7px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);border:0}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);border:0}
+.compare input[type=range]::-webkit-slider-runnable-track{background:#e9e8e4}
+.tone-sliders{margin-top:6px}
+.tone-sliders .slider{grid-template-columns:64px 1fr}
+.why{margin:14px 0 0;padding:12px 0 0;border-top:1px solid var(--rule);font-size:14px;color:#4a4945}
+.why textarea{width:100%;border:1px solid transparent;border-radius:8px;background:#f6f5f2;padding:8px 10px;resize:none;overflow:hidden;min-height:60px;line-height:1.45;font-size:14px}
+.why textarea:focus{border-color:var(--rule);outline:none;background:#fff}
+.oncam{font-size:13px;color:#4a4945;background:#f6f5f2;border-radius:10px;padding:10px 12px;margin:12px 0 0}
+.oncam b{color:var(--ink)}
+
+/* save card */
+.savegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:8px}
+.field{display:grid;gap:4px;font-size:14px}
+.field select{border:1px solid var(--rule);background:var(--card);border-radius:10px;padding:7px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.msg{font-size:14px;min-height:1.4em;margin:10px 0 0}.msg.err{color:#b42318}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.legend{margin:28px 0 0;background:var(--card);border-radius:16px;padding:16px 20px;font-size:14px;color:#4a4945}
+.legend p{margin:4px 0}.legend b{color:var(--ink)}
+.legend a{color:inherit}
+@media (max-width:720px){.card{padding:18px 14px}}
+@media (prefers-reduced-motion:no-preference){.pill,.btn{transition:border-color .15s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <div class="eyebrow">OM-3 · Look Lab</div>
+    <h1>Profiles for the camera's Profiles page</h1>
+    <div class="status"><span class="dot" id="sdot"></span><span id="stext">Loading…</span></div>
+  </div>
+  <p class="shared">Each of COLOR 1–4 has its <b>own 5 profiles</b>. On the camera's <b>Profiles</b> page, the 12 o'clock (Yellow) spot picks one: <b>0</b> is nothing (all neutral), <b>1–5</b> load a whole profile: every wheel plus Contrast, Sharpness, Shading and Shadows / Midtones / Highlights. Changes you make on the camera are kept in the selected profile. Drag the dots on a wheel to edit, and check the preview on the left.</p>
+</header>
+
+<nav class="profiles" id="pills" aria-label="Profiles by COLOR"></nav>
+<div class="tools">
+  <button class="btn" id="b-dup">Duplicate</button>
+  <label class="sr" for="copyto">Copy to</label>
+  <select id="copyto"><option value="">Copy to…</option><option value="0">COLOR 1</option><option value="1">COLOR 2</option><option value="2">COLOR 3</option><option value="3">COLOR 4</option></select>
+  <button class="btn" id="b-left" aria-label="Move earlier">◀ Move</button>
+  <button class="btn" id="b-right" aria-label="Move later">Move ▶</button>
+  <button class="btn" id="b-del">Delete</button>
+  <label class="sr" for="starter">Starter</label>
+  <select id="starter"></select><button class="btn" id="b-add">Add starter here</button>
+  <span class="count" id="count"></span>
+</div>
+
+<main>
+  <article class="card" id="card">
+    <div class="card-head">
+      <label class="sr" for="name">Profile name</label>
+      <input class="name" id="name" maxlength="15" autocomplete="off">
+      <span class="slot" id="slot"></span>
+    </div>
+    <label class="sr" for="blurb">Description</label>
+    <textarea class="blurb" id="blurb" rows="2" placeholder="Describe the profile in a sentence or two."></textarea>
+    <div class="body">
+      <div class="left">
+        <div class="chips" id="photos" role="group" aria-label="Test photo"></div>
+        <p class="hint" id="photohint"></p>
+        <div class="stage"><canvas id="view" width="900" height="600" aria-label="Preview of the profile"></canvas><span class="tag l">Before</span><span class="tag r">After</span></div>
+        <div class="compare"><span>Before</span><input type="range" id="split" min="0" max="100" value="50" aria-label="Before and after divider"><span>After</span></div>
+        <p class="hint">An approximation of the camera, good for direction and strength. Judge the final look in live view.</p>
+      </div>
+      <div class="right">
+        <div class="wheels" id="wheels"></div>
+        <div class="lower">
+          <div>
+            <div class="tone-labels"><span id="tl-sh"></span><span id="tl-mid"></span><span id="tl-hi"></span></div>
+            <div class="panel" id="tonepanel"></div>
+            <div class="tone-sub"><span id="ts-b"></span><span id="ts-w"></span></div>
+            <div class="tone-sliders" id="tonesl"></div>
+          </div>
+          <div class="settings">
+            <h4 id="wbhead"></h4>
+            <p class="wbline">The profile shift is set on the WB/BW page (12 o'clock A/B, 3 Blacks, 6 G/M, 9 Whites) and adds to the camera's own WB.</p>
+            <div id="setsl"></div>
+            <div class="oncam" id="oncam"></div>
+            <div class="why"><label for="why"><b>Why</b> <span class="hint">(one reason per line)</span></label><textarea id="why"></textarea></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <section class="card" aria-labelledby="h-save">
+    <div class="card-head"><h2 id="h-save" style="font-family:var(--font-display);font-size:22px;font-weight:600;margin:0">Save for the camera</h2><span class="slot">OM3MOD folder</span></div>
+    <p class="blurb" style="margin:0">All 20 profiles go into <b>PROFILES.BIN</b>. It replaces the camera's bank, including profiles you changed or made on the camera, so to keep those, open the camera's PROFILES.BIN here first. After copying it over, every COLOR starts at 0, and your current camera settings stay as they are until you pick a profile.</p>
+    <div class="row">
+      <button class="btn primary" id="b-card" hidden>Save to the SD card…</button>
+      <button class="btn primary" id="b-save">Save card files (.zip)</button>
+      <label class="btn" for="f-open">Open PROFILES.BIN from the card…</label><input type="file" id="f-open" accept=".BIN,.bin" multiple class="sr">
+      <label class="btn" for="f-photo">Add your own photos…</label><input type="file" id="f-photo" accept="image/jpeg,image/png,image/webp" multiple class="sr">
+      <button class="btn" id="b-copy">Copy profiles as text</button>
+    </div>
+    <p class="msg" id="msg" role="status"></p>
+    <p class="hint">Unzip and copy the OM3MOD folder to the top of the SD card, replacing the files. Needs OM-3 firmware test 16 or later. Older LOOKS.BIN and BUNDLES.BIN files can still be opened: their entries are added as profiles.</p>
+  </section>
+</main>
+
+<section class="legend" aria-label="How to read the card">
+  <p><b>Wheels</b> run clockwise from Yellow at 12 o'clock, the same as the camera: Yellow, Orange, Orange-red, Red, Magenta, Violet, Blue, Blue-cyan, Cyan, Green-cyan, Green, Yellow-green. The dashed ring is 0; points outside it are +, inside are −. Drag a dot in or out, or select a slice and use the − / + buttons (or the arrow keys).</p>
+  <p><b>Hue</b> + rotates a slice clockwise toward its next neighbour (Yellow → Orange, Blue → Blue-cyan). <b>Light</b> steps grow as they go out: ±3 is four times ±1.</p>
+  <p><b>WB / B·W</b>: A/B at 12, Blacks at 3, G/M at 6, Whites at 9. A/B + is amber and − is blue; G/M + is green and − is magenta. Blacks + lifts (fades) and − crushes; Whites + brightens and − softens.</p>
+  <p><b>Profiles page on the camera</b> (INFO after WB/BW): only the 12 o'clock (Yellow) spot works. 0, or anything below 0, is nothing: everything neutral. 1–5 load that COLOR's profile 1–5; an empty number loads neutral, ready to build a new profile on the camera. Turning away from a profile keeps what it has, and a half-press saves the bank to the card. Exposure comp is shared by the whole mode, so it is a preview setting only.</p>
+  <p>Test photos, all public domain (CC0 1.0): Portrait, Market, Lake and Sunset from Wikimedia Commons (Wilfredor, Fons Heijnsbroek, Bonnie Moreland) via the Caduceus project; the other 16 are Unsplash photos from 2014–2016, when Unsplash published under CC0, via the cslr/cc0pictures archive; Mossy falls and Autumn falls are from the WordPress.org photo directory (CC0). See samples/CREDITS.md. Starter looks, the tone model and the preview are adapted from <a href="https://github.com/cakelesscoder/caduceus-ep7">cakelesscoder/caduceus-ep7</a> (Apache-2.0). Photos you add are kept with this Look Lab; it is private to you unless you share it.</p>
+</section>
+</div>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+// ---------- model ----------
+const SLICES = [["Yellow","#f2d23c"],["Orange","#f0a536"],["Orange-red","#e8692f"],["Red","#d83a3a"],["Magenta","#c43a8c"],["Violet","#8a3fc8"],
+  ["Blue","#3b55d8"],["Blue-cyan","#3a8ed8"],["Cyan","#36c6d6"],["Green-cyan","#38d29e"],["Green","#5cc84b"],["Yellow-green","#a9d63b"]];
+const PER = 5;
+const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+const cN = (v, n) => clamp(Math.round(+v || 0), -n, n);
+const fmt = (v) => v > 0 ? '+' + v : String(v).replace('-', '−');
+let uid = 1; const newId = () => 'l' + Date.now().toString(36) + (uid++);
+function mkLook(o = {}) {
+  const z = () => new Array(12).fill(0), arr = (a) => (Array.isArray(a) && a.length === 12 ? a : z()).map((v) => cN(v, 5));
+  return { id: o.id || newId(), name: String(o.name || 'New look').slice(0, 15), blurb: String(o.blurb || o.notes || ''), why: Array.isArray(o.why) ? o.why.map(String) : [], src: o.src || '',
+    hue: arr(o.hue), sat: arr(o.sat), light: arr(o.light), ab: cN(o.ab, 5), gm: cN(o.gm, 5), blacks: cN(o.blacks, 5), whites: cN(o.whites, 5),
+    contrast: cN(o.contrast, 2), sharp: cN(o.sharp, 2), shading: cN(o.shading, 5), hl: cN(o.hl, 7), mid: cN(o.mid, 7), sh: cN(o.sh, 7),
+    ev: clamp(Math.round((+o.ev || 0) * 3) / 3, -3, 3) };
+}
+const state = { photos: [], prof: [[], [], [], []], cp: 0, cj: 0, sel: { sat: 0, hue: 0, light: 0, wb: 0 }, photo: 'portrait', own: [null, null, null, null], base: null };
+function defaults() {
+  state.prof = RECIPES.map((r) => [mkLook(r)]);
+  state.own = state.prof.map((p) => p[0].id); state.cp = 0; state.cj = 0;
+}
+
+// ---------- binary formats (LOOKS.BIN v1, BUNDLES.BIN for OM-3 build 1100, stored ZIP) ----------
+const CRC = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+function crc32(u8, c = 0xffffffff) { for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+// LOOKS.BIN v2: 'OM3K' | 992 | crc32(12..) | u16 2 | u16 20 | counts[4] | 12 zero | 20 x 32 looks (COLOR k look j at 5k+j-1) | 20 x 16 names
+function looksBin(prof) {
+  const b = new Uint8Array(992), v = new DataView(b.buffer);
+  b.set([0x4f, 0x4d, 0x33, 0x4b]); v.setUint32(4, 992, true); v.setUint16(12, 2, true); v.setUint16(14, 20, true);
+  prof.forEach((p, k) => {
+    b[16 + k] = p.length;
+    p.forEach((L, j) => {
+      const r = 5 * k + j, o = 32 + 32 * r;
+      for (let i = 0; i < 12; i++) { v.setInt8(o + i, L.hue[i]); v.setInt8(o + 12 + i, L.light[i]); }
+      v.setInt8(o + 24, L.ab || L.gm ? 1 : 0); v.setInt8(o + 25, L.ab); v.setInt8(o + 26, L.gm); v.setInt8(o + 27, L.blacks); v.setInt8(o + 28, L.whites);
+      const nm = L.name.replace(/[^\x20-\x7e]/g, '?').slice(0, 15);
+      for (let i = 0; i < nm.length; i++) b[672 + 16 * r + i] = nm.charCodeAt(i);
+    });
+  });
+  v.setUint32(8, crc32(b.subarray(12)), true);
+  return b;
+}
+/** -> 4 lists of looks (v2), or one flat list in COLOR 1 (v1 files from test 14). */
+function readLooks(b) {
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength), ver = v.getUint16(12, true), n = v.getUint16(14, true), total = v.getUint32(4, true);
+  if (total !== b.length || crc32(b.subarray(12)) !== v.getUint32(8, true)) throw new Error('this LOOKS.BIN is damaged (size or checksum).');
+  const rec = (r, nameAt) => {
+    const o = 32 + 32 * r, s = (k) => v.getInt8(o + k), on = s(24) & 1; let name = '';
+    for (let k = 0; k < 16; k++) { const c = b[nameAt + 16 * r + k]; if (!c) break; name += String.fromCharCode(c); }
+    return mkLook({ name: name || 'Look', src: 'Card', hue: [...Array(12)].map((_, k) => s(k)), light: [...Array(12)].map((_, k) => s(12 + k)), ab: on ? s(25) : 0, gm: on ? s(26) : 0, blacks: s(27), whites: s(28) });
+  };
+  if (ver === 2 && n === 20 && total === 992) return [0, 1, 2, 3].map((k) => [...Array(Math.min(5, b[16 + k]))].map((_, j) => rec(5 * k + j, 672)));
+  if (ver === 1 && total === 32 + 48 * n) return [[...Array(n)].map((_, i) => rec(i, 32 + 32 * n))];
+  throw new Error('this LOOKS.BIN has an unknown version.');
+}
+function bundlesBin(base, looksFor) {
+  const b = new Uint8Array(544), v = new DataView(b.buffer);
+  if (base) b.set(base);
+  b.set([0x4f, 0x4d, 0x33, 0x42]); v.setUint16(4, 1, true); v.setUint16(6, 32, true); v.setUint32(8, 1100, true); v.setUint32(12, 512, true);
+  b.set([0x5e, 0x8d, 0x37, 0x6e], 20); b.fill(0, 24, 32);
+  looksFor.forEach((L, k) => {
+    const o = 32 + 64 * k;
+    if (!L) { if (!base) b.fill(0, o, o + 64); return; }
+    for (let i = 0; i < 12; i++) { v.setInt8(o + i, L.hue[i]); v.setInt8(o + 12 + i, L.light[i]); }
+    const on = L.ab || L.gm; b[o + 25] = on ? 1 : 0; v.setInt8(o + 26, on ? L.ab : 0); v.setInt8(o + 27, on ? L.gm : 0);
+    v.setInt8(o + 47, L.blacks); v.setInt8(o + 48, L.whites); b[o + 31] |= 2;
+  });
+  v.setUint32(16, 0, true); v.setUint32(16, crc32(new Uint8Array([...b.subarray(0, 16), ...b.subarray(20)])), true);
+  return b;
+}
+function readBundles(b) {
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  if (b.length !== 544 || v.getUint16(4, true) !== 1 || v.getUint32(8, true) !== 1100) throw new Error('this BUNDLES.BIN is not for OM-3 firmware 1.1.');
+  if (crc32(new Uint8Array([...b.subarray(0, 16), ...b.subarray(20)])) !== v.getUint32(16, true)) throw new Error('this BUNDLES.BIN failed its checksum.');
+  return [0, 1, 2, 3].map((k) => {
+    const o = 32 + 64 * k, s = (i) => v.getInt8(o + i), on = b[o + 25] === 1;
+    return mkLook({ name: 'Card COLOR' + (k + 1), src: 'Card', blurb: 'COLOR ' + (k + 1) + ' as it was on the card.', hue: [...Array(12)].map((_, i) => s(i)), light: [...Array(12)].map((_, i) => s(12 + i)), ab: on ? s(26) : 0, gm: on ? s(27) : 0, blacks: s(47), whites: s(48) });
+  });
+}
+// PROFILES.BIN v1 (firmware test 16): 'OM3P' | 1632 | crc32(12..) | u16 1 | u16 20 | sel[4] | 12 zero | 20 x 64-B records
+// (COLOR k profile v at 5k + v - 1: hue[12], light[12], sat[12], +36 wb on, +37 A-B, +38 G-M, +39 Blacks, +40 Whites,
+// +41 Contrast, +42 Sharpness, +43 Shading, +44 Shadows, +45 Midtones, +46 Highlights) | 20 x 16-B names at 1312.
+// The selection is written as 0 for every COLOR, so the camera never saves its own settings over these profiles.
+const PF_LEN = 1632;
+function profilesBin(prof) {
+  const b = new Uint8Array(PF_LEN), v = new DataView(b.buffer);
+  b.set([0x4f, 0x4d, 0x33, 0x50]); v.setUint32(4, PF_LEN, true); v.setUint16(12, 1, true); v.setUint16(14, 20, true);
+  prof.forEach((list, k) => list.slice(0, PER).forEach((L, j) => {
+    const r = 5 * k + j, o = 32 + 64 * r;
+    for (let i = 0; i < 12; i++) { v.setInt8(o + i, L.hue[i]); v.setInt8(o + 12 + i, L.light[i]); v.setInt8(o + 24 + i, L.sat[i]); }
+    b[o + 36] = L.ab || L.gm ? 1 : 0; v.setInt8(o + 37, L.ab); v.setInt8(o + 38, L.gm); v.setInt8(o + 39, L.blacks); v.setInt8(o + 40, L.whites);
+    v.setInt8(o + 41, L.contrast); v.setInt8(o + 42, L.sharp); v.setInt8(o + 43, L.shading); v.setInt8(o + 44, L.sh); v.setInt8(o + 45, L.mid); v.setInt8(o + 46, L.hl);
+    const nm = L.name.replace(/[^\x20-\x7e]/g, '?').slice(0, 15);
+    for (let i = 0; i < nm.length; i++) b[1312 + 16 * r + i] = nm.charCodeAt(i);
+  }));
+  v.setUint32(8, crc32(b.subarray(12)), true);
+  return b;
+}
+/** -> 4 lists of profiles. Empty numbers before a used one become neutral profiles so the numbers stay the camera's. */
+function readProfiles(b) {
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  if (b.length !== PF_LEN || v.getUint32(4, true) !== PF_LEN || crc32(b.subarray(12)) !== v.getUint32(8, true)) throw new Error('this PROFILES.BIN is damaged (size or checksum).');
+  if (v.getUint16(12, true) !== 1 || v.getUint16(14, true) !== 20) throw new Error('this PROFILES.BIN has an unknown version.');
+  return [0, 1, 2, 3].map((k) => {
+    const out = [];
+    for (let j = 0; j < 5; j++) {
+      const r = 5 * k + j, o = 32 + 64 * r, s = (i) => v.getInt8(o + i), a = (at) => [...Array(12)].map((_, i) => s(at + i));
+      let name = ''; for (let i = 0; i < 16; i++) { const c = b[1312 + 16 * r + i]; if (!c) break; name += String.fromCharCode(c); }
+      const used = name || b.subarray(o, o + 47).some(Boolean), on = b[o + 36] & 1;
+      out.push(used ? mkLook({ name: name || 'Profile ' + (j + 1), src: 'Card', hue: a(0), light: a(12), sat: a(24), ab: on ? s(37) : 0, gm: on ? s(38) : 0, blacks: s(39), whites: s(40),
+        contrast: s(41), sharp: s(42), shading: s(43), sh: s(44), mid: s(45), hl: s(46) }) : null);
+    }
+    while (out.length && !out[out.length - 1]) out.pop();
+    return out.map((L, j) => L || mkLook({ name: 'Empty ' + (j + 1), blurb: 'Neutral: this number was empty on the card.' }));
+  });
+}
+function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const f of files) {
+    const name = enc.encode(f.name), crc = crc32(f.data), n = f.data.length;
+    const lh = new Uint8Array(30 + name.length), l = new DataView(lh.buffer);
+    l.setUint32(0, 0x04034b50, true); l.setUint16(4, 20, true); l.setUint16(10, time, true); l.setUint16(12, date, true); l.setUint32(14, crc, true); l.setUint32(18, n, true); l.setUint32(22, n, true); l.setUint16(26, name.length, true); lh.set(name, 30);
+    const ch = new Uint8Array(46 + name.length), c = new DataView(ch.buffer);
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, crc, true); c.setUint32(20, n, true); c.setUint32(24, n, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true); ch.set(name, 46);
+    parts.push(lh, f.data); central.push(ch); off += lh.length + n;
+  }
+  const cd = central.reduce((a, x) => a + x.length, 0), end = new Uint8Array(22), e = new DataView(end.buffer);
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cd, true); e.setUint32(16, off, true);
+  const all = [...parts, ...central, end], out = new Uint8Array(all.reduce((a, x) => a + x.length, 0)); let p = 0;
+  for (const x of all) { out.set(x, p); p += x.length; }
+  return out;
+}
+
+// ---------- tone model (Highlight & Shadow knots, Blacks/Whites remap; port of Caduceus webapp/src/tone.ts) ----------
+const i32 = (v) => v | 0, s16 = (v) => ((v & 0xffff) ^ 0x8000) - 0x8000;
+function idiv(a, b) { const A = Math.abs(a), B = Math.abs(b), q = (A - (A % B)) / B; return (a < 0) === (b < 0) ? q : -q; }
+function solve(xs, ys) {
+  const n = xs.length, M = new Array(n).fill(0), H = new Array(n).fill(0), P = new Array(n + 1).fill(0);
+  for (let i = 0; i < n - 1; i++) { H[i] = xs[i + 1] - xs[i]; P[i + 1] = i32(idiv(i32((ys[i + 1] - ys[i]) * 1024), H[i])); }
+  M[1] = i32(P[2] - P[1]); P[1] = 2 * (xs[2] - xs[0]);
+  for (let i = 1; i < n - 2; i++) { const r = idiv(i32(H[i] * 1024), P[i]); M[i + 1] = i32(P[i + 2] - P[i + 1] - (i32(r * M[i]) >> 10)); P[i + 1] = i32(2 * (xs[i + 2] - xs[i]) - (i32(H[i] * r) >> 10)); }
+  M[n - 2] = i32(M[n - 2] - i32(H[n - 2] * M[n - 1]));
+  for (let k = n - 2; k > 0; k--) M[k] = idiv(i32(i32(M[k] * 1024) - i32(H[k] * M[k + 1])), P[k]);
+  return M;
+}
+function evalSpline(x, xs, ys, M) {
+  let lo = 0, hi = xs.length - 1;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (xs[mid] < x) lo = mid + 1; else hi = mid; }
+  const k = lo > 0 ? lo - 1 : 0, h = xs[k + 1] - xs[k], t = x - xs[k];
+  const b = i32(idiv(i32((ys[k + 1] - ys[k]) * 1048576), h) - i32((2 * M[k] + M[k + 1]) * h)), c = idiv(i32((M[k + 1] - M[k]) * t), h);
+  return i32(i32(t * i32(i32(t * (3 * M[k] + c)) + b)) + i32(ys[k] * 1048576) + 524288) >> 20;
+}
+function knots(h, s, m) {
+  const q = { highlights: idiv(h * 4096, 7), midtones: idiv(m * 4096, 7), shadows: idiv(s * 4096, 7) };
+  return Array.from({ length: 8 }, (_, j) => Math.floor((TM.gains.highlights[j] * q.highlights + TM.gains.midtones[j] * q.midtones + TM.gains.shadows[j] * q.shadows) / 4096));
+}
+function bend(lut, w) {
+  const S = TM.samples_k, A = TM.curve_a_x, ya = [...A]; ya[1] -= w[2]; ya[3] += w[2];
+  const ma = solve(A, ya), smp = S.map((x) => s16(evalSpline(lut[x], A, ya, ma)));
+  let xs, ys;
+  if (w[5] === 0) { xs = TM.curve_b_x; ys = [...xs]; ys[1] += w[3]; ys[6] += w[4]; } else { xs = TM.curve_c_x; ys = [...xs]; ys[1] += w[6]; ys[3] += w[7]; ys[2] += w[5]; }
+  const mc = solve(xs, ys), out = []; let prev = 0;
+  smp.forEach((x, i) => { const v = s16(evalSpline(x, xs, ys, mc)); prev = i === 0 ? (v <= 0 ? 0 : Math.min(v, 1023)) : v <= prev ? prev : Math.min(v, 1023); out.push(prev); });
+  const md = solve(S, out), L = new Array(256).fill(0); let d3 = out[0], j = 1; L[0] = d3;
+  for (let a = 2; a < 255; a += 2) { let v; if (a < S[j]) v = s16(evalSpline(a, S, out, md)); else { v = out[j]; j++; } const d2 = v <= d3 ? d3 : Math.min(v, 1023); L[a - 1] = (d3 + d2) >> 1; L[a] = d2; d3 = d2; }
+  const v = out[26]; L[255] = v <= d3 ? d3 : Math.min(v, 1023);
+  return L;
+}
+const hsmLut = (h, s, m) => !h && !s && !m ? BASE_LUT.slice() : bend(BASE_LUT, knots(h, s, m));
+function remapBW(lut, B, W) {
+  if (!B && !W) return lut.slice();
+  const lo = B > 0 ? 8 * B : 0, hi = W < 0 ? 1023 + 10 * W : 1023, cB = B < 0 ? -12 * B : 0, cW = W > 0 ? 12 * W : 0, K = (hi - lo) * 1025; let prev = 0;
+  return lut.map((v0) => {
+    let y = Math.min(v0, 1023); const t = 1023 - y;
+    y -= (cB * ((((t * t) >> 10) * t) >> 10)) >> 10; y = Math.max(y, 0); y += (cW * ((((y * y) >> 10) * y) >> 10)) >> 10; y = Math.min(y, 1023);
+    y = lo + Math.floor((y * K + 0xfffff) / 0x100000); y = Math.max(y, prev); prev = y; return y;
+  });
+}
+const contrastCurve = (c) => (y) => clamp(y + 0.5 * 0.035 * c * Math.sin(2 * Math.PI * (y - 0.5)), 0, 1);
+/** display-luma y -> y' table (1025 entries): contrast, then the stock base LUT -> the look's LUT. Identity when neutral. */
+function toneTable(L) {
+  const t = new Float32Array(1025);
+  if (!L.blacks && !L.whites && !L.hl && !L.sh && !L.mid && !L.contrast) { for (let i = 0; i <= 1024; i++) t[i] = i / 1024; return t; }
+  const xs = BASE_LUT.map((v) => v / 1023), ys = remapBW(hsmLut(L.hl, L.sh, L.mid), L.blacks, L.whites).map((v) => v / 1023), pre = contrastCurve(L.contrast);
+  for (let i = 0; i <= 1024; i++) {
+    const y = pre(i / 1024); let lo = 0, hi = 255;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] <= y) lo = m; else hi = m; }
+    const d = xs[hi] - xs[lo]; t[i] = y <= xs[0] ? ys[0] : y >= xs[255] ? ys[255] : d > 0 ? ys[lo] + ((y - xs[lo]) * (ys[hi] - ys[lo])) / d : ys[hi];
+  }
+  return t;
+}
+
+// ---------- preview engine (after Caduceus webapp/src/preview.ts; OM-3 hue direction: + toward the next slice clockwise) ----------
+const CENTRE = [12197, 9466, 8192, 6736, 3095, 30401, 28945, 27489, 24212, 20753, 16111, 15019].map((w) => (w / 32768) * 360);
+const WIDTH = [3823, 5461, 3959, 2685, 5006, 9057, 6872, 2867, 4642, 6690, 8055, 5643].map((w) => (w / 32768) * 360);
+const GAIN_POS = [240, 240, 240, 256, 369, 328, 382, 382, 300, 615, 400, 656], GAIN_NEG = [385, 385, 395, 493, 513, 395, 385, 385, 395, 395, 395, 395];
+const L_LUT = [-300, -250, -200, -150, -100, -50, -25, 0, 25, 50, 100, 150, 200, 250, 300];
+const BINS = 720, WB_STEP = 0.015;
+const DEC = new Float32Array(256).map((_, i) => { const x = i / 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+const ENC = new Float32Array(4097).map((_, i) => { const x = i / 4096; return x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055; });
+const enc = (x) => ENC[clamp((x * 4096 + 0.5) | 0, 0, 4096)];
+function sectorLut(L) {
+  const satMul = new Float32Array(BINS), shift = new Float32Array(BINS), lsum = new Float32Array(BINS), w = new Float64Array(12);
+  const sc = L.sat.map((s, k) => (s * (s >= 0 ? GAIN_POS[k] : GAIN_NEG[k])) / 5 * 1.5), centre = CENTRE.map((c) => (c + 15) % 360);
+  for (let b = 0; b < BINS; b++) {
+    const h = (b + 0.5) * (360 / BINS); let sum = 0;
+    for (let k = 0; k < 12; k++) { const d = ((h - centre[k] + 540) % 360) - 180, x = clamp(d / Math.max(WIDTH[k], 1), -1, 1); w[k] = Math.max(0, Math.cos(x * Math.PI / 2)); sum += w[k]; }
+    let s = 0, hs = 0, l = 0;
+    for (let k = 0; k < 12; k++) { const wk = sum > 1e-6 ? w[k] / sum : 1 / 12; s += wk * sc[k]; hs -= wk * L.hue[k] * 5.5; l += wk * L_LUT[clamp(L.light[k], -7, 7) + 7]; }
+    satMul[b] = clamp(1 + s / 1000, 0, 3); shift[b] = hs * Math.PI / 180; lsum[b] = l / 4096;
+  }
+  return { satMul, shift, lsum };
+}
+function render(src, dst, L) {
+  const s = src.data, d = dst.data, n = src.width * src.height, W = src.width, H = src.height;
+  const lut = sectorLut(L), tl = toneTable(L), ev = Math.pow(2, L.ev);
+  const gr = (1 + WB_STEP * L.ab) * ev, gg = (1 + WB_STEP * L.gm) * ev, gb = (1 - WB_STEP * L.ab) * ev, lin = L.ab || L.gm || L.ev;
+  for (let i = 0; i < n; i++) {
+    const p = i * 4; let r, g, b;
+    if (lin) { r = enc(DEC[s[p]] * gr); g = enc(DEC[s[p + 1]] * gg); b = enc(DEC[s[p + 2]] * gb); } else { r = s[p] / 255; g = s[p + 1] / 255; b = s[p + 2] / 255; }
+    let y = 0.299 * r + 0.587 * g + 0.114 * b, cb = -0.168736 * r - 0.331264 * g + 0.5 * b, cr = 0.5 * r - 0.418688 * g - 0.081312 * b;
+    y = tl[clamp((y * 1024 + 0.5) | 0, 0, 1024)];
+    const ch = Math.hypot(cb, cr);
+    if (ch > 1e-5) {
+      let hd = Math.atan2(cr, cb) * 180 / Math.PI; if (hd < 0) hd += 360;
+      const bin = Math.min(BINS - 1, (hd * (BINS / 360)) | 0), ang = hd * Math.PI / 180 + lut.shift[bin], c2 = ch * lut.satMul[bin];
+      y += lut.lsum[bin] * Math.min(1, ch / 0.25); cb = c2 * Math.cos(ang); cr = c2 * Math.sin(ang);
+    }
+    d[p] = clamp(y + 1.402 * cr, 0, 1) * 255 + 0.5; d[p + 1] = clamp(y - 0.344136 * cb - 0.714136 * cr, 0, 1) * 255 + 0.5; d[p + 2] = clamp(y + 1.772 * cb, 0, 1) * 255 + 0.5; d[p + 3] = 255;
+  }
+  if (L.sharp) {   // unsharp mask on luma; negative softens (illustrative at preview size)
+    const Y = new Float32Array(n), amt = 0.45 * L.sharp;
+    for (let i = 0; i < n; i++) Y[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x, bl = (Y[i - W - 1] + 2 * Y[i - W] + Y[i - W + 1] + 2 * Y[i - 1] + 4 * Y[i] + 2 * Y[i + 1] + Y[i + W - 1] + 2 * Y[i + W] + Y[i + W + 1]) / 16, dl = amt * (Y[i] - bl), p = i * 4;
+      d[p] += dl; d[p + 1] += dl; d[p + 2] += dl;
+    }
+  }
+  if (L.shading) { // corner brightness, negative = darker corners (Olympus convention)
+    const cx = (W - 1) / 2, cy = (H - 1) / 2, R2 = cx * cx + cy * cy, k = 0.07 * L.shading;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const r = ((x - cx) ** 2 + (y - cy) ** 2) / R2, f = 1 + k * r * Math.sqrt(r), p = (y * W + x) * 4; d[p] *= f; d[p + 1] *= f; d[p + 2] *= f; }
+  }
+}
+
+// ---------- photos + drawing ----------
+const PHOTOS = [["portrait", "Portrait", "samples/portrait.jpg"], ["market", "Market", "samples/market.jpg"], ["lake", "Lake", "samples/lake.jpg"], ["sunset", "Sunset", "samples/sunset.jpg"], ["redhead", "Redhead", "samples/redhead.jpg"], ["smile", "Smile", "samples/smile.jpg"], ["autumn", "Autumn", "samples/autumn.jpg"], ["purple", "Purple", "samples/purple.jpg"], ["alpine", "Alpine", "samples/alpine.jpg"], ["forest", "Forest", "samples/forest.jpg"], ["waterfall", "Waterfall", "samples/waterfall.jpg"], ["rainbowfalls", "Rainbow falls", "samples/rainbowfalls.jpg"], ["mossyfalls", "Mossy falls", "samples/mossyfalls.jpg"], ["autumnfalls", "Autumn falls", "samples/autumnfalls.jpg"], ["iceland", "Iceland", "samples/iceland.jpg"], ["turquoise", "Turquoise", "samples/turquoise.jpg"], ["blossom", "Blossom", "samples/blossom.jpg"], ["frames", "Colour frames", "samples/frames.jpg"], ["cab", "Yellow cab", "samples/cab.jpg"], ["canyon", "Canyon", "samples/canyon.jpg"], ["neon", "Neon night", "samples/neon.jpg"], ["bluehour", "Blue hour", "samples/bluehour.jpg"]];
+const pix = {}; let own = null; let assets = null;
+const cv = document.getElementById('view'), ctx = cv.getContext('2d', { willReadFrequently: true });
+const loadImg = (url) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = url; });
+function toPixels(im) {
+  const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, k = Math.min(1, 1200 / iw, 900 / ih), Wd = Math.round(iw * k), Hd = Math.round(ih * k);
+  const c = document.createElement('canvas'); c.width = Wd; c.height = Hd; const x = c.getContext('2d'); x.drawImage(im, 0, 0, Wd, Hd); return x.getImageData(0, 0, Wd, Hd);
+}
+async function getPhoto(key) {
+  if (key === 'own') return own;
+  if (!pix[key]) pix[key] = toPixels(await loadImg(key.startsWith('u:') ? '/_blob/' + key.slice(2) : PHOTOS.find((q) => q[0] === key)[2]));
+  return pix[key];
+}
+const photoOk = (key) => key === 'own' ? !!own : key.startsWith('u:') ? state.photos.some((q) => 'u:' + q.id === key) : PHOTOS.some((q) => q[0] === key);
+let pending = false, full = null, quick = false;
+const bufs = {}, half = {};
+const buf = (k, w, h) => (bufs[k] && bufs[k].width === w && bufs[k].height === h) ? bufs[k] : (bufs[k] = new ImageData(w, h));
+function halfOf(src) {   // a half-size copy for quick previews while dragging
+  if (half.src === src) return half.img;
+  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.getContext('2d').putImageData(src, 0, 0);
+  const h = document.createElement('canvas'); h.width = Math.max(1, src.width >> 1); h.height = Math.max(1, src.height >> 1);
+  const x = h.getContext('2d'); x.drawImage(c, 0, 0, h.width, h.height); half.src = src; half.img = x.getImageData(0, 0, h.width, h.height); return half.img;
+}
+const off = document.createElement('canvas'), offx = off.getContext('2d');
+/** Redraw soon. While the user is dragging (fast), render at half size first, then at full size once input pauses. */
+function schedule(fast) {
+  clearTimeout(full);
+  if (fast) { quick = true; full = setTimeout(() => { quick = false; schedule(); }, 180); }
+  if (pending) return; pending = true; requestAnimationFrame(async () => { pending = false; await draw(); });
+}
+async function draw() {
+  let src; try { src = await getPhoto(state.photo); } catch { return; }
+  if (!src) return;
+  if (cv.width !== src.width || cv.height !== src.height) { cv.width = src.width; cv.height = src.height; }
+  const s = quick ? halfOf(src) : src, out = buf(quick ? 'h' : 'f', s.width, s.height);
+  render(s, out, cur());
+  const cut = Math.round(src.width * (+$('split').value) / 100);
+  if (quick) {
+    off.width = s.width; off.height = s.height; offx.putImageData(out, 0, 0);
+    ctx.imageSmoothingQuality = 'high'; ctx.drawImage(off, 0, 0, cv.width, cv.height);
+  } else ctx.putImageData(out, 0, 0);
+  if (cut > 0) ctx.putImageData(src, 0, 0, 0, 0, cut, src.height);
+  ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(cut - 1, 0, 2, src.height);
+}
+
+// ---------- wheels (recipe-card style, draggable) ----------
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const C = 130, RIM = 104, RIM_W = 9, R0 = 60, STEP = 8.2;
+const rOf = (v) => R0 + v * STEP, pt = (ang, r) => [C + r * Math.cos(ang), C + r * Math.sin(ang)], angOf = (i, n = 12) => (-90 + i * 360 / n) * Math.PI / 180;
+const WB_AX = [['ab', 'A/B', '#e8a33a'], ['blacks', 'Blacks', '#141414'], ['gm', 'G/M', '#4caf50'], ['whites', 'Whites', '#f4f2ec']];
+const WHEELS = [['sat', 'Saturation'], ['hue', 'Hue'], ['light', 'Light'], ['wb', 'WB / B·W']];
+function wheelVals(kind, L) { return kind === 'wb' ? WB_AX.map((a) => L[a[0]]) : L[kind]; }
+function setWheel(kind, i, v) { const L = cur(); v = cN(v, 5); if (kind === 'wb') L[WB_AX[i][0]] = v; else L[kind][i] = v; }
+function drawWheel(kind, svg) {
+  const L = cur(), vals = wheelVals(kind, L), n = vals.length, sel = state.sel[kind]; svg.textContent = '';
+  el('circle', { cx: C, cy: C, r: RIM - RIM_W / 2 - 1, fill: '#4a4a4a' }, svg);
+  el('circle', { cx: C, cy: C, r: R0, fill: 'none', stroke: '#9a978f', 'stroke-width': 1.2, 'stroke-dasharray': '3 4' }, svg);
+  el('circle', { cx: C, cy: C, r: rOf(-5), fill: 'none', stroke: '#6b6964', 'stroke-width': 1, 'stroke-dasharray': '2 4' }, svg);
+  const half = Math.PI / n;
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = pt(angOf(i, n) - half, RIM), [x1, y1] = pt(angOf(i, n) + half, RIM), col = kind === 'wb' ? WB_AX[i][2] : SLICES[i][1];
+    el('path', { d: `M${x0} ${y0} A${RIM} ${RIM} 0 0 1 ${x1} ${y1}`, fill: 'none', stroke: col, 'stroke-width': i === sel ? RIM_W + 5 : RIM_W, 'stroke-linecap': 'butt' }, svg);
+  }
+  const pts = vals.map((v, i) => pt(angOf(i, n), rOf(v)));
+  el('polygon', { points: pts.map((p) => p.join(',')).join(' '), fill: 'rgba(255,255,255,.08)', stroke: '#fff', 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+  pts.forEach((p, i) => el('circle', { cx: p[0], cy: p[1], r: i === sel ? 8 : 5.2, fill: kind === 'wb' ? WB_AX[i][2] : SLICES[i][1], stroke: i === sel ? '#fff' : '#2f2f2f', 'stroke-width': i === sel ? 2.2 : 1 }, svg));
+  vals.forEach((v, i) => {
+    const off = kind === 'wb' ? 0 : 17, [x, y] = pt(angOf(i, n), RIM + 17);
+    if (kind === 'wb') {
+      const a = (x, y, anchor, size) => ({ x, y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-size': size, fill: i === sel ? '#8fb3f0' : v === 0 ? '#a9a59c' : '#fff', 'font-weight': v === 0 && i !== sel ? 400 : 600 });
+      if (i === 0 || i === 2) el('text', a(C, i === 0 ? 13 : 248, 'middle', 14), svg).textContent = WB_AX[i][1] + ' ' + fmt(v);
+      else {
+        const x = i === 1 ? C + RIM + 10 : C - RIM - 10, anchor = i === 1 ? 'start' : 'end';
+        el('text', a(x, C - 10, anchor, 13), svg).textContent = WB_AX[i][1];
+        el('text', a(x, C + 9, anchor, 15), svg).textContent = fmt(v);
+      }
+    } else {
+      el('text', { x, y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 15, fill: i === sel ? '#8fb3f0' : v === 0 ? '#a9a59c' : '#fff', 'font-weight': v === 0 && i !== sel ? 400 : 600 }, svg).textContent = fmt(v);
+    }
+  });
+}
+const wheelEls = {};
+function buildWheels() {
+  const box = $('wheels');
+  for (const [kind, title] of WHEELS) {
+    const p = document.createElement('div'); p.className = 'panel';
+    const h = document.createElement('h3'); h.textContent = title;
+    const svg = el('svg', { viewBox: '-34 0 328 260', tabindex: '0', role: 'slider', 'aria-label': title });
+    const ro = document.createElement('div'); ro.className = 'readout';
+    const lab = document.createElement('span'), stp = document.createElement('span'); stp.className = 'step';
+    const mi = document.createElement('button'), pl = document.createElement('button'); mi.textContent = '−'; pl.textContent = '+';
+    mi.setAttribute('aria-label', title + ' minus one'); pl.setAttribute('aria-label', title + ' plus one');
+    const bump = (d) => { const i = state.sel[kind]; setWheel(kind, i, wheelVals(kind, cur())[i] + d); changed(); };
+    mi.onclick = () => bump(-1); pl.onclick = () => bump(1);
+    stp.append(mi, pl); ro.append(lab, stp); p.append(h, svg, ro); box.append(p);
+    wheelEls[kind] = { svg, lab };
+    const n = kind === 'wb' ? 4 : 12;
+    const locate = (e) => {
+      const m = svg.getScreenCTM().inverse(), q = new DOMPoint(e.clientX, e.clientY).matrixTransform(m);
+      const dx = q.x - C, dy = q.y - C, a = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+      return { i: Math.round(a / (360 / n)) % n, v: Math.round((Math.hypot(dx, dy) - R0) / STEP), r: Math.hypot(dx, dy) };
+    };
+    let drag = null;
+    svg.addEventListener('pointerdown', (e) => {
+      const h = locate(e); if (h.r > RIM + 30) return;
+      drag = h.i; state.sel[kind] = h.i; svg.setPointerCapture(e.pointerId);
+      if (h.r <= RIM) setWheel(kind, h.i, h.v);
+      changed(); e.preventDefault();
+    });
+    svg.addEventListener('pointermove', (e) => { if (drag === null) return; const h = locate(e); setWheel(kind, drag, h.v); changed(true); });
+    const stop = () => { drag = null; };
+    svg.addEventListener('pointerup', stop); svg.addEventListener('pointercancel', stop);
+    svg.addEventListener('keydown', (e) => {
+      const i = state.sel[kind], v = wheelVals(kind, cur())[i];
+      if (e.key === 'ArrowRight') state.sel[kind] = (i + 1) % n; else if (e.key === 'ArrowLeft') state.sel[kind] = (i + n - 1) % n;
+      else if (e.key === 'ArrowUp') setWheel(kind, i, v + 1); else if (e.key === 'ArrowDown') setWheel(kind, i, v - 1); else return;
+      e.preventDefault(); changed();
+    });
+  }
+}
+function renderWheels() {
+  const L = cur();
+  for (const [kind, title] of WHEELS) {
+    const { svg, lab } = wheelEls[kind], i = state.sel[kind], v = wheelVals(kind, L)[i], nm = kind === 'wb' ? WB_AX[i][1] : SLICES[i][0];
+    drawWheel(kind, svg); lab.innerHTML = ''; lab.append(nm + ' ');
+    const b = document.createElement('b'); b.textContent = fmt(v); lab.append(b);
+    svg.setAttribute('aria-valuenow', v); svg.setAttribute('aria-valuetext', title + ', ' + nm + ' ' + fmt(v));
+  }
+}
+function drawTone() {
+  const L = cur(), box = $('tonepanel'); box.textContent = '';
+  const svg = el('svg', { viewBox: '0 0 260 260', role: 'img', 'aria-label': `Tone curve: shadows ${fmt(L.sh)}, midtones ${fmt(L.mid)}, highlights ${fmt(L.hl)}, blacks ${fmt(L.blacks)}, whites ${fmt(L.whites)}, contrast ${fmt(L.contrast)}` }, box);
+  svg.style.cursor = 'default';
+  const P = 14, S = 232, X = (x) => P + x * S, Y = (y) => P + (1 - y) * S;
+  el('rect', { x: P, y: P, width: S, height: S, fill: 'none', stroke: '#d8d4ca', 'stroke-width': 1.5 }, svg);
+  el('line', { x1: X(.5), y1: Y(0), x2: X(.5), y2: Y(1), stroke: '#5c5a55', 'stroke-width': 1 }, svg);
+  el('line', { x1: X(0), y1: Y(.5), x2: X(1), y2: Y(.5), stroke: '#5c5a55', 'stroke-width': 1 }, svg);
+  el('line', { x1: X(0), y1: Y(0), x2: X(1), y2: Y(1), stroke: '#8d8a83', 'stroke-width': 1.2, 'stroke-dasharray': '4 4' }, svg);
+  const t = toneTable(L); let d = '';
+  for (let i = 0; i <= 64; i++) { const x = i / 64; d += (i ? ' L' : 'M') + X(x).toFixed(1) + ' ' + Y(t[Math.round(x * 1024)]).toFixed(1); }
+  el('path', { d, fill: 'none', stroke: '#fff', 'stroke-width': 2.4, 'stroke-linejoin': 'round' }, svg);
+  $('tl-sh').textContent = 'Sh: ' + fmt(L.sh); $('tl-mid').textContent = 'Mid: ' + fmt(L.mid); $('tl-hi').textContent = 'Hi: ' + fmt(L.hl);
+  $('ts-b').textContent = 'Blacks ' + fmt(L.blacks); $('ts-w').textContent = 'Whites ' + fmt(L.whites);
+}
+
+// ---------- sliders ----------
+const TONE_SL = [['sh', 'Sh', 7], ['mid', 'Mid', 7], ['hl', 'Hi', 7]];
+const SET_SL = [['shading', 'Shading Effect', 5, 1, ''], ['sharp', 'Sharpness', 2, 1, ''], ['contrast', 'Contrast', 2, 1, ''], ['ev', 'Exposure Comp', 3, 1 / 3, '(preview only)']];
+const slEls = {};
+function buildSliders() {
+  const mk = (box, [key, label, n, step, note]) => {
+    const row = document.createElement('div'); row.className = 'slider';
+    const lab = document.createElement('label'); lab.htmlFor = 'r-' + key;
+    const inp = document.createElement('input'); inp.type = 'range'; inp.id = 'r-' + key; inp.min = -n; inp.max = n; inp.step = step || 1;
+    inp.oninput = () => { const L = cur(); L[key] = key === 'ev' ? clamp(Math.round(+inp.value * 3) / 3, -3, 3) : cN(inp.value, n); changed(true); };
+    row.append(lab, inp); box.append(row); slEls[key] = { lab, inp, label, n, note };
+  };
+  TONE_SL.forEach((s) => mk($('tonesl'), s)); SET_SL.forEach((s) => mk($('setsl'), s));
+}
+const evTxt = (v) => v === 0 ? '0.0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1);
+function renderSliders() {
+  const L = cur();
+  for (const k in slEls) {
+    const { lab, inp, label, n, note } = slEls[k], v = L[k];
+    inp.value = v; inp.style.setProperty('--f', ((v + n) / (2 * n) * 100) + '%');
+    lab.textContent = label + ': ' + (k === 'ev' ? evTxt(v) : fmt(v)) + (note ? ' ' + note : '');
+  }
+}
+
+// ---------- UI ----------
+const $ = (id) => document.getElementById(id);
+const cur = () => state.prof[state.cp][state.cj];
+function setMsg(t, err) { const m = $('msg'); m.textContent = t; m.className = 'msg' + (err ? ' err' : ''); }
+const blank = () => mkLook({ name: 'New profile' });
+function select(p, j) { state.cp = p; state.cj = j; renderAll(); }
+function ensureCur() {
+  if (state.prof[state.cp][state.cj]) return;
+  for (let p = 0; p < 4; p++) if (state.prof[p].length) { state.cp = p; state.cj = 0; return; }
+  state.prof[0].push(blank()); state.cp = 0; state.cj = 0;
+}
+function renderPills() {
+  const nav = $('pills'); nav.textContent = '';
+  state.prof.forEach((list, p) => {
+    const box = document.createElement('div'); box.className = 'prof';
+    const h = document.createElement('h2'); h.textContent = 'COLOR ' + (p + 1); const c = document.createElement('span'); c.textContent = list.length + ' / ' + PER; h.append(c);
+    const pl = document.createElement('div'); pl.className = 'pl';
+    list.forEach((L, j) => {
+      const b = document.createElement('button'); b.className = 'pill'; b.setAttribute('aria-current', p === state.cp && j === state.cj ? 'true' : 'false');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = j + 1;
+      const nm = document.createElement('span'); nm.textContent = L.name; b.append(n, nm);
+            b.onclick = () => select(p, j); pl.append(b);
+    });
+    if (list.length < PER) { const a = document.createElement('button'); a.className = 'pill add'; a.textContent = '+ New profile'; a.onclick = () => { list.push(blank()); select(p, list.length - 1); save(); }; pl.append(a); }
+    box.append(h, pl); nav.append(box);
+  });
+  const L = state.prof[state.cp];
+  $('count').textContent = 'Editing COLOR ' + (state.cp + 1) + ', profile ' + (state.cj + 1);
+  $('b-dup').disabled = $('b-add').disabled = L.length >= PER;
+  $('b-left').disabled = state.cj === 0; $('b-right').disabled = state.cj >= L.length - 1;
+  [...$('copyto').options].forEach((o) => { if (o.value !== '') o.disabled = state.prof[+o.value].length >= PER; });
+}
+function fit(id) { const t = $(id); t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+const fitBlurb = () => fit('blurb');
+function renderHead() {
+  const L = cur(); $('name').value = L.name; $('blurb').value = L.blurb; fitBlurb(); $('why').value = L.why.join('\n'); fit('why');
+  $('slot').textContent = 'COLOR ' + (state.cp + 1) + ' · Profile ' + (state.cj + 1);
+}
+function renderInfo() {
+  const L = cur();
+  $('wbhead').textContent = 'Profile shift A/B ' + fmt(L.ab) + ' · G/M ' + fmt(L.gm);
+  $('oncam').innerHTML = '';
+  const b = document.createElement('b'); b.textContent = 'On the camera: ';
+  $('oncam').append(b, 'COLOR ' + (state.cp + 1) + ', Profiles page, 12 o\'clock at ' + (state.cj + 1) + ' loads all of this: the four wheels, Contrast, Sharpness, Shading and Sh/Mid/Hi.' +
+    (L.ev ? ' Exposure ' + evTxt(L.ev) + ' is for the preview only; set it on the camera if you want it.' : ''));
+}
+function renderCard() {}
+function renderPhotos() {
+  const g = $('photos'); g.textContent = '';
+  if (!photoOk(state.photo)) state.photo = 'portrait';
+  for (const [key, label] of [...PHOTOS, ...(own ? [['own', 'This photo (not kept)']] : [])]) {
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', state.photo === key ? 'true' : 'false');
+    b.onclick = () => { state.photo = key; renderPhotos(); schedule(); save(); }; g.append(b);
+  }
+  for (const q of state.photos) {
+    const key = 'u:' + q.id, w = document.createElement('span'); w.className = 'chipx'; w.dataset.on = state.photo === key ? 'true' : 'false';
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = q.name; b.setAttribute('aria-pressed', state.photo === key ? 'true' : 'false');
+    b.onclick = () => { state.photo = key; renderPhotos(); schedule(); save(); };
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + q.name);
+    x.onclick = async () => {
+      state.photos = state.photos.filter((r) => r.id !== q.id); delete pix[key]; renderPhotos(); schedule(); save();
+      if (assets) try { await assets.delete(q.id); } catch {}
+      setMsg('Removed "' + q.name + '".');
+    };
+    w.append(b, x); g.append(w);
+  }
+  $('photohint').textContent = state.photos.length ? 'Your photos are kept with the Look Lab (anyone you share it with can see them).' :
+    'Tip: add your own OM-3 JPEGs shot with COLOR 1 at 0 (all neutral). The preview adds the profile on top of the photo, so neutral camera JPEGs give the truest preview.';
+}
+function renderLive(fast) { renderWheels(); drawTone(); renderSliders(); renderInfo(); schedule(fast); }
+function renderAll() { ensureCur(); renderPills(); renderHead(); renderCard(); renderPhotos(); renderLive(); }
+function changed(fast) { renderLive(fast); save(); }
+
+$('name').oninput = (e) => { cur().name = e.target.value.slice(0, 15) || 'Untitled'; renderPills(); renderCard(); save(); };
+$('blurb').oninput = (e) => { cur().blurb = e.target.value; fitBlurb(); save(); };
+$('why').oninput = (e) => { cur().why = e.target.value.split('\n'); fit('why'); save(); };
+$('split').oninput = () => schedule(true);
+const dupOf = (L, name) => mkLook({ ...JSON.parse(JSON.stringify(L)), id: null, name });
+$('b-dup').onclick = () => { const list = state.prof[state.cp]; if (list.length >= PER) return; list.push(dupOf(cur(), cur().name.slice(0, 13) + ' 2')); select(state.cp, list.length - 1); save(); };
+$('copyto').onchange = (e) => {
+  const k = e.target.value; e.target.value = ''; if (k === '') return;
+  const list = state.prof[+k]; if (list.length >= PER) { setMsg('COLOR ' + (+k + 1) + ' already has 5 profiles.', true); return; }
+  list.push(dupOf(cur(), cur().name)); setMsg('Copied "' + cur().name + '" to COLOR ' + (+k + 1) + ' as profile ' + list.length + '.'); select(+k, list.length - 1); save();
+};
+$('b-del').onclick = () => {
+  const list = state.prof[state.cp], gone = list.splice(state.cj, 1)[0];
+  state.cj = Math.max(0, Math.min(state.cj, list.length - 1)); setMsg('Deleted "' + gone.name + '". The profiles after it moved up one number.'); renderAll(); save();
+};
+const swap = (d) => { const list = state.prof[state.cp], i = state.cj, j = i + d; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; state.cj = j; renderAll(); save(); };
+$('b-left').onclick = () => swap(-1); $('b-right').onclick = () => swap(1);
+const st = $('starter'); STARTERS.forEach((S, i) => { const o = document.createElement('option'); o.value = i; o.textContent = S.name; st.append(o); });
+$('b-add').onclick = () => { const list = state.prof[state.cp]; if (list.length >= PER) return; list.push(mkLook(STARTERS[+st.value])); select(state.cp, list.length - 1); save(); };
+/** Downscale to at most 1600 px wide and re-encode as JPEG (keeps uploads small; the preview works at 900 px). */
+function shrink(im) {
+  const iw = im.naturalWidth, ih = im.naturalHeight, W = Math.min(1600, iw), H = Math.round(W * ih / iw);
+  const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(im, 0, 0, W, H);
+  return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.9));
+}
+$('f-photo').onchange = async (e) => {
+  const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+  let kept = 0, last = null;
+  for (const f of files) {
+    let im; const url = URL.createObjectURL(f);
+    try { im = await loadImg(url); } catch { setMsg(f.name + ' could not be opened. Try a JPEG or PNG.', true); URL.revokeObjectURL(url); continue; }
+    URL.revokeObjectURL(url);
+    if (assets) {
+      try {
+        setMsg('Uploading ' + f.name + '…');
+        const r = await assets.upload(await shrink(im), { type: 'image/jpeg' });
+        const name = f.name.replace(/\.[^.]+$/, '').slice(0, 24) || 'Photo';
+        state.photos.push({ id: r.id, name }); pix['u:' + r.id] = toPixels(im); last = 'u:' + r.id; kept++;
+        continue;
+      } catch (err) { setMsg('Could not keep ' + f.name + ' (' + ((err && err.code) || 'error') + '); using it for this visit only.', true); }
+    }
+    own = toPixels(im); last = 'own';
+  }
+  if (last) { state.photo = last; renderPhotos(); schedule(); save(); }
+  if (kept) setMsg('Added ' + kept + ' photo' + (kept === 1 ? '' : 's') + '. They are kept with the Look Lab.');
+  else if (last === 'own' && !assets) setMsg('Using your photo for this visit only.');
+};
+$('f-open').onchange = async (e) => {
+  const notes = []; let bad = false;
+  for (const f of e.target.files) {
+    try {
+      const b = new Uint8Array(await f.arrayBuffer()), magic = String.fromCharCode(...b.subarray(0, 4));
+      if (magic === 'OM3P') {
+        const ps = readProfiles(b); state.prof = ps; state.cp = 0; state.cj = 0;
+        notes.push('PROFILES.BIN: loaded ' + ps.reduce((a, l) => a + l.length, 0) + ' profiles; they replace what was here.');
+      } else if (magic === 'OM3B') {
+        const ls = readBundles(b); let added = 0;
+        ls.forEach((L, k) => {
+          const used = L.hue.some(Boolean) || L.light.some(Boolean) || L.ab || L.gm || L.blacks || L.whites;
+          if (used && state.prof[k].length < PER) { state.prof[k].push(L); added++; }
+        });
+        notes.push('BUNDLES.BIN: added ' + added + ' wheel setting' + (added === 1 ? '' : 's') + ' as profiles ("Card COLOR n"; wheels only).');
+      } else if (magic === 'OM3K') {
+        const ps = readLooks(b); let added = 0;
+        ps.forEach((list, k) => list.forEach((L) => { if (state.prof[k].length < PER) { state.prof[k].push(L); added++; } }));
+        notes.push('LOOKS.BIN: added ' + added + ' look' + (added === 1 ? '' : 's') + ' as profiles (wheels only)' + (ps.length === 1 ? ', to COLOR 1 (older one-list file)' : '') + '.');
+      } else { notes.push(f.name + ' is not a PROFILES.BIN (or an older LOOKS.BIN / BUNDLES.BIN) from the OM3MOD folder.'); bad = true; }
+    } catch (err) { notes.push(f.name + ': ' + err.message); bad = true; }
+  }
+  e.target.value = ''; setMsg(notes.join(' '), bad); renderAll(); save();
+};
+let downloads = null;
+// Chrome / Edge on a computer: write OM3MOD/PROFILES.BIN straight onto the card (the browser asks for the folder).
+if (window.showDirectoryPicker && window.self === window.top) {
+  $('b-card').hidden = false;
+  $('b-card').onclick = async () => {
+    let root;
+    try { root = await window.showDirectoryPicker({ id: 'om3card', mode: 'readwrite' }); } catch { return; }
+    try {
+      let dir = root;
+      if (root.name !== 'OM3MOD') {
+        let isCard = false; for await (const k of root.keys()) if (k === 'DCIM' || k === 'OM3MOD' || k === 'DCOLYMP') isCard = true;
+        if (!isCard) { setMsg('That folder does not look like the SD card (no DCIM or OM3MOD in it). Pick the card itself.', true); return; }
+        dir = await root.getDirectoryHandle('OM3MOD', { create: true });
+      }
+      const f = await dir.getFileHandle('PROFILES.BIN', { create: true }), w = await f.createWritable();
+      await w.write(profilesBin(state.prof)); await w.close();
+      setMsg('Saved PROFILES.BIN to the card. Eject it, put it in the camera, and every COLOR starts at 0.');
+    } catch (err) { setMsg('Could not write to the card (' + ((err && err.name) || 'error') + ').', true); }
+  };
+}
+$('b-save').onclick = async () => {
+  const files = [{ name: 'OM3MOD/PROFILES.BIN', data: profilesBin(state.prof) }];
+  if (!downloads) {                      // a plain web page (GitHub Pages, a local copy): an ordinary browser download
+    const url = URL.createObjectURL(new Blob([makeZip(files)], { type: 'application/zip' })), a = document.createElement('a');
+    a.href = url; a.download = 'OM3-profiles.zip'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setMsg('Downloaded OM3-profiles.zip with PROFILES.BIN. Unzip it and copy its OM3MOD folder to the SD card.'); return;
+  }
+  try { await downloads.save({ filename: 'OM3-profiles.zip', data: makeZip(files) }); setMsg('Saved OM3-profiles.zip with PROFILES.BIN. Copy its OM3MOD folder to the SD card.'); }
+  catch (err) { const c = err && err.code; setMsg(c === 'declined' ? 'Save cancelled.' : 'The file could not be saved (' + (c || 'error') + ').', c !== 'declined'); }
+};
+$('b-copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(JSON.stringify({ om3profiles: 1, profiles: state.prof.map((list) => list.map(({ id, ...L }) => L)) })); setMsg('Profiles copied as text. Paste them to Claude to put them on the card.'); }
+  catch { setMsg('Copying was blocked by the browser.', true); }
+};
+
+// ---------- persistence: the artifact's db when available, else this browser ----------
+let db = null, saveTimer = null, loaded = false;
+const snapshot = () => ({ v: 3, prof: state.prof, own: state.own, photos: state.photos, photo: state.photo === 'own' ? 'portrait' : state.photo, base: state.base ? Array.from(state.base) : null });
+function restore(s) {
+  if (!s) return false;
+  if (s.v === 3 && Array.isArray(s.prof) && s.prof.length === 4) {
+    state.prof = s.prof.map((list) => (Array.isArray(list) ? list : []).slice(0, PER).map(mkLook)); state.own = (s.own || [null, null, null, null]).slice(0, 4);
+  } else if (Array.isArray(s.looks) && s.looks.length) {   // v1/v2 (one shared list): each COLOR gets its card recipe as look 1
+    const by = (n) => s.looks.find((L) => L.name === n);
+    state.prof = RECIPES.map((r) => [mkLook({ ...(s.v === 2 && by(r.name) ? by(r.name) : r), id: null })]);
+    state.own = state.prof.map((p) => p[0].id);
+  } else return false;
+  state.base = Array.isArray(s.base) && s.base.length === 544 ? new Uint8Array(s.base) : null;
+  state.photos = Array.isArray(s.photos) ? s.photos.filter((q) => q && /^[0-9a-f]{32}$/.test(q.id)).map((q) => ({ id: q.id, name: String(q.name || 'Photo').slice(0, 24) })) : [];
+  if (s.photo && (PHOTOS.some((p) => p[0] === s.photo) || state.photos.some((q) => 'u:' + q.id === s.photo))) state.photo = s.photo;
+  state.cp = 0; state.cj = 0; return true;
+}
+function status(kind, text) { $('sdot').className = 'dot ' + kind; $('stext').textContent = text; }
+function save() {
+  if (!loaded) return;
+  try { localStorage.setItem('om3-looklab', JSON.stringify(snapshot())); } catch {}
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    if (!db) { status('warn', 'Saved in this browser only'); return; }
+    try { await db.doc('lab/state').set({ ...snapshot(), updated: Date.now() }); status('ok', 'Saved'); }
+    catch { status('warn', 'Could not save online; kept in this browser'); }
+  }, 1200);
+}
+(function boot() {
+  buildWheels(); buildSliders();
+  let local = null; try { local = JSON.parse(localStorage.getItem('om3-looklab') || 'null'); } catch {}
+  if (!restore(local)) defaults();
+  renderAll(); loaded = true; status('', 'Connecting…');
+  const timer = setTimeout(() => status('warn', 'Saved in this browser only'), 10000);
+  const cl = window.claude;
+  if (cl && cl.use) {
+    cl.use('downloads').then((d) => { downloads = d; }).catch(() => {});
+    cl.use('assets').then((a) => { assets = a; }).catch(() => {});
+    cl.use('db').then(async (d) => {
+      clearTimeout(timer); db = d;
+      if (!db) { status('warn', 'Saved in this browser only'); return; }
+      try {
+        const snap = await db.doc('lab/state').get(), data = snap && snap.exists ? snap.data() : null;
+        if (data && restore(data)) { renderAll(); status('ok', 'Saved'); if (data.v !== 3) save(); } else { status('ok', 'Ready'); save(); }
+      } catch { status('warn', 'Could not load saved looks; using this browser'); }
+    }).catch(() => { clearTimeout(timer); status('warn', 'Saved in this browser only'); });
+  } else { clearTimeout(timer); status('warn', 'Saved in this browser only'); }
+})();
+</script>
+</body>
+</html>

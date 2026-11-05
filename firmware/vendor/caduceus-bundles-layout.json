@@ -1,0 +1,20 @@
+{
+ "_comment": "Fixed v0.2 bundle-table ABI for other patches (e.g. per-profile WB). Section-1 FF tail; section 1 loads before every other section. Checked by patches/bundles/build.py.",
+ "bundle_table": "0x60210900",
+ "slot_bytes": 64,
+ "slots": ["COLOR1", "COLOR2", "COLOR3", "COLOR4", "MONO1", "MONO2", "MONO3", "MONO4"],
+ "fields": {"hue": [0, 12, "s8 x12, UI -7..7, UI sector order"], "light": [12, 12, "s8 x12"],
+            "grain": [24, 1, "u8 0 off,1 low,2 medium,3 high; read by patches/grain v0.4 (COLOR slots; other values = off)"], "wb_flags": [25, 1, "bit0 = override WB fine-tune; bit7 must be 0 (0xFF = erased, ignored by patches/wb)"],
+            "wb_ab": [26, 1, "s8 -7..7"], "wb_gm": [27, 1, "s8 -7..7"],
+            "effect_id": [28, 1, "u8 0 none,1 bloom,2 halation,3 clarity"], "effect_strength": [29, 1, "u8 1..5 when effect_id != 0; bloom (id 1) read by patches/bloom v0.4, clarity (id 3) by patches/bloom --clarity (other values = off)"],
+            "vignette": [30, 1, "s8 -5..5"], "flags": [31, 1, "bit0 render colour (MONO, mirror of colour), bit1 H/L enabled"],
+            "colour": [32, 1, "u8: exactly 1 = MONO slot renders in colour (patches/mono_colour); any other value = stock mono"],
+            "sat": [33, 12, "s8 x12, -5..5, request+1816 order (as the COLOR profile saturation); read only when colour == 1"],
+            "bloom_tint": [45, 1, "u8 0 neutral,1 red,2 amber,3 warm,4 cool; bloom colour (patches/bloom --halation, test13b); with effect_id 2, 0 means red (legacy)"],
+            "art_effect": [46, 1, "u8 0 off,1 star light,2 pin hole,3 blur,4 white edge,5 frame; COLOR stills only (patches/bloom --art, v0.14): the stock Art Effect job flag 0x40/0x400/0x100/0x2000/0x8000"]},
+ "color_fields": {"blacks": [47, 1, "s8 -5..5 (v0.19, patches/tone_ends): tone-curve black point; COLOR slots only, MONO slots must hold 0"],
+                  "whites": [48, 1, "s8 -5..5 (v0.19, patches/tone_ends): tone-curve white point; COLOR slots only, MONO slots must hold 0"]},
+ "_color_fields": "v0.19: outside 'fields' so the LOOKS.BIN layout_crc is unchanged; slot bytes 49..63 stay 0",
+ "job_extension": {"job_size": 15512, "profile": 15488, "picture_mode": 15489, "marker": 15490, "marker_value": "0xB2",
+                   "note": "valid only behind the callback/record/parent guard; marker != 0xB2 means no capture record"}
+}
