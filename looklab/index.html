@@ -70,7 +70,13 @@ main{display:grid;gap:28px;padding-top:22px}
 .left{position:sticky;top:12px;display:grid;gap:10px}
 @media (max-width:960px){.left{position:static}}
 .stage{position:relative;background:#111;border-radius:12px;overflow:hidden;line-height:0}
-.stage canvas{max-width:100%;max-height:68vh;width:auto;height:auto;display:block;margin:0 auto}
+.frame{position:relative;width:fit-content;max-width:100%;margin:0 auto;touch-action:pan-y;cursor:ew-resize;user-select:none;-webkit-user-select:none}
+.frame canvas{max-width:100%;max-height:68vh;width:auto;height:auto;display:block}
+.frame canvas.before{position:absolute;inset:0;width:100%;height:100%;max-height:none;clip-path:inset(0 calc(100% - var(--cut,50%)) 0 0)}
+.divider{position:absolute;top:0;bottom:0;left:var(--cut,50%);width:0;outline:none}
+.divider::before{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:rgba(255,255,255,.92);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.divider .knob{position:absolute;top:50%;left:0;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:grid;place-items:center;color:#2f2f2f;font:600 14px/1 var(--font-body);letter-spacing:-1px}
+.divider:focus-visible .knob{box-shadow:0 0 0 3px var(--accent),0 1px 4px rgba(0,0,0,.4)}
 .tag{position:absolute;top:8px;font:600 11px/1 var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.45);padding:5px 7px;border-radius:5px}
 .tag.l{left:8px}.tag.r{right:8px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -80,7 +86,6 @@ main{display:grid;gap:28px;padding-top:22px}
 .chipx .chip{border:0;padding-right:4px;background:none}
 .chipx[data-on="true"]{background:var(--panel);border-color:var(--panel)}.chipx[data-on="true"] .chip,.chipx[data-on="true"] .x{color:#fff}
 .chipx .x{border:0;background:none;color:var(--muted);padding:2px 9px 2px 4px;font-size:15px;line-height:1}
-.compare{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
 .hint{font-size:13px;color:var(--muted);margin:0}
 
 .wheels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -168,9 +173,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       <div class="left">
         <div class="chips" id="photos" role="group" aria-label="Test photo"></div>
         <p class="hint" id="photohint"></p>
-        <div class="stage"><canvas id="view" width="900" height="600" aria-label="Preview of the profile"></canvas><span class="tag l">Before</span><span class="tag r">After</span></div>
-        <div class="compare"><span>Before</span><input type="range" id="split" min="0" max="100" value="50" aria-label="Before and after divider"><span>After</span></div>
-        <p class="hint">An approximation of the camera, good for direction and strength. Judge the final look in live view.</p>
+        <div class="stage"><div class="frame" id="frame"><canvas id="view" width="900" height="600" aria-label="Preview of the profile"></canvas><canvas id="before" class="before" width="900" height="600" aria-hidden="true"></canvas><div class="divider" id="divider" role="slider" tabindex="0" aria-label="Before and after divider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="knob" aria-hidden="true">‹ ›</span></div></div><span class="tag l">Before</span><span class="tag r">After</span></div>
+        <p class="hint">Drag the line on the photo to compare before and after. An approximation of the camera, good for direction and strength. Judge the final look in live view.</p>
       </div>
       <div class="right">
         <div class="wheels" id="wheels"></div>
@@ -504,13 +508,34 @@ async function draw() {
   if (cv.width !== src.width || cv.height !== src.height) { cv.width = src.width; cv.height = src.height; }
   const s = quick ? halfOf(src) : src, out = buf(quick ? 'h' : 'f', s.width, s.height);
   render(s, out, cur());
-  const cut = Math.round(src.width * (+$('split').value) / 100);
+  if (beforeOf !== src) {               // the untouched photo sits on its own canvas, clipped at the divider
+    bcv.width = src.width; bcv.height = src.height; bctx.putImageData(src, 0, 0); beforeOf = src;
+  }
   if (quick) {
     off.width = s.width; off.height = s.height; offx.putImageData(out, 0, 0);
     ctx.imageSmoothingQuality = 'high'; ctx.drawImage(off, 0, 0, cv.width, cv.height);
   } else ctx.putImageData(out, 0, 0);
-  if (cut > 0) ctx.putImageData(src, 0, 0, 0, 0, cut, src.height);
-  ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(cut - 1, 0, 2, src.height);
+}
+// ---------- before / after divider: drag it on the photo (or click anywhere); arrow keys when focused ----------
+const bcv = document.getElementById('before'), bctx = bcv.getContext('2d'); let beforeOf = null, cutPct = 50;
+function setCut(v) {
+  cutPct = clamp(v, 0, 100); const f = document.getElementById('frame'); f.style.setProperty('--cut', cutPct + '%');
+  document.getElementById('divider').setAttribute('aria-valuenow', String(Math.round(cutPct)));
+  document.getElementById('divider').setAttribute('aria-valuetext', Math.round(cutPct) + '% before');
+}
+{
+  const f = document.getElementById('frame'), d = document.getElementById('divider'); let dragging = false;
+  const at = (e) => { const r = f.getBoundingClientRect(); setCut((e.clientX - r.left) / r.width * 100); };
+  f.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; dragging = true; f.setPointerCapture(e.pointerId); at(e); e.preventDefault(); });
+  f.addEventListener('pointermove', (e) => { if (dragging) at(e); });
+  const end = () => { dragging = false; };
+  f.addEventListener('pointerup', end); f.addEventListener('pointercancel', end);
+  d.addEventListener('keydown', (e) => {
+    const k = { ArrowLeft: -2, ArrowRight: 2, PageDown: -10, PageUp: 10 }[e.key];
+    if (k) { setCut(cutPct + k); e.preventDefault(); }
+    else if (e.key === 'Home') { setCut(0); e.preventDefault(); } else if (e.key === 'End') { setCut(100); e.preventDefault(); }
+  });
+  setCut(50);
 }
 
 // ---------- wheels (recipe-card style, draggable) ----------
@@ -714,7 +739,6 @@ function changed(fast) { renderLive(fast); save(); }
 $('name').oninput = (e) => { cur().name = e.target.value.slice(0, 15) || 'Untitled'; renderPills(); renderCard(); save(); };
 $('blurb').oninput = (e) => { cur().blurb = e.target.value; fitBlurb(); save(); };
 $('why').oninput = (e) => { cur().why = e.target.value.split('\n'); fit('why'); save(); };
-$('split').oninput = () => schedule(true);
 const dupOf = (L, name) => mkLook({ ...JSON.parse(JSON.stringify(L)), id: null, name });
 $('b-dup').onclick = () => { const list = state.prof[state.cp]; if (list.length >= PER) return; list.push(dupOf(cur(), cur().name.slice(0, 13) + ' 2')); select(state.cp, list.length - 1); save(); };
 $('copyto').onchange = (e) => {
