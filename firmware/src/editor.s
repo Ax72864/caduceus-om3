@@ -640,7 +640,7 @@ sd_pub:
  inc d0
  movhu d0,(STATE)                 /* publish: the colour hook switches to the block */
  call gd_load,[d2,d3,a2,a3],28    /* editor guide pictures from C:\OM3MOD\GUIDES.BIN (optional) */
- call pf_load,[d2,d3,a2,a3],28    /* profile bank from C:\OM3MOD\PROFILES.BIN (test 16) */
+ call pf_load,[d2,d3,a2,a3],28    /* look bank from C:\OM3MOD\LOOKS.BIN (test 16; PROFILES.BIN before v0.19) */
  call nm_load,[d2,d3,a2,a3],36    /* profile name pictures from C:\OM3MOD\NAMES.BIN (test 17) */
  bra sd_out                       /* block kept for the rest of the power-on */
 sd_free:
@@ -1888,7 +1888,7 @@ pf_cap:
  ret [d2,d3,a2,a3],28
 
 /* pf_load: `call pf_load,[d2,d3,a2,a3],28` from sd_load after gd_load, a2 = P. Locals (4) handle, (8) buffer.
- * PROFILES.BIN (PF_LEN B) checked -> bank; no file -> a neutral bank (saved on the first half-press save);
+ * LOOKS.BIN (PF_LEN B; v0.19, before: PROFILES.BIN, read when there is no LOOKS.BIN) checked -> bank; no file -> a neutral bank (saved on the first half-press save);
  * a file that fails the check -> no bank (the file is left alone). P+LIDX+k = the saved selection. Stores: P+LPTR,
  * P+LIDX, the heap buffer, own frame. */
 .section .ext8,"ax"
@@ -1898,9 +1898,7 @@ pf_load:
  cmp 0,a0
  beq 9f
  mov a0,(8,sp)
- mov pf_pbin,a0
- mov gd_mode,a1
- call fopen,[],4
+ call pf_open,[],4                /* LOOKS.BIN, else PROFILES.BIN (v0.19) */
  cmp 0,a0
  beq 5f                           /* no file: neutral bank */
  mov a0,(4,sp)
@@ -2187,7 +2185,7 @@ pf_wb:
 
 .section .ext9,"ax"
 /* pf_save: `call pf_save,[d2,d3,a2,a3],24` from ed_trig after ed_save, a2 = P: selection bytes, CRC, then
- * PROFILES.NEW and PROFILES.BIN, each read back. Locals (0) scratch, (4) read-back buffer. */
+ * LOOKS.NEW and LOOKS.BIN (v0.19; PROFILES.* before), each read back. Locals (0) scratch, (4) read-back buffer. */
 pf_save:
  mov (LPTR,a2),a3
  cmp 0,a3
@@ -2316,8 +2314,10 @@ pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0,
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
  .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 pf_pnew:
- .asciz "C:\\OM3MOD\\PROFILES.NEW"
+ .asciz "C:\\OM3MOD\\LOOKS.NEW"
 pf_pbin:
+ .asciz "C:\\OM3MOD\\LOOKS.BIN"
+pf_pold:
  .asciz "C:\\OM3MOD\\PROFILES.BIN"
 
 /* ------------------------------------------------------------------ Profiles page dial range 0..5 (test 16b)
@@ -2671,4 +2671,19 @@ ei_page:
  mov d3,d0
  call gd_set,[d2,a2],8
 9:
+ ret [],4
+
+/* pf_open (v0.19): `call pf_open,[],4` -> a0 = fopen(LOOKS.BIN), or when there is none fopen(PROFILES.BIN), the
+ * name before v0.19 (read once; the next save writes LOOKS.BIN), or 0. Uses d0, d1, a0, a1 (as fopen). */
+.section .ext5,"ax"
+pf_open:
+ mov pf_pbin,a0
+ mov gd_mode,a1
+ call fopen,[],4
+ cmp 0,a0
+ bne 1f
+ mov pf_pold,a0
+ mov gd_mode,a1
+ call fopen,[],4
+1:
  ret [],4

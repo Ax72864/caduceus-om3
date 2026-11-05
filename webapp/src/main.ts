@@ -58,14 +58,14 @@ let CAM: Cam = (() => {
 const isOm3 = () => CAM === 'om3';
 const samples = () => (isOm3() ? OM3_SAMPLES : SAMPLES);
 if (isOm3()) S.image = 'frames';
-/** The OM-3 profile bank: 4 COLORs x 5 numbers, positional like the camera's Profiles page. */
-const O = { name: 'OM-3 profiles', bank: startBank(), k: 0, v: 0 };
+/** The OM-3 look bank: 4 COLORs x 5 numbers, positional like the camera's Looks page. */
+const O = { name: 'OM-3 looks', bank: startBank(), k: 0, v: 0 };
 function startBank(): Bank {
   try {
     const s = localStorage.getItem(STORE_OM3);
     if (s) return parseBank(JSON.parse(s), parseLook).bank;
     const old = fromOldLookLab(localStorage.getItem('om3-looklab'));
-    if (old) { libNotice = 'Your profiles from the earlier OM-3 Look Lab are here.'; return old; }
+    if (old) { libNotice = 'Your looks from the earlier OM-3 Look Lab are here.'; return old; }
   } catch { /* fall through */ }
   return defaultBank(LIBRARY, fromLibrary);
 }
@@ -215,7 +215,7 @@ function shell() {
         ...([['ep7', 'Olympus PEN E-P7'], ['om3', 'OM SYSTEM OM-3']] as [Cam, string][]).map(([c, t]) =>
           h('button', { role: 'radio', 'aria-checked': String(c === CAM), class: c === CAM ? 'on' : '', onclick: () => switchCamera(c) }, t))),
       h('span', { class: 'cam-note' }, om3
-        ? 'Caduceus for OM-3: 5 profiles for each of COLOR 1–4 (PROFILES.BIN + NAMES.BIN).'
+        ? 'Caduceus for OM-3: 5 looks for each of COLOR 1–4 (LOOKS.BIN + NAMES.BIN).'
         : 'Caduceus for the E-P7: the Film page look pack (LOOKS.BIN).')),
     h('header', { class: 'top' },
       h('div', { class: 'brand' }, h('span', { class: 'mark', 'aria-hidden': 'true' }, '☤'), h('span', { class: 'word' }, 'Caduceus'),
@@ -225,15 +225,15 @@ function shell() {
           h('button', { id: 'undo', class: 'icon', title: 'Undo (Ctrl+Z)', 'aria-label': 'Undo', disabled: true, onclick: () => step('undo') }, '↶'),
           h('button', { id: 'redo', class: 'icon', title: 'Redo (Ctrl+Shift+Z)', 'aria-label': 'Redo', disabled: true, onclick: () => step('redo') }, '↷')),
         om3 ? menu('New', [
-          ['Reset profiles to standard', () => newBank('library')],
-          ['Empty profiles', () => newBank('empty')],
+          ['Reset looks to standard', () => newBank('library')],
+          ['Empty looks', () => newBank('empty')],
         ]) : menu('New', [
           ['Reset pack to standard', () => newPack('library')],
           ['Empty pack', () => newPack('empty')],
         ]),
-        h('button', { onclick: openFile, title: om3 ? 'PROFILES.BIN from the card, a profiles file, or a Caduceus pack / LOOKS.BIN' : undefined }, 'Open…'),
+        h('button', { onclick: openFile, title: om3 ? 'The card\'s OM3MOD/LOOKS.BIN (or PROFILES.BIN from v0.17–v0.18), a looks file, or a Caduceus pack / E-P7 LOOKS.BIN' : undefined }, 'Open…'),
         h('button', { onclick: pasteDialog }, 'Paste code'),
-        h('button', { onclick: sharePack }, om3 ? 'Share profiles' : 'Share pack'),
+        h('button', { onclick: sharePack }, om3 ? 'Share looks' : 'Share pack'),
         h('button', { onclick: om3 ? om3InstallDialog : installDialog }, 'Install firmware'),
         h('button', { class: 'primary', onclick: om3 ? om3ExportDialog : exportDialog }, 'Export'))),
     h('main', { class: 'layout' },
@@ -241,7 +241,7 @@ function shell() {
       h('section', { class: 'pane preview-pane', id: 'preview' }),
       h('section', { class: 'pane editor-pane', id: 'editor' })),
     h('footer', { class: 'foot' },
-      h('span', {}, om3 ? 'Caduceus for OM-3 is an unofficial, community firmware mod (COLOR profiles only, not Monochrome). Files are made in your browser; nothing is uploaded.'
+      h('span', {}, om3 ? 'Caduceus for OM-3 is an unofficial, community firmware mod (COLOR looks only, not Monochrome). Files are made in your browser; nothing is uploaded.'
         : 'Caduceus is an unofficial, community firmware mod. Files are made in your browser; nothing is uploaded.'),
       h('a', { href: './samples/CREDITS.md', target: '_blank', rel: 'noopener' }, 'Image credits (CC0)')),
     h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' }),
@@ -467,9 +467,9 @@ function lookCodePanel(l: Look): HTMLElement {
     if (isOm3()) {
       try {
         const c = toOm3(decodeLookCode(t));
-        if (!c.look) throw new Error('A monochrome look can\'t be an OM-3 profile (COLOR profiles only).');
+        if (!c.look) throw new Error('A monochrome look can\'t be an OM-3 look (COLOR looks only).');
         c.look.notes = l.notes; O.bank[O.k][O.v] = c.look; save(); renderAll();
-        toast(`Loaded "${c.look.name}" into COLOR ${O.k + 1}, profile ${O.v + 1}${om3Changes(c)}`);
+        toast(`Loaded "${c.look.name}" into COLOR ${O.k + 1}, look ${O.v + 1}${om3Changes(c)}`);
       } catch (e) { msg.className = 'help err'; msg.textContent = (e as Error).message; }
       return;
     }
@@ -605,9 +605,9 @@ function tonePanel(l: Look, changed: () => void): HTMLElement {
     h('div', { class: 'tone-sep' }),
     ...rows.slice(3),
     isOm3() ? h('p', { class: 'help' },
-      'Highlights / Shadows / Midtones (±7) are the profile\'s own tone settings; Blacks / Whites (±5) move the ends of the curve ',
-      '(the WB/BW page\'s 3 and 9 o\'clock). Choosing the profile on the camera\'s Profiles page sets them all. ',
-      'The graph shows stock → this profile; dots mark the Blacks and Whites ends.') :
+      'Highlights / Shadows / Midtones (±7) are the look\'s own tone settings; Blacks / Whites (±5) move the ends of the curve ',
+      '(the WB/BW page\'s 3 and 9 o\'clock). Choosing the look on the camera\'s Looks page sets them all. ',
+      'The graph shows stock → this look; dots mark the Blacks and Whites ends.') :
     h('p', { class: 'help' },
       'Highlights / Shadows / Midtones (±7): picking the look sets the profile\'s own tone settings to these. ',
       'Blacks / Whites (±5) move the ends of the tone curve (+Blacks lifts to a matte black, −Whites rolls the white point off); ',
@@ -668,7 +668,7 @@ function wbPanel(l: Look, changed: () => void): HTMLElement {
   }) : [];
   return h('div', { class: 'group' },
     h('label', { class: 'check' }, box, h('span', {}, 'White balance shift'),
-      h('span', { class: 'help' }, isOm3() ? (on ? 'the profile\'s shift, added to the camera\'s own WB (WB/BW page, 12 and 6 o\'clock)' : 'off: no shift')
+      h('span', { class: 'help' }, isOm3() ? (on ? 'the look\'s shift, added to the camera\'s own WB (WB/BW page, 12 and 6 o\'clock)' : 'off: no shift')
         : on ? 'overrides the camera\'s WB fine-tune for this look' : 'off: your own WB fine-tune applies')),
     ...rows);
 }
@@ -1055,10 +1055,10 @@ function ep7Body(): HTMLElement {
 const fmtProblem = (p: Problem) => (p.look !== undefined ? `Look ${p.look + 1} (${S.pack.looks[p.look]?.name || 'no name'}): ` : '') + p.message;
 
 // ---------------------------------------------------------------- OM-3 (Caduceus for OM-3)
-// The OM-3 has no look list: each of COLOR 1-4 holds five numbered profiles (the camera's Profiles page, dial 1-5).
+// The OM-3 has no look list: each of COLOR 1-4 holds five numbered looks (the camera's Looks page, dial 1-5).
 const OB_PREFIX = 'ob1_', OP_PREFIX = 'op1_';
 const OM3_GH = 'https://github.com/androidfanman/caduceus-om3';
-const at = (k: number, v: number) => `COLOR ${k + 1}, profile ${v + 1}`;
+const at = (k: number, v: number) => `COLOR ${k + 1}, look ${v + 1}`;
 
 function switchCamera(c: Cam) {
   if (c === CAM) return;
@@ -1074,12 +1074,12 @@ function switchCamera(c: Cam) {
 }
 
 function newBank(kind: 'library' | 'empty') {
-  if (!confirm(kind === 'library' ? 'Reset all 20 profiles to the standard set? Your current profiles are replaced (Undo brings them back).'
-    : 'Empty all 20 profiles? Your current profiles are removed (Undo brings them back).')) return;
+  if (!confirm(kind === 'library' ? 'Reset all 20 looks to the standard set? Your current looks are replaced (Undo brings them back).'
+    : 'Empty all 20 looks? Your current looks are removed (Undo brings them back).')) return;
   O.bank = kind === 'library' ? defaultBank(LIBRARY, fromLibrary) : emptyBank();
   O.k = 0; O.v = 0;
   save(); renderAll();
-  toast(kind === 'library' ? 'Profiles reset to the standard set' : 'All profiles emptied');
+  toast(kind === 'library' ? 'Looks reset to the standard set' : 'All looks emptied');
 }
 
 let bankDrag: [number, number] | null = null;
@@ -1136,20 +1136,20 @@ function renderBank() {
       return li;
     }))));
   el.replaceChildren(
-    h('div', { class: 'list-head' }, h('span', {}, 'Profiles'), h('span', { class: 'count' }, `${used} / ${COLORS * PER}`)),
+    h('div', { class: 'list-head' }, h('span', {}, 'Looks'), h('span', { class: 'count' }, `${used} / ${COLORS * PER}`)),
     ...groups,
-    h('p', { class: 'help' }, 'The number is the Profiles page dial (1–5) for that COLOR; 0 on the camera is "nothing". Drag a profile to another number, or use ↑ ↓. An empty number shows "Empty" on the camera and loads neutral there.'));
+    h('p', { class: 'help' }, 'The number is the Looks page dial (1–5) for that COLOR; 0 on the camera is "nothing". Drag a look to another number, or use ↑ ↓. An empty number shows "Empty" on the camera and loads neutral there.'));
 }
 
-/** The editor for a number with no profile: make one. */
+/** The editor for a number with no look: make one. */
 function emptySlotPanel(): HTMLElement {
   const k = O.k, v = O.v;
   const put = (l: Look, msg: string) => { O.bank[k][v] = l; save(); renderAll(); toast(msg); };
   return h('div', { class: 'empty-slot-panel' },
     h('h3', {}, `${at(k, v)}: Empty`),
-    h('p', { class: 'help' }, 'On the camera this number shows "Empty" and loads neutral settings. Give it a profile:'),
+    h('p', { class: 'help' }, 'On the camera this number shows "Empty" and loads neutral settings. Give it a look:'),
     h('div', { class: 'pick-row' },
-      h('button', { class: 'primary', onclick: () => put(blankProfile(`Profile ${v + 1}`), `New blank profile in ${at(k, v)}`) }, 'Blank profile'),
+      h('button', { class: 'primary', onclick: () => put(blankProfile(`Look ${v + 1}`), `New blank look in ${at(k, v)}`) }, 'Blank look'),
       h('button', { onclick: om3LibraryPicker }, 'From the built-in library…'),
       h('button', { onclick: pasteDialog }, 'Paste a code…')),
     h('p', { class: 'help' }, 'Library looks come from Caduceus (E-P7) and are converted for the OM-3: Hue, Light and WB shifts are limited to ±5, and noise filter, glow / clarity and Art Effects are left out.'));
@@ -1172,7 +1172,7 @@ function om3LibraryPicker() {
       O.bank[k][v] = c.look; save(); renderAll(); dlg.close();
       toast(`"${c.look.name}" is now ${at(k, v)}${om3Changes(c)}`);
     },
-  }, h('b', {}, l.name), inBank.has(l.name.toLowerCase()) ? h('span', { class: 'tag' }, 'in profiles') : null, h('small', {}, l.notes))));
+  }, h('b', {}, l.name), inBank.has(l.name.toLowerCase()) ? h('span', { class: 'tag' }, 'in looks') : null, h('small', {}, l.notes))));
   const dlg = modal(`Library look for ${at(k, v)}`, list);
 }
 
@@ -1187,7 +1187,7 @@ function renderOm3Editor(l: Look) {
     oninput: (e: Event) => draft(() => {
       l.name = (e.target as HTMLInputElement).value;
       const p = om3NameProblem(l.name);
-      $('#name-help').textContent = p ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Profiles page`;
+      $('#name-help').textContent = p ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Looks page`;
       $('#name-help').className = p ? 'help err' : 'help';
       const row = document.querySelector(`#list li[data-at="${k * PER + v}"] .nm`);
       if (row) row.textContent = l.name || '(no name)';
@@ -1203,7 +1203,7 @@ function renderOm3Editor(l: Look) {
   el.replaceChildren(
     h('div', { class: 'ed-head' },
       h('label', { class: 'field grow' }, h('span', { class: 'lbl' }, `Name · ${at(k, v)}`), nameInput,
-        h('span', { id: 'name-help', class: np ? 'help err' : 'help' }, np ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Profiles page`)),
+        h('span', { id: 'name-help', class: np ? 'help err' : 'help' }, np ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Looks page`)),
       h('div', { class: 'ed-btns' },
         h('button', {
           class: 'share-btn', title: orig ? `Restore the built-in "${orig.name}" values (OM-3 version)` : 'Set every value to neutral',
@@ -1212,36 +1212,36 @@ function renderOm3Editor(l: Look) {
             O.bank[k][v] = r; save(); renderAll();
             toast(orig ? `"${r.name}" restored to the built-in values` : `"${l.name}" reset to neutral`);
           },
-        }, 'Reset profile'),
-        h('button', { class: 'share-btn', onclick: () => om3ShareProfile(l), title: 'Share this profile as a link or code' }, 'Share'))),
+        }, 'Reset look'),
+        h('button', { class: 'share-btn', onclick: () => om3ShareProfile(l), title: 'Share this look as a link or code' }, 'Share'))),
     sectorPanel(l, changed),
     tonePanel(l, changed),
     h('div', { class: 'group' },
       h('span', { class: 'lbl' }, 'Camera settings'),
-      setting('Contrast', OM3.contrast, () => l.advice.contrast ?? 0, (x) => { l.advice.contrast = x; }, 'The camera\'s Contrast for this profile'),
-      setting('Sharpness', OM3.sharpness, () => l.advice.sharpness ?? 0, (x) => { l.advice.sharpness = x; }, 'The camera\'s Sharpness for this profile'),
+      setting('Contrast', OM3.contrast, () => l.advice.contrast ?? 0, (x) => { l.advice.contrast = x; }, 'The camera\'s Contrast for this look'),
+      setting('Sharpness', OM3.sharpness, () => l.advice.sharpness ?? 0, (x) => { l.advice.sharpness = x; }, 'The camera\'s Sharpness for this look'),
       setting('Shading', OM3.shading, () => l.vignette, (x) => { l.vignette = x; }, 'The camera\'s Shading (− darker corners, + lighter)'),
-      h('p', { class: 'help' }, 'Choosing the profile on the camera sets its Contrast, Sharpness and Shading (Picture Mode menu items) to these.')),
+      h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast, Sharpness and Shading (Picture Mode menu items) to these.')),
     wbPanel(l, changed),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Notes'),
       h('textarea', {
-        rows: 3, maxlength: 400, placeholder: 'What the profile is for…', onchange: checkpoint,
+        rows: 3, maxlength: 400, placeholder: 'What the look is for…', onchange: checkpoint,
         oninput: (e: Event) => draft(() => {
           l.notes = (e.target as HTMLTextAreaElement).value;
           const b = notesBytes();
-          $('#notes-help').textContent = `${b} / ${NOTE_MAX} bytes · kept in the profiles file (not on the card)`;
+          $('#notes-help').textContent = `${b} / ${NOTE_MAX} bytes · kept in the looks file (not on the card)`;
           $('#notes-help').className = b > NOTE_MAX ? 'help err' : 'help';
           changed();
         }),
       }, l.notes),
-      h('span', { id: 'notes-help', class: notesBytes() > NOTE_MAX ? 'help err' : 'help' }, `${notesBytes()} / ${NOTE_MAX} bytes · kept in the profiles file (not on the card)`)),
+      h('span', { id: 'notes-help', class: notesBytes() > NOTE_MAX ? 'help err' : 'help' }, `${notesBytes()} / ${NOTE_MAX} bytes · kept in the looks file (not on the card)`)),
     lookCodePanel(l),
     h('div', { id: 'problems' }));
   refreshProblems();
   refreshLookCode();
 }
 
-// ---- OM-3 links: a whole bank (ob1_) or one profile (op1_), deflated JSON. Unlike look codes they keep Contrast and Sharpness.
+// ---- OM-3 links: a whole bank (ob1_) or one look (op1_), deflated JSON. Unlike look codes they keep Contrast and Sharpness.
 async function zpipe(data: Uint8Array, s: CompressionStream | DecompressionStream): Promise<Uint8Array> {
   const out = new Response(new Blob([data as BlobPart]).stream().pipeThrough(s));
   return new Uint8Array(await out.arrayBuffer());
@@ -1272,15 +1272,15 @@ function replaceBank(bank: Bank, msg: string, name?: string) {
 }
 function confirmPackToBank(p: Pack, fromE7 = true) {
   const r = packToBank(p);
-  const yes = h('button', { class: 'primary' }, 'Use as OM-3 profiles');
+  const yes = h('button', { class: 'primary' }, 'Use as OM-3 looks');
   const e7 = h('button', {}, 'Open for the E-P7 instead');
   const no = h('button', {}, 'Cancel');
-  const dlg = modal('Caduceus pack → OM-3 profiles', h('div', {},
-    h('p', {}, `"${p.name}": ${p.looks.length} looks. The first ${r.n} colour looks become COLOR 1–4, profiles 1–5, in order.`),
-    h('p', { class: 'help' }, [r.mono ? `${r.mono} monochrome look(s) are skipped (COLOR profiles only). ` : '', r.extra ? `${r.extra} more colour look(s) don't fit (20 profiles). ` : '',
-      'Hue, Light and WB are limited to ±5; noise filter, glow / clarity and Art Effects are left out. This replaces your current profiles (Undo brings them back).'].join(''))),
+  const dlg = modal('Caduceus pack → OM-3 looks', h('div', {},
+    h('p', {}, `"${p.name}": ${p.looks.length} looks. The first ${r.n} colour looks become COLOR 1–4, looks 1–5, in order.`),
+    h('p', { class: 'help' }, [r.mono ? `${r.mono} monochrome look(s) are skipped (COLOR looks only). ` : '', r.extra ? `${r.extra} more colour look(s) don't fit (20 looks). ` : '',
+      'Hue, Light and WB are limited to ±5; noise filter, glow / clarity and Art Effects are left out. This replaces your current looks (Undo brings them back).'].join(''))),
   [no, ...(fromE7 ? [e7] : []), yes]);
-  yes.addEventListener('click', () => { replaceBank(r.bank, `Loaded ${r.n} profiles from "${p.name}"`); dlg.close(); });
+  yes.addEventListener('click', () => { replaceBank(r.bank, `Loaded ${r.n} looks from "${p.name}"`); dlg.close(); });
   e7.addEventListener('click', () => { dlg.close(); switchCamera('ep7'); replacePack(p, `Opened "${p.name}"`); });
   no.addEventListener('click', () => dlg.close());
 }
@@ -1292,13 +1292,13 @@ async function om3OnFile(e: Event) {
   const bytes = new Uint8Array(await f.arrayBuffer());
   const magic = bytes.length >= 4 ? String.fromCharCode(...bytes.subarray(0, 4)) : '';
   try {
-    if (magic === 'OM3P') { replaceBank(readProfiles(bytes), `Opened ${f.name} (${readProfiles(bytes).flat().filter(Boolean).length} profiles)`); return; }
-    if (magic === 'OM3N') { toast('That is NAMES.BIN (the name pictures). Open PROFILES.BIN instead: it holds the names too.', 'err'); return; }
+    if (magic === 'OM3P') { replaceBank(readProfiles(bytes), `Opened ${f.name} (${readProfiles(bytes).flat().filter(Boolean).length} looks)`); return; }
+    if (magic === 'OM3N') { toast('That is NAMES.BIN (the name pictures). Open LOOKS.BIN instead: it holds the names too.', 'err'); return; }
     if (magic === 'EP7B') { confirmPackToBank(decodeLooksBin(bytes, f.name.replace(/\.bin$/i, '') || 'LOOKS.BIN')); return; }
     const j = JSON.parse(new TextDecoder().decode(bytes));
     if (j && j.schema === BANK_SCHEMA) { const b = parseBank(j, parseLook); replaceBank(b.bank, `Opened "${b.name}"`, b.name); return; }
     confirmPackToBank(parsePack(j));
-  } catch (err) { toast(`Not a PROFILES.BIN, profiles file or Caduceus pack: ${(err as Error).message}`, 'err'); }
+  } catch (err) { toast(`Not a LOOKS.BIN, looks file or Caduceus pack: ${(err as Error).message}`, 'err'); }
 }
 
 async function om3ImportCode(t: string, fromLink: boolean): Promise<boolean> {
@@ -1306,15 +1306,15 @@ async function om3ImportCode(t: string, fromLink: boolean): Promise<boolean> {
     if (isOm3Code(t, OB_PREFIX)) {
       const b = parseBank(await decodeOm3(OB_PREFIX, t), parseLook);
       const n = b.bank.flat().filter(Boolean).length;
-      if (!confirm(`Open the shared profiles "${b.name}" (${n} profiles)? They replace your current profiles (Undo brings them back).`)) return fromLink;
+      if (!confirm(`Open the shared looks "${b.name}" (${n} looks)? They replace your current looks (Undo brings them back).`)) return fromLink;
       replaceBank(b.bank, `Opened "${b.name}"`, b.name);
       return true;
     }
     if (isPackCode(t)) { confirmPackToBank(await decodePackCode(t)); return true; }
     let c: { look: Look | null; changed: string[]; dropped: string[] };
-    if (isOm3Code(t, OP_PREFIX)) c = { look: parseLook(await decodeOm3(OP_PREFIX, t), 'profile'), changed: [], dropped: [] };
+    if (isOm3Code(t, OP_PREFIX)) c = { look: parseLook(await decodeOm3(OP_PREFIX, t), 'look'), changed: [], dropped: [] };
     else c = toOm3(decodeLookCode(t));
-    if (!c.look) throw new Error('That is a monochrome look: OM-3 profiles are COLOR only.');
+    if (!c.look) throw new Error('That is a monochrome look: OM-3 looks are COLOR only.');
     let k = O.k, v = O.v;
     if (O.bank[k][v]) {
       const free = O.bank[k].findIndex((x) => !x);
@@ -1322,7 +1322,7 @@ async function om3ImportCode(t: string, fromLink: boolean): Promise<boolean> {
       else {
         const any = O.bank.flat().findIndex((x) => !x);
         if (any >= 0) { k = Math.floor(any / PER); v = any % PER; }
-        else if (!confirm(`All 20 profiles are in use. Replace ${at(O.k, O.v)} ("${O.bank[k][v]!.name}") with "${c.look.name}"?`)) return false;
+        else if (!confirm(`All 20 looks are in use. Replace ${at(O.k, O.v)} ("${O.bank[k][v]!.name}") with "${c.look.name}"?`)) return false;
       }
     }
     O.bank[k][v] = c.look; O.k = k; O.v = v;
@@ -1338,11 +1338,11 @@ async function om3ImportCode(t: string, fromLink: boolean): Promise<boolean> {
 async function om3Share() {
   const code = await encodeOm3(OB_PREFIX, { schema: BANK_SCHEMA, name: O.name, bank: O.bank.map((r) => r.map((l) => (l ? plainLook(l) : null))) });
   const link = `${shareBase()}?camera=om3#${code}`;
-  modal('Share these profiles', h('div', { class: 'share' },
-    h('p', {}, `A link to all ${O.bank.flat().filter(Boolean).length} OM-3 profiles (names, notes, Contrast / Sharpness / Shading). Opening it loads them here. Everything is inside the link itself: nothing is stored on a server.`),
+  modal('Share these looks', h('div', { class: 'share' },
+    h('p', {}, `A link to all ${O.bank.flat().filter(Boolean).length} OM-3 looks (names, notes, Contrast / Sharpness / Shading). Opening it loads them here. Everything is inside the link itself: nothing is stored on a server.`),
     h('div', { class: 'code-box link' }, h('input', { type: 'text', readonly: true, value: link, onfocus: (e: Event) => (e.target as HTMLInputElement).select() }),
       h('button', { onclick: () => copy(link, 'Link copied') }, 'Copy link')),
-    h('p', { class: 'help' }, `${link.length} characters. For one profile, use the Share button next to its name.`)));
+    h('p', { class: 'help' }, `${link.length} characters. For one look, use the Share button next to its name.`)));
 }
 
 async function om3ShareProfile(l: Look) {
@@ -1351,13 +1351,13 @@ async function om3ShareProfile(l: Look) {
   let lc = '';
   try { lc = encodeLookCode(l); } catch { /* shown below */ }
   modal(`Share "${l.name}"`, h('div', { class: 'share' },
-    h('p', {}, 'A link to this OM-3 profile, with everything in it (including Contrast, Sharpness and Shading):'),
+    h('p', {}, 'A link to this OM-3 look, with everything in it (including Contrast, Sharpness and Shading):'),
     h('div', { class: 'code-box link' }, h('input', { type: 'text', readonly: true, value: link, onfocus: (e: Event) => (e.target as HTMLInputElement).select() }),
       h('button', { onclick: () => copy(link, 'Link copied') }, 'Copy link')),
     lc ? h('p', {}, 'Or the short Caduceus look code, which also works for E-P7 users (it carries no Contrast or Sharpness):') : null,
     lc ? h('div', { class: 'code-box' }, h('code', {}, encodeLookCode(l, true)), h('button', { onclick: () => copy(lc, 'Code copied') }, 'Copy code')) : null,
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'RapidRAW preset'), h('p', { class: 'help' }, 'This profile as a .rrpreset for RapidRAW (Presets › Import), for ORF files. An approximation of the camera look.')),
+      h('div', {}, h('b', {}, 'RapidRAW preset'), h('p', { class: 'help' }, 'This look as a .rrpreset for RapidRAW (Presets › Import), for ORF files. An approximation of the camera look.')),
       h('button', { onclick: () => download(`${rrName(l.name)}.rrpreset`, rrpreset(bankPack([l]), 0), 'application/json') }, 'Download'))));
 }
 const bankPack = (looks: Look[]): Pack => ({ schema: PACK_SCHEMA, name: O.name, looks, slots: {} });
@@ -1378,17 +1378,17 @@ function om3InstallDialog() {
         h('p', {}, 'Open the ', link(`${OM3_GH}/releases/latest`, 'latest release'), ', download ', h('b', {}, 'Source code (zip)'), ' and unzip it. There is no firmware file to download: OM\'s licence means you build it yourself from the official firmware.')),
       step('Build',
         h('p', {}, 'Run ', code('firmware/patch.py'), ' (the guide shows how). It gets OM\'s official firmware, applies the patch, checks every file and writes an ', code('SD card files'), ' folder: copy ', code('DCOLYMP'), ' and ', code('OM3MOD'), ' to the root of the card. Keep ', code('restore/'), ' on your computer.')),
-      step('Your profiles: PROFILES.BIN + NAMES.BIN (optional)',
-        h('p', {}, 'Profiles can be made on the camera itself (Profiles page). To use the ones here instead:'),
+      step('Your looks: LOOKS.BIN + NAMES.BIN (optional)',
+        h('p', {}, 'Looks can be made on the camera itself (Looks page). To use the ones here instead:'),
         h('ol', { class: 'substeps' },
-          h('li', {}, 'To keep profiles made on the camera, first ', h('b', {}, 'Open…'), ' the card\'s ', code('OM3MOD/PROFILES.BIN'), ' here.'),
+          h('li', {}, 'To keep looks made on the camera, first ', h('b', {}, 'Open…'), ' the card\'s ', code('OM3MOD/LOOKS.BIN'), ' here (', code('PROFILES.BIN'), ' before v0.19).'),
           h('li', {}, 'Edit, then ', h('b', {}, 'Export'), ' › Save to the SD card (or download the card folder zip).'),
           h('li', {}, 'Put the card back and half-press once.')),
         exportBtn),
       step('Flash',
         h('p', {}, 'Put the card in the camera, hold ', h('b', {}, 'OK'), ' and switch on. Wait for the update to finish (blinking LED) and don\'t switch off meanwhile. Then delete ', code('DCOLYMP/E1479999.BIN'), ' from the card.')),
       step('Shoot',
-        h('p', {}, 'Picture Mode › COLOR 1–4 › press ', h('b', {}, '▼'), ' for the wheel; it opens on ', h('b', {}, 'Profiles'), '. Turn the front dial to 1–5 to load a profile; ', h('b', {}, 'INFO'), ' changes page (Saturation, Hue, Light, WB/BW).')))
+        h('p', {}, 'Picture Mode › COLOR 1–4 › press ', h('b', {}, '▼'), ' for the wheel; it opens on ', h('b', {}, 'Looks'), '. Turn the front dial to 1–5 to load a look; ', h('b', {}, 'INFO'), ' changes page (Saturation, Hue, Light, WB/BW).')))
   );
   const dlg = modal('Install Caduceus for OM-3', body, [
     h('a', { class: 'btn', href: `${OM3_GH}/blob/main/docs/INSTALL.md`, target: '_blank', rel: 'noopener' }, 'Full guide on GitHub'),
@@ -1415,10 +1415,10 @@ async function om3ToCard(files: { name: string; data: Uint8Array }[]) {
 
 function om3ExportDialog() {
   const probs = validateBank(O.bank);
-  const fname = (O.name || 'om3-profiles').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'om3-profiles';
+  const fname = (O.name || 'om3-looks').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'om3-looks';
   const n = O.bank.flat().filter(Boolean).length;
   const bankJson = () => JSON.stringify({ schema: BANK_SCHEMA, name: O.name, bank: O.bank.map((r) => r.map((l) => (l ? plainLook(l) : null))) }, null, 1) + '\n';
-  const cardFiles = async () => [{ name: 'PROFILES.BIN', data: profilesBin(O.bank) }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
+  const cardFiles = async () => [{ name: 'LOOKS.BIN', data: profilesBin(O.bank) }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
   const busy = async (b: HTMLButtonElement, f: () => Promise<void>) => { b.disabled = true; try { await f(); } catch (e) { toast((e as Error).message, 'err'); } finally { b.disabled = probs.length > 0; } };
   const looks = O.bank.flat().filter(Boolean) as Look[];
   const rrAll = () => makeZip(looks.map((l, i) => ({ name: `${String(i + 1).padStart(2, '0')}-${rrName(l.name)}.rrpreset`, data: new TextEncoder().encode(rrpreset(bankPack(looks), i)) })));
@@ -1435,25 +1435,26 @@ function om3ExportDialog() {
   modal('Export for the OM-3', h('div', { class: 'export' },
     probs.length
       ? h('div', { class: 'problems-box' }, h('b', {}, `${probs.length} problem(s) to fix first:`), h('ul', { class: 'problems' }, ...probs.slice(0, 12).map((p) => h('li', {}, fmt(p)))))
-      : h('p', { class: 'ok' }, `✓ ${n} profiles pass the camera's checks (Caduceus for OM-3 v0.17 or later).`),
+      : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; on v0.17–v0.18 use the PROFILES.BIN file below).`),
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'Save to the SD card'), h('p', { class: 'help' }, 'Pick the card (or its OM3MOD folder): writes OM3MOD/PROFILES.BIN and NAMES.BIN. This replaces the profiles on the card, including ones made on the camera: Open… the card\'s PROFILES.BIN first to keep those. Chrome / Edge.')),
+      h('div', {}, h('b', {}, 'Save to the SD card'), h('p', { class: 'help' }, 'Pick the card (or its OM3MOD folder): writes OM3MOD/LOOKS.BIN and NAMES.BIN. This replaces the looks on the card, including ones made on the camera: Open… the card\'s LOOKS.BIN first to keep those. Chrome / Edge.')),
       toCard),
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'Card folder (.zip)'), h('p', { class: 'help' }, 'OM3MOD/PROFILES.BIN, OM3MOD/NAMES.BIN and the profiles file. Unzip at the card root (never into DCOLYMP/).')),
+      h('div', {}, h('b', {}, 'Card folder (.zip)'), h('p', { class: 'help' }, 'OM3MOD/LOOKS.BIN, OM3MOD/NAMES.BIN and the looks file. Unzip at the card root (never into DCOLYMP/).')),
       zip),
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'Single files'), h('p', { class: 'help' }, 'PROFILES.BIN: the 20 profiles. NAMES.BIN: their names as the camera shows them under the wheel ("Empty" for unused numbers). Both go in OM3MOD/.')),
+      h('div', {}, h('b', {}, 'Single files'), h('p', { class: 'help' }, 'LOOKS.BIN: the 20 looks. NAMES.BIN: their names as the camera shows them under the wheel ("Empty" for unused numbers). Both go in OM3MOD/. Still on firmware v0.17–v0.18? It reads the same looks as PROFILES.BIN.')),
       h('div', { class: 'ex-btns' },
-        h('button', { disabled: probs.length > 0, onclick: () => download('PROFILES.BIN', profilesBin(O.bank)) }, 'PROFILES.BIN'),
+        h('button', { disabled: probs.length > 0, onclick: () => download('LOOKS.BIN', profilesBin(O.bank)) }, 'LOOKS.BIN'),
+        h('button', { disabled: probs.length > 0, title: 'For firmware v0.17–v0.18', onclick: () => download('PROFILES.BIN', profilesBin(O.bank)) }, 'PROFILES.BIN'),
         names)),
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'Profiles file (.json)'), h('p', { class: 'help' }, 'Everything, including notes. Open it here later or send it to someone.')),
+      h('div', {}, h('b', {}, 'Looks file (.json)'), h('p', { class: 'help' }, 'Everything, including notes. Open it here later or send it to someone.')),
       h('button', { onclick: () => download(`${fname}.om3.json`, bankJson(), 'application/json') }, 'Download')),
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'RapidRAW presets (.rrpreset)'), h('p', { class: 'help' }, 'Every profile as its own preset in a zip, for ORF files. Approximate.')),
+      h('div', {}, h('b', {}, 'RapidRAW presets (.rrpreset)'), h('p', { class: 'help' }, 'Every look as its own preset in a zip, for ORF files. Approximate.')),
       h('button', { disabled: !looks.length, onclick: () => download(`${fname}-rapidraw.zip`, rrAll(), 'application/zip') }, `All ${looks.length} (.zip)`)),
-    h('p', { class: 'help' }, 'The camera checks every file and ignores one that fails. A new PROFILES.BIN starts every COLOR at 0, so your current camera settings stay until you pick a profile.')));
+    h('p', { class: 'help' }, 'The camera checks every file and ignores one that fails. A new LOOKS.BIN starts every COLOR at 0, so your current camera settings stay until you pick a look.')));
 }
 
 // ---------------------------------------------------------------- start

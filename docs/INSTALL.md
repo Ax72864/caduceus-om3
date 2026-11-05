@@ -13,7 +13,7 @@
 4. Camera off, full battery: **hold OK and switch on**. Steady light = writing (about two minutes, don't touch
    anything); blinking = done. Switch off and on again.
 5. Delete `DCOLYMP/E1479999.BIN` from the card, keep `OM3MOD`.
-6. **Half-press once** after every power-on, then Picture Mode › COLOR 1–4 › **▼**: the wheel opens on the Profiles
+6. **Half-press once** after every power-on, then Picture Mode › COLOR 1–4 › **▼**: the wheel opens on the Looks
    page, and **INFO** steps through the others.
 
 To undo: flash `SD card files/restore/E1479999.BIN` the same way.
@@ -74,8 +74,8 @@ SD card files/
 
 1. Put the camera's SD card in your computer.
 2. Copy the **`DCOLYMP`** and **`OM3MOD`** folders from `SD card files` to the **top level** of the card, next to
-   `DCIM`. If the card already has an `OM3MOD` folder from an earlier version, keep its `PROFILES.BIN` and
-   `BUNDLES.BIN` (your profiles and edits) and only replace `GUIDES.BIN`.
+   `DCIM`. If the card already has an `OM3MOD` folder from an earlier version, keep its `LOOKS.BIN` and
+   `BUNDLES.BIN` (your looks and edits) and only replace `GUIDES.BIN`.
 3. Eject the card properly before taking it out.
 
 The card should look like this:
@@ -105,12 +105,12 @@ anything (that is how the same updater behaves on the E-P7): make the files agai
 1. Switch on and **half-press the shutter once**. That loads your settings from the card. Nothing is read at power-on,
    so until the first half-press the wheel works exactly as stock.
 2. Picture Mode › **COLOR 1** (or 2–4) › press **▼** to open the Color Profile wheel.
-3. It opens on the **Profiles** page with the selected profile's name. Press **INFO** for the others: Saturation →
-   Saturation (All) → **Hue** → **Light** → **WB/BW** → back to **Profiles**. The label under the wheel names the page.
+3. It opens on the **Looks** page with the selected look's name. Press **INFO** for the others: Saturation →
+   Saturation (All) → **Hue** → **Light** → **WB/BW** → back to **Looks**. The label under the wheel names the page.
 4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card.
 
-To bring in profiles from the [Control Panel](https://androidfanman.github.io/caduceus-om3/) (OM SYSTEM OM-3 selected at
-the top): save `PROFILES.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD` folder, then on the Profiles page turn the 12 o'clock spot to 1–5. See
+To bring in looks from the [Control Panel](https://androidfanman.github.io/caduceus-om3/) (OM SYSTEM OM-3 selected at
+the top): save `LOOKS.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD` folder, then on the Looks page turn the 12 o'clock spot to 1–5. See
 [USING.md](USING.md) for every page.
 
 ## Restore stock firmware
@@ -144,7 +144,7 @@ says 1.1 and that the flash finished (steady, then blinking).
 **My changes don't stay**: they save at the next half-press, and only when the card has an `OM3MOD` folder at its top
 level. A locked or full card can't be written.
 
-**The Profiles page is missing**: the card's `PROFILES.BIN` failed the camera's check (damaged or edited by hand), so
+**The Looks page is missing**: the card's `LOOKS.BIN` failed the camera's check (damaged or edited by hand), so
 the camera ignored it and left it alone. Open it in the Control Panel and save it again, or delete it: with no file, the
 camera starts a fresh, neutral bank.
 
@@ -153,16 +153,17 @@ switch on again. If that doesn't help, [restore stock firmware](#restore-stock-f
 
 ## FAQ
 
-**Will updating to a new version lose my profiles?** No. Flash the new firmware the same way and keep the card's
-`OM3MOD/PROFILES.BIN` and `BUNDLES.BIN`.
+**Will updating to a new version lose my looks?** No. Flash the new firmware the same way and keep the card's
+`OM3MOD/LOOKS.BIN` and `BUNDLES.BIN`. Coming from v0.16–v0.18, where the bank was called `PROFILES.BIN`: v0.19
+reads it when there is no `LOOKS.BIN` yet, and the next half-press save writes `LOOKS.BIN`.
 
 **Does it change the Monochrome profiles?** No. Only COLOR 1–4. The MONO profiles keep the camera's own editor.
 
-**Can I share profiles?** Yes: send a `PROFILES.BIN`, or use **Share profiles** in the Control Panel to send a link.
+**Can I share looks?** Yes: send a `LOOKS.BIN`, or use **Share looks** in the Control Panel to send a link.
 Copying one onto a card replaces that camera's whole bank.
 
 **Can I use Caduceus looks?** Yes: it's the same Control Panel. In OM-3 mode, **Paste code** takes Caduceus look
-codes and pack links, and **Open…** takes packs and E-P7 `LOOKS.BIN` files; each colour look becomes an OM-3 profile.
+codes and pack links, and **Open…** takes packs and E-P7 `LOOKS.BIN` files; each colour look becomes an OM-3 look.
 
 **Why do I have to make the file myself?** OM's licence doesn't allow sharing their firmware, so this project only
 publishes its own changes and the patcher applies them to your copy of the official file.

@@ -86,8 +86,8 @@ export function encode11(px, w, h) {
   }
   return out;
 }
-/** Picture name for COLOR k profile j (0-based): its name; "Empty" for a number with no profile. */
-const nameText = (prof, k, j) => prof[k][j] ? (prof[k][j].name.trim() || 'Profile ' + (j + 1)) : 'Empty';
+/** Picture name for COLOR k look j (0-based): its name; "Empty" for a number with no look. */
+const nameText = (prof, k, j) => prof[k][j] ? (prof[k][j].name.trim() || 'Look ' + (j + 1)) : 'Empty';
 export async function namesBin(prof) {
   await nmFont();
   const groups = [];

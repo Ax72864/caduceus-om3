@@ -64,7 +64,7 @@ export const blankProfile = (name: string): Look => blankLook('colour', name);
 export function validateProfile(l: Look, at?: { k: number; v: number }): Problem[] {
   const p: Problem[] = [], add = (field: string, message: string) => p.push({ look: at ? at.k * PER + at.v : undefined, field, message });
   const np = om3NameProblem(l.name); if (np) add('name', np);
-  if (l.kind !== 'colour') add('kind', 'OM-3 profiles are colour only.');
+  if (l.kind !== 'colour') add('kind', 'OM-3 looks are colour only.');
   const ok = (v: unknown, n: number) => Number.isInteger(v) && Math.abs(v as number) <= n;
   for (const [k, n] of [['hue', OM3.hl], ['light', OM3.hl], ['sat', OM3.sat]] as const)
     if (!l[k].every((v) => ok(v, n))) add(k, `${k}: 12 whole numbers in -${n}..${n} (the OM-3 wheel).`);
@@ -102,18 +102,18 @@ export function profilesBin(bank: Bank): Uint8Array {
   d.setUint32(8, crc32(b.subarray(12)), true);
   return b;
 }
-/** A camera PROFILES.BIN -> bank. Used numbers without a name (made on the camera) become "Profile n". */
+/** A camera LOOKS.BIN -> bank. Used numbers without a name (made on the camera) become "Look n". */
 export function readProfiles(b: Uint8Array): Bank {
   const d = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  if (b.length !== PF_LEN || String.fromCharCode(...b.subarray(0, 4)) !== 'OM3P' || d.getUint32(4, true) !== PF_LEN) throw new Error('This is not a PROFILES.BIN (wrong size or header).');
-  if (crc32(b.subarray(12)) !== d.getUint32(8, true)) throw new Error('This PROFILES.BIN is damaged (checksum).');
-  if (d.getUint16(12, true) !== 1 || d.getUint16(14, true) !== 20) throw new Error('This PROFILES.BIN has an unknown version.');
+  if (b.length !== PF_LEN || String.fromCharCode(...b.subarray(0, 4)) !== 'OM3P' || d.getUint32(4, true) !== PF_LEN) throw new Error('This is not a LOOKS.BIN (wrong size or header).');
+  if (crc32(b.subarray(12)) !== d.getUint32(8, true)) throw new Error('This LOOKS.BIN is damaged (checksum).');
+  if (d.getUint16(12, true) !== 1 || d.getUint16(14, true) !== 20) throw new Error('This LOOKS.BIN has an unknown version.');
   const bank = emptyBank();
   for (let r = 0; r < 20; r++) {
     const o = 32 + 64 * r, s = (i: number) => d.getInt8(o + i), a = (at: number) => Array.from({ length: 12 }, (_, i) => s(at + i));
     let name = ''; for (let i = 0; i < 15; i++) { const c = b[1312 + 16 * r + i]; if (!c) break; name += String.fromCharCode(c); }
     if (!name && !b.subarray(o, o + 47).some(Boolean)) continue;
-    const l = blankLook('colour', (name || `Profile ${(r % 5) + 1}`).slice(0, OM3_NAME_MAX).trim() || 'Profile');
+    const l = blankLook('colour', (name || `Look ${(r % 5) + 1}`).slice(0, OM3_NAME_MAX).trim() || 'Look');
     l.hue = a(0); l.light = a(12); l.sat = a(24);
     l.wb = b[o + 36] & 1 ? { a_b: s(37), g_m: s(38) } : null;
     l.tone = { ...zeroTone(), blacks: s(39), whites: s(40), shadows: s(44), midtones: s(45), highlights: s(46) };
@@ -153,7 +153,7 @@ export function fromOldLookLab(raw: string | null): Bank | null {
     if (!s || s.v !== 3 || !Array.isArray(s.prof) || s.prof.length !== 4) return null;
     const bank = emptyBank();
     s.prof.forEach((list: unknown[], k: number) => (Array.isArray(list) ? list : []).slice(0, PER).forEach((o: any, v: number) => {
-      const l = blankLook('colour', String(o?.name || `Profile ${v + 1}`).slice(0, OM3_NAME_MAX).trim() || 'Profile');
+      const l = blankLook('colour', String(o?.name || `Look ${v + 1}`).slice(0, OM3_NAME_MAX).trim() || 'Look');
       const a = (x: unknown, n: number) => (Array.isArray(x) && x.length === 12 ? x.map((y) => clampI(y, n)) : new Array(12).fill(0));
       l.hue = a(o.hue, 5); l.light = a(o.light, 5); l.sat = a(o.sat, 5);
       l.wb = o.ab || o.gm ? { a_b: clampI(o.ab, 5), g_m: clampI(o.gm, 5) } : null;
@@ -169,10 +169,10 @@ export function fromOldLookLab(raw: string | null): Bank | null {
 /** Parse a saved / opened bank file. */
 export function parseBank(v: unknown, parseLook: (x: unknown, what: string) => Look): BankFile {
   const o = v as { schema?: unknown; name?: unknown; bank?: unknown };
-  if (!o || o.schema !== BANK_SCHEMA || !Array.isArray(o.bank)) throw new Error('Not an OM-3 profile bank file.');
+  if (!o || o.schema !== BANK_SCHEMA || !Array.isArray(o.bank)) throw new Error('Not an OM-3 look bank file.');
   const bank = emptyBank();
   (o.bank as unknown[]).slice(0, COLORS).forEach((row, k) => (Array.isArray(row) ? row : []).slice(0, PER).forEach((x, j) => {
-    if (x) bank[k][j] = parseLook(x, `COLOR ${k + 1} profile ${j + 1}`);
+    if (x) bank[k][j] = parseLook(x, `COLOR ${k + 1} look ${j + 1}`);
   }));
-  return { schema: BANK_SCHEMA, name: typeof o.name === 'string' ? o.name : 'OM-3 profiles', bank };
+  return { schema: BANK_SCHEMA, name: typeof o.name === 'string' ? o.name : 'OM-3 looks', bank };
 }

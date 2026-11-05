@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GUIDES.BIN for the OM-3 colour editor: the guide pictures shown under the wheel ("Hue [INFO]", "Light [INFO]",
-"WB/BW [INFO]", "Profiles [INFO]"), drawn from scratch (no camera graphics are copied).
+"WB/BW [INFO]", "Looks [INFO]"), drawn from scratch (no camera graphics are copied).
 
 Picture: 175 x 50 px, OM-3 OSD palette indices (0 clear, 7 dark edge, 9 faint rim, 10 white fill, 11 light edge,
 12 grey). The word is fitted to the camera's own guide metrics (cap height 31 px, baseline row 40, right edge col 102);
@@ -129,7 +129,7 @@ def encode11(px, w, h):
     return bytes(out)
 
 
-PAGES = ['Hue', 'Light', 'WB/BW', 'Profiles']             # streams 1..4 = pages Hue, Light, WB/BW, Profiles
+PAGES = ['Hue', 'Light', 'WB/BW', 'Looks']                # streams 1..4 = pages Hue, Light, WB/BW, Looks (v0.19; before: Profiles)
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--preview')

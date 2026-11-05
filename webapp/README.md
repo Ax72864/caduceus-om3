@@ -23,24 +23,25 @@ tools on random packs.
 ## Camera switch: E-P7 and OM-3
 
 A switch at the very top picks the camera. **Olympus PEN E-P7** is the Caduceus Control Panel as above, unchanged.
-**OM SYSTEM OM-3** edits the profile bank of [Caduceus for OM-3](https://github.com/androidfanman/caduceus-om3)
-(firmware v0.17 or later): 5 profiles for each of COLOR 1–4, the camera's Profiles page.
+**OM SYSTEM OM-3** edits the look bank of [Caduceus for OM-3](https://github.com/androidfanman/caduceus-om3)
+(firmware v0.19 or later; v0.17–v0.18 read the same file as `PROFILES.BIN`): 5 looks for each of COLOR 1–4, the
+camera's Looks page.
 
 - The left pane shows COLOR 1–4 with numbers 1–5 (an unused number is "Empty", as on the camera). Drag, ↑ ↓ or
-  Alt+↑/↓ swap numbers; × empties one. An empty number offers a blank profile, a library look or a pasted code.
+  Alt+↑/↓ swap numbers; × empties one. An empty number offers a blank look, a library look or a pasted code.
 - The editor keeps what the OM-3 has: Hue / Lightness / Saturation ±5, Tone (Highlights / Shadows / Midtones ±7,
   Blacks / Whites ±5), the camera's Contrast and Sharpness (±2) and Shading (±5), and a WB shift (±5). No noise
   filter, glow / clarity, Art Effect or monochrome. Names are up to 15 characters.
 - The preview turns hue the OM-3 way (+ toward the clockwise neighbour) and includes Contrast, Sharpness and Shading.
-- Open: the card's `OM3MOD/PROFILES.BIN` (to keep profiles made on the camera), a profiles file (`*.om3.json`), or a
-  Caduceus pack / `LOOKS.BIN` / pack link: its first 20 colour looks become the 20 profiles (limited to the OM-3 ranges).
+- Open: the card's `OM3MOD/LOOKS.BIN` (to keep looks made on the camera), a looks file (`*.om3.json`), or a
+  Caduceus pack / `LOOKS.BIN` / pack link: its first 20 colour looks become the 20 looks (limited to the OM-3 ranges).
   Pasted Caduceus look codes go into the selected empty number.
-- Export: `PROFILES.BIN` + `NAMES.BIN` (the names as pictures in the camera's label style) straight to the card
-  (Chrome / Edge), as a card zip, or singly; a profiles file; RapidRAW presets.
-- Share: a link to all profiles (`ob1_…`) or one profile (`op1_…`); both keep Contrast / Sharpness / Shading.
+- Export: `LOOKS.BIN` + `NAMES.BIN` (the names as pictures in the camera's label style) straight to the card
+  (Chrome / Edge), as a card zip, or singly; a looks file; RapidRAW presets.
+- Share: a link to all looks (`ob1_…`) or one look (`op1_…`); both keep Contrast / Sharpness / Shading.
 
-The OM-3 code is in `src/om3.ts` (bank, `PROFILES.BIN`, converting looks), `src/om3names.ts` (`NAMES.BIN`) and the
-`OM-3` section of `src/main.ts`; `tests/om3.test.ts` checks `PROFILES.BIN` byte for byte against
+The OM-3 code is in `src/om3.ts` (bank, `LOOKS.BIN`, converting looks), `src/om3names.ts` (`NAMES.BIN`) and the
+`OM-3` section of `src/main.ts`; `tests/om3.test.ts` checks `LOOKS.BIN` byte for byte against
 `card/mkprofiles.py` of the caduceus-om3 repo when it is the parent folder. `?camera=om3` / `?camera=ep7` in the URL
 picks the camera; otherwise the last choice is remembered, and a build with `VITE_DEFAULT_CAMERA=om3` starts on the OM-3.
 

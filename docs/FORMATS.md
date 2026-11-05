@@ -2,7 +2,10 @@
 
 All multi-byte values little-endian. CRC-32 = zlib/PNG CRC-32. Signed values are s8.
 
-## PROFILES.BIN v1 (1632 bytes)
+## LOOKS.BIN v1 (1632 bytes)
+
+Called `PROFILES.BIN` in v0.16–v0.18 (same format). v0.19 reads `LOOKS.BIN`, or `PROFILES.BIN` when there is no
+`LOOKS.BIN`, and always writes `LOOKS.BIN`.
 
 | Offset | Size | Field |
 |---|---|---|
@@ -13,7 +16,7 @@ All multi-byte values little-endian. CRC-32 = zlib/PNG CRC-32. Signed values are
 | 14 | 2 | record count 20 |
 | 16 | 4 | selection per COLOR 1..4 (0..5; the camera writes what is selected, the Control Panel writes 0) |
 | 20 | 12 | zero |
-| 32 | 20 × 64 | records: COLOR k (0..3) profile v (1..5) at index 5k + v − 1 |
+| 32 | 20 × 64 | records: COLOR k (0..3) look v (1..5) at index 5k + v − 1 |
 | 1312 | 20 × 16 | names, ASCII, zero-padded (up to 15 characters) |
 
 Record (64 bytes): `+0` hue[12], `+12` light[12], `+24` saturation[12] (all −5..5, slices clockwise from Yellow),
@@ -21,8 +24,8 @@ Record (64 bytes): `+0` hue[12], `+12` light[12], `+24` saturation[12] (all −5
 `+42` Sharpness (−2..2), `+43` Shading (−5..5), `+44` Shadows, `+45` Midtones, `+46` Highlights (−7..7), `+47..63` zero.
 
 The camera checks size, magic, CRC, version, selection range and every record byte's range; a file that fails is
-ignored and left alone (the Profiles page is then hidden). With no file, the camera starts a neutral bank and
-writes the file the first time a profile is used. Writes go to `PROFILES.NEW`, are read back, then to `PROFILES.BIN`.
+ignored and left alone (the Looks page is then hidden). With no file, the camera starts a neutral bank and
+writes the file the first time a look is used. Writes go to `LOOKS.NEW`, are read back, then to `LOOKS.BIN`.
 
 Generators: `card/mkprofiles.py` (JSON → file) and the Control Panel (`webapp/src/om3.ts`: `profilesBin` / `readProfiles`), byte-identical
 (`webapp/tests/om3.test.ts`).
@@ -37,13 +40,13 @@ u32 payload 512 | u32 CRC-32 over bytes 0..15 + 20..543 | 4 bytes decoded-firmwa
 ## GUIDES.BIN v4
 
 `OM3G` | u32 total | u32 CRC-32 of bytes 12.. | u16 width 175 | u16 height 50 | u32 length of streams 1..4 |
-streams (Hue, Light, WB/BW, Profiles), each padded to 4 bytes. Streams are OM-3 OSD type-11 pictures (palette
+streams (Hue, Light, WB/BW, Looks), each padded to 4 bytes. Streams are OM-3 OSD type-11 pictures (palette
 indices, run-length tokens); see `card/mkguides.py`.
 
 ## NAMES.BIN v1
 
-Pictures of the profile names, shown under the wheel on the Profiles page. Written by the Control Panel (`webapp/src/om3names.ts`: `namesBin`)
-together with `PROFILES.BIN`, in the camera's label style (`card/mkguides.py` metrics).
+Pictures of the look names, shown under the wheel on the Looks page. Written by the Control Panel (`webapp/src/om3names.ts`: `namesBin`)
+together with `LOOKS.BIN`, in the camera's label style (`card/mkguides.py` metrics).
 
 | Offset | Size | Field |
 |---|---|---|
@@ -56,8 +59,8 @@ together with `PROFILES.BIN`, in the camera's label style (`card/mkguides.py` me
 | 18 | 2 | picture height 50 |
 | 20 | 12 | zero |
 | 32 | 4 × 8 | groups {u32 offset, u32 length}: COLOR k's five pictures, contiguous from 144, each group ≤ 16384 bytes |
-| 64 | 20 × 4 | entries {u16 offset in its group, u16 length}: COLOR k profile v at 5k + v − 1 (length 0 = none) |
+| 64 | 20 × 4 | entries {u16 offset in its group, u16 length}: COLOR k look v at 5k + v − 1 (length 0 = none) |
 | 144 | … | group data: OSD type-11 pictures, 175 × 50, each 4-byte aligned |
 
 The camera loads each group into its own buffer at the first half-press and checks the CRC and every picture's
-header; a file that fails is ignored (the label then says "Profiles").
+header; a file that fails is ignored (the label then says "Looks").

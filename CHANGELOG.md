@@ -3,6 +3,12 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.19
+- **Profiles are now Looks**, matching Caduceus: the wheel page is labelled **Looks** (new `GUIDES.BIN`) and the
+  bank is `OM3MOD/LOOKS.BIN` (same format). With no `LOOKS.BIN` yet, the camera reads the `PROFILES.BIN` of
+  v0.16–v0.18 and the next save writes `LOOKS.BIN`. The Control Panel's OM-3 mode says Looks and exports
+  `LOOKS.BIN` (plus a `PROFILES.BIN` button for v0.17–v0.18).
+
 ## Control Panel (no new firmware)
 - The OM-3 Look Lab is now the **Caduceus Control Panel**, the same tool as Caduceus for the E-P7, with a camera
   switch at the very top: **Olympus PEN E-P7** shows cakelesscoder's panel unchanged, **OM SYSTEM OM-3** the version

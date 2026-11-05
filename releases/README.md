@@ -5,6 +5,7 @@ card files it needs, the expected checksums, and short notes. No OM firmware is 
 
 | Version | What's new | Status |
 |---|---|---|
+| [v0.19](v0.19/NOTES.md) | Profiles are now Looks: the Looks page, `LOOKS.BIN` (reads your `PROFILES.BIN`) | Emulator-tested |
 | [v0.18](v0.18/NOTES.md) | The wheel opens on the Profiles page | Camera-tested |
 | [v0.17](v0.17/NOTES.md) | Profile names on the Profiles page (`NAMES.BIN`) | Camera-tested |
 | [v0.16](v0.16/NOTES.md) | Profile bank: 5 profiles per COLOR, Profiles dial 0–5 | Camera-tested |
@@ -13,12 +14,13 @@ The launchers (`Make SD card files (Mac).command` / `(Windows).bat`) make the ne
 want an older one. From a terminal: `python3 firmware/patch.py --release v0.16`.
 
 **Going back to an older version:** make its files, copy `DCOLYMP` to the card and flash as usual. Keep your
-`OM3MOD/PROFILES.BIN` and `BUNDLES.BIN`; every version reads them. Files a version doesn't know (for example
+`OM3MOD` files; every version reads `BUNDLES.BIN`. The look bank is `LOOKS.BIN` from v0.19 and `PROFILES.BIN` in
+v0.16–v0.18: going back from v0.19, copy `LOOKS.BIN` to `PROFILES.BIN` so the older version sees your latest looks. Files a version doesn't know (for example
 `NAMES.BIN` on v0.16) are ignored.
 
 **Going back to stock:** flash `SD card files/restore/E1479999.BIN`, the official firmware the patcher saved.
 
-Each version is also published on the repo's **Releases** page (tag `v0.16`, `v0.17`, `v0.18`, …) with the whole project as
+Each version is also published on the repo's **Releases** page (tag `v0.16` … `v0.19`) with the whole project as
 it was at that version: a GitHub Action (`.github/workflows/releases.yml`) publishes every folder here once, so a
 new version only needs its folder.
 See [CHANGELOG.md](../CHANGELOG.md) for the full history.
