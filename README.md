@@ -56,6 +56,13 @@ In Chrome or Edge on a computer, **Save to the SD card…** writes `OM3MOD/PROFI
 elsewhere, **Save card files (.zip)** downloads it. Work is kept in the browser. On a Mac, Safari's File › Add to
 Dock makes it an app.
 
+**Works with Caduceus:** *Import from Caduceus…* takes a look code or pack link from the
+[Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/), a Caduceus pack (`.json`) or an E-P7
+`EP7MOD/LOOKS.BIN`, and turns each colour look into an OM-3 profile: Hue, Light, Saturation, WB, Blacks/Whites,
+Shadows/Midtones/Highlights, Contrast and Vignette (as Shading) carry over; values beyond the OM-3 range of ±5 are
+limited; Caduceus-only features (noise filter, bloom, halation, clarity, Art Effects) and monochrome looks are left
+out, and the import says which. A link to the Look Lab with a code after `#` imports it on opening.
+
 ## For developers
 
 - `firmware/src/editor.s`, `editor.ld`: the patch source (MN10300 / AM33 assembly).

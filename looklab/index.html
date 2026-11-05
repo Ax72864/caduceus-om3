@@ -129,6 +129,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
 .msg{font-size:14px;min-height:1.4em;margin:10px 0 0}.msg.err{color:#b42318}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.dlg{border:0;border-radius:16px;padding:20px 22px;max-width:560px;width:calc(100% - 32px);background:var(--card);color:var(--ink);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.dlg::backdrop{background:rgba(0,0,0,.35)}
+.dlg h3{margin:0 0 8px;font-size:19px}.dlg p{margin:6px 0;font-size:14px}.dlg a{color:inherit}
+.dlg textarea{width:100%;box-sizing:border-box;margin-top:8px;border:1px solid var(--rule);border-radius:10px;padding:8px 10px;font:14px/1.4 ui-monospace,Menlo,monospace;resize:vertical}
 .legend{margin:28px 0 0;background:var(--card);border-radius:16px;padding:16px 20px;font-size:14px;color:#4a4945}
 .legend p{margin:4px 0}.legend b{color:var(--ink)}
 .legend a{color:inherit}
@@ -156,7 +160,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   <button class="btn" id="b-right" aria-label="Move later">Move ▶</button>
   <button class="btn" id="b-del">Delete</button>
   <label class="sr" for="starter">Starter</label>
-  <select id="starter"></select><button class="btn" id="b-add">Add starter here</button>
+  <select id="starter"></select><button class="btn" id="b-add">Add to this COLOR</button>
+  <button class="btn" id="b-cad">Import from Caduceus…</button>
   <span class="count" id="count"></span>
 </div>
 
@@ -203,7 +208,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     <div class="row">
       <button class="btn primary" id="b-card" hidden>Save to the SD card…</button>
       <button class="btn primary" id="b-save">Save card files (.zip)</button>
-      <label class="btn" for="f-open">Open PROFILES.BIN from the card…</label><input type="file" id="f-open" accept=".BIN,.bin" multiple class="sr">
+      <label class="btn" for="f-open">Open PROFILES.BIN from the card…</label><input type="file" id="f-open" accept=".BIN,.bin,.json" multiple class="sr">
       <label class="btn" for="f-photo">Add your own photos…</label><input type="file" id="f-photo" accept="image/jpeg,image/png,image/webp" multiple class="sr">
       <button class="btn" id="b-copy">Copy profiles as text</button>
     </div>
@@ -212,6 +217,19 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   </section>
 </main>
 
+<dialog id="cad-dlg" class="dlg" aria-labelledby="cad-h">
+  <h3 id="cad-h">Import from Caduceus</h3>
+  <p>Paste a <b>look code</b> or a <b>pack link</b> from the <a href="https://cakelesscoder.github.io/caduceus-ep7/" target="_blank" rel="noopener">Caduceus Control Panel</a>, or open a Caduceus pack (<code>.json</code>) or an E-P7 <code>EP7MOD/LOOKS.BIN</code>.</p>
+  <label class="sr" for="cad-code">Look code or pack link</label>
+  <textarea id="cad-code" rows="3" placeholder="1BM9Y-B0K8X-PVAC8-…   or   https://…#pk1_…" spellcheck="false" autocomplete="off"></textarea>
+  <div class="row">
+    <button class="btn primary" id="cad-go">Import</button>
+    <label class="btn" for="cad-file">Open a file…</label><input type="file" id="cad-file" accept=".json,.BIN,.bin" class="sr">
+    <button class="btn" id="cad-close">Close</button>
+  </div>
+  <p class="msg" id="cad-msg" role="status"></p>
+  <p class="hint"><b>Adjusted for the OM-3:</b> Hue, Light and Saturation, WB A/B and G/M, Blacks/Whites, Shadows/Midtones/Highlights, Contrast and Vignette (as Shading) carry over. Hue, Light and WB beyond ±5 are limited to ±5, the OM-3 wheel range. Caduceus-only features (noise filter, bloom, halation, clarity, Art Effects) and monochrome looks are left out, and the import says which.</p>
+</dialog>
 <section class="legend" aria-label="How to read the card">
   <p><b>Wheels</b> run clockwise from Yellow at 12 o'clock, the same as the camera: Yellow, Orange, Orange-red, Red, Magenta, Violet, Blue, Blue-cyan, Cyan, Green-cyan, Green, Yellow-green. The dashed ring is 0; points outside it are +, inside are −. Drag a dot in or out, or select a slice and use the − / + buttons (or the arrow keys).</p>
   <p><b>Hue</b> + rotates a slice clockwise toward its next neighbour (Yellow → Orange, Blue → Blue-cyan). <b>Light</b> steps grow as they go out: ±3 is four times ±1.</p>
@@ -240,7 +258,7 @@ function mkLook(o = {}) {
     contrast: cN(o.contrast, 2), sharp: cN(o.sharp, 2), shading: cN(o.shading, 5), hl: cN(o.hl, 7), mid: cN(o.mid, 7), sh: cN(o.sh, 7),
     ev: clamp(Math.round((+o.ev || 0) * 3) / 3, -3, 3) };
 }
-const state = { photos: [], prof: [[], [], [], []], cp: 0, cj: 0, sel: { sat: 0, hue: 0, light: 0, wb: 0 }, photo: 'frames', own: [null, null, null, null], base: null };
+const state = { imported: [], photos: [], prof: [[], [], [], []], cp: 0, cj: 0, sel: { sat: 0, hue: 0, light: 0, wb: 0 }, photo: 'frames', own: [null, null, null, null], base: null };
 function defaults() {
   state.prof = typeof DEFAULT_BANK !== 'undefined'
     ? DEFAULT_BANK.map((list) => list.map((n) => STARTERS.find((S) => S.name === n)).filter(Boolean).map((S) => mkLook({ ...S, src: 'Caduceus' })))
@@ -733,7 +751,7 @@ function renderPhotos() {
     'Tip: add your own OM-3 JPEGs shot with COLOR 1 at 0 (all neutral). The preview adds the profile on top of the photo, so neutral camera JPEGs give the truest preview.';
 }
 function renderLive(fast) { renderWheels(); drawTone(); renderSliders(); renderInfo(); schedule(fast); }
-function renderAll() { ensureCur(); renderPills(); renderHead(); renderCard(); renderPhotos(); renderLive(); }
+function renderAll() { ensureCur(); renderStarters(); renderPills(); renderHead(); renderCard(); renderPhotos(); renderLive(); }
 function changed(fast) { renderLive(fast); save(); }
 
 $('name').oninput = (e) => { cur().name = e.target.value.slice(0, 15) || 'Untitled'; renderPills(); renderCard(); save(); };
@@ -752,8 +770,21 @@ $('b-del').onclick = () => {
 };
 const swap = (d) => { const list = state.prof[state.cp], i = state.cj, j = i + d; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; state.cj = j; renderAll(); save(); };
 $('b-left').onclick = () => swap(-1); $('b-right').onclick = () => swap(1);
-const st = $('starter'); STARTERS.forEach((S, i) => { const o = document.createElement('option'); o.value = i; o.textContent = S.name; st.append(o); });
-$('b-add').onclick = () => { const list = state.prof[state.cp]; if (list.length >= PER) return; list.push(mkLook(STARTERS[+st.value])); select(state.cp, list.length - 1); save(); };
+const st = $('starter');
+function renderStarters(pick) {
+  const keep = pick || st.value; st.textContent = '';
+  const g1 = document.createElement('optgroup'); g1.label = 'Caduceus library';
+  STARTERS.forEach((S, i) => { const o = document.createElement('option'); o.value = 's' + i; o.textContent = S.name; g1.append(o); });
+  st.append(g1);
+  if (state.imported.length) {
+    const g2 = document.createElement('optgroup'); g2.label = 'Imported from Caduceus';
+    state.imported.forEach((L, i) => { const o = document.createElement('option'); o.value = 'i' + i; o.textContent = L.name; g2.append(o); });
+    st.append(g2);
+  }
+  if ([...st.options].some((o) => o.value === keep)) st.value = keep;
+}
+const starterLook = (v) => v[0] === 'i' ? dupOf(state.imported[+v.slice(1)], state.imported[+v.slice(1)].name) : mkLook(STARTERS[+v.slice(1)]);
+$('b-add').onclick = () => { const list = state.prof[state.cp]; if (list.length >= PER || !st.value) return; list.push(starterLook(st.value)); select(state.cp, list.length - 1); save(); };
 /** Downscale to at most 1600 px wide and re-encode as JPEG (keeps uploads small; the preview works at 900 px). */
 function shrink(im) {
   const iw = im.naturalWidth, ih = im.naturalHeight, W = Math.min(1600, iw), H = Math.round(W * ih / iw);
@@ -801,6 +832,8 @@ $('f-open').onchange = async (e) => {
         const ps = readLooks(b); let added = 0;
         ps.forEach((list, k) => list.forEach((L) => { if (state.prof[k].length < PER) { state.prof[k].push(L); added++; } }));
         notes.push('LOOKS.BIN: added ' + added + ' look' + (added === 1 ? '' : 's') + ' as profiles (wheels only)' + (ps.length === 1 ? ', to COLOR 1 (older one-list file)' : '') + '.');
+      } else if (magic === 'EP7B' || b[0] === 0x7b) {
+        notes.push(cadImport(magic === 'EP7B' ? cadLooksBin(b) : cadPackJson(new TextDecoder().decode(b)), f.name));
       } else { notes.push(f.name + ' is not a PROFILES.BIN (or an older LOOKS.BIN / BUNDLES.BIN) from the OM3MOD folder.'); bad = true; }
     } catch (err) { notes.push(f.name + ': ' + err.message); bad = true; }
   }
@@ -841,9 +874,164 @@ $('b-copy').onclick = async () => {
   catch { setMsg('Copying was blocked by the browser.', true); }
 };
 
+// ---------- Caduceus import (cakelesscoder/caduceus-ep7, Apache-2.0: webapp/src/sharecode.ts, pack.ts, format.ts) ----------
+// Look codes ("1".."6" + base32 body + CRC-15), pack links ("pk1_" + base64url(deflate(JSON caduceus-pack/1))),
+// pack files (.json) and E-P7 EP7MOD/LOOKS.BIN (version 3) -> Caduceus looks -> OM-3 profiles (cadToOm3).
+const CAD = {
+  ALPHA: '0123456789ABCDEFGHJKMNPQRSTVWXYZ', NAMES: [...Array(95)].map((_, i) => String.fromCharCode(0x20 + i)).filter((c) => c !== '@'),
+  GRAINS: ['off', 'fine', 'film', 'standard'], EFFECTS: ['none', 'bloom', 'halation', 'clarity'], TINTS: ['neutral', 'red', 'amber', 'warm', 'cool'],
+  ARTS: ['off', 'star_light', 'pin_hole', 'blur', 'white_edge', 'frame'], TONE: ['highlights', 'shadows', 'midtones', 'blacks', 'whites'],
+};
+const cadGrain = (b) => (b <= 0 ? 'off' : b === 1 ? 'fine' : b === 6 ? 'standard' : b > 6 ? 'off' : 'film');
+function cadCrc15(syms) {
+  let crc = 0;
+  for (const s of syms) for (let b = 4; b >= 0; b--) { const bit = (s >> b) & 1, top = (crc >> 14) & 1; crc = (crc << 1) & 0x7fff; if (top ^ bit) crc ^= 0x4599; }
+  return crc;
+}
+function cadDecodeCode(input) {
+  let s = String(input); const h = s.lastIndexOf('#'); if (h >= 0) s = s.slice(h + 1);
+  s = s.replace(/[\s\-_.]/g, '').toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1');
+  if (s.length < 6) throw new Error('that code is too short.');
+  const syms = [...s].map((c) => CAD.ALPHA.indexOf(c)); const badAt = syms.indexOf(-1);
+  if (badAt >= 0) throw new Error('"' + s[badAt] + '" is not a code character.');
+  if (!'123456'.includes(s[0])) throw new Error(/[7-9]/.test(s[0]) ? 'this code comes from a newer Caduceus app than the Look Lab knows.' : 'this is not a Caduceus look code.');
+  const body = syms.slice(0, -3), chk = syms.slice(-3), c = cadCrc15(body);
+  if (chk[0] !== ((c >> 10) & 31) || chk[1] !== ((c >> 5) & 31) || chk[2] !== (c & 31)) throw new Error('the check failed: the code has a typo or is incomplete.');
+  let n = 0n; for (const v of body.slice(1)) n = (n << 5n) | BigInt(v);
+  const gr = '56'.includes(s[0]) ? 7 : '34'.includes(s[0]) ? 6 : 4, withTone = '246'.includes(s[0]);
+  const get = (r) => { const R = BigInt(r), v = Number(n % R); n /= R; return v; };
+  const vec = (lim) => {
+    const R = 2 * lim + 1, mode = get(3);
+    if (mode === 0) return new Array(12).fill(0);
+    if (mode === 1) { const mask = [...Array(12)].map(() => get(2)); return mask.map((m) => { if (!m) return 0; const x = get(R - 1) - lim; return x < 0 ? x : x + 1; }); }
+    if (mode === 2) return [...Array(12)].map(() => get(R) - lim);
+    throw new Error('the code is damaged.');
+  };
+  const kind = get(2) ? 'mono' : 'colour', hue = vec(7), light = vec(7), sat = vec(5), grain = cadGrain(get(gr));
+  const wbi = get(226), wb = wbi ? { a_b: Math.floor((wbi - 1) / 15) - 7, g_m: ((wbi - 1) % 15) - 7 } : null;
+  const ei = get(56); const effect = ei === 0 ? null : ei < 51 ? { type: ei < 26 ? 'bloom' : 'halation' } : { type: 'clarity' };
+  const vignette = get(11) - 5, art = CAD.ARTS[get(6)]; get(19);
+  const tone = { highlights: 0, shadows: 0, midtones: 0, blacks: 0, whites: 0 };
+  if (withTone) {
+    const mask = get(31) + 1;
+    CAD.TONE.forEach((k, i) => { if (!(mask & (1 << i))) return; const L = k === 'blacks' || k === 'whites' ? 5 : 7, x = get(2 * L) - L; tone[k] = x < 0 ? x : x + 1; });
+  }
+  const len = get(12) + 1; let name = ''; for (let i = 0; i < len; i++) name += CAD.NAMES[get(94)];
+  if (n !== 0n) throw new Error('the code is damaged (extra data).');
+  return { name, notes: '', kind, hue, light, sat, grain, wb, effect, vignette, art_effect: art, tone, advice: {} };
+}
+async function cadDecodePack(input) {
+  let s = String(input).trim(); const h = s.lastIndexOf('#'); if (h >= 0) s = s.slice(h + 1); s = s.replace(/\s/g, '');
+  if (!s.startsWith('pk1_')) throw new Error(/^pk\d+_/.test(s) ? 'this pack link comes from a newer Caduceus app.' : 'this is not a Caduceus pack link.');
+  try {
+    const t = s.slice(4).replace(/-/g, '+').replace(/_/g, '/'), bin = atob(t + '='.repeat((4 - (t.length % 4)) % 4));
+    const z = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    const out = new Response(new Blob([z]).stream().pipeThrough(new DecompressionStream('deflate')));
+    return cadPackJson(new TextDecoder('utf-8', { fatal: true }).decode(await out.arrayBuffer()));
+  } catch (e) { if (e && /Caduceus pack/.test(e.message)) throw e; throw new Error('the pack link is damaged or incomplete.'); }
+}
+function cadPackJson(text) {
+  let v; try { v = JSON.parse(text); } catch { throw new Error('not a JSON file.'); }
+  if (!v || v.schema !== 'caduceus-pack/1' || !Array.isArray(v.looks)) throw new Error('not a Caduceus pack (schema caduceus-pack/1).');
+  const a12 = (x) => (Array.isArray(x) && x.length === 12 ? x.map((y) => Math.round(+y || 0)) : new Array(12).fill(0));
+  return v.looks.map((l) => ({
+    name: String(l.name || 'Look'), notes: typeof l.notes === 'string' ? l.notes : '', kind: l.kind === 'mono' ? 'mono' : 'colour',
+    hue: a12(l.hue), light: a12(l.light), sat: a12(l.sat), grain: typeof l.grain === 'string' ? l.grain : 'off',
+    wb: l.wb && typeof l.wb === 'object' ? { a_b: +l.wb.a_b || 0, g_m: +l.wb.g_m || 0 } : null,
+    effect: l.effect && l.effect.type && l.effect.type !== 'none' ? { type: l.effect.type } : null, vignette: +l.vignette || 0,
+    art_effect: typeof l.art_effect === 'string' ? l.art_effect : 'off',
+    tone: { highlights: 0, shadows: 0, midtones: 0, blacks: 0, whites: 0, ...(l.tone && typeof l.tone === 'object' ? l.tone : {}) },
+    advice: l.advice && typeof l.advice === 'object' ? l.advice : {},
+  }));
+}
+function cadLooksBin(d) {
+  const v = new DataView(d.buffer, d.byteOffset, d.byteLength);
+  if (d.length < 128 || v.getUint16(4, true) !== 3 || (d.length - 64) % 64) throw new Error('this EP7MOD file is not a Caduceus LOOKS.BIN (version 3).');
+  if (crc32(new Uint8Array([...d.subarray(0, 16), ...d.subarray(20)])) !== v.getUint32(16, true)) throw new Error('this LOOKS.BIN failed its checksum.');
+  const s8 = (x) => (x >= 128 ? x - 256 : x), out = [];
+  for (let j = 0; j < (d.length - 64) / 64; j++) {
+    const r = d.subarray(64 + 64 * j, 128 + 64 * j), mono = r[45] === 1, tone = !mono && r[32] === 1, nm = r.subarray(48, 64);
+    const l = { name: String.fromCharCode(...nm.subarray(0, Math.max(0, nm.indexOf(0)))) || 'Look', notes: '', kind: mono ? 'mono' : 'colour',
+      hue: [], light: [], sat: new Array(12).fill(0), grain: cadGrain(r[24]), wb: r[25] ? { a_b: s8(r[26]), g_m: s8(r[27]) } : null,
+      effect: r[28] ? { type: CAD.EFFECTS[r[28]] || 'bloom' } : null, vignette: s8(r[30]), art_effect: 'off',
+      tone: { highlights: 0, shadows: 0, midtones: 0, blacks: 0, whites: 0 }, advice: {} };
+    for (let k = 0; k < 12; k++) { l.hue[k] = s8(r[k]); l.light[k] = s8(r[12 + k]); if (!mono && !tone) l.sat[k] = s8(r[33 + k]); }
+    if (tone) {
+      Object.assign(l.tone, { blacks: s8(r[33]), whites: s8(r[34]), highlights: s8(r[35]), midtones: s8(r[36]), shadows: s8(r[37]) });
+      if (r[44] === 1) for (let k = 0; k < 12; k++) { const x = (r[38 + (k >> 1)] >> (4 * (k & 1))) & 15; l.sat[k] = x > 7 ? x - 16 : x; }
+    }
+    out.push(l);
+  }
+  return out;
+}
+/** One Caduceus look -> an OM-3 profile plus what had to change. Ranges: OM-3 wheels -5..5, Sh/Mid/Hi -7..7, Contrast -2..2. */
+function cadToOm3(c) {
+  const lim = (a) => a.some((v) => Math.abs(v) > 5), t = c.tone || {}, adv = c.advice || {};
+  const tz = !t.highlights && !t.shadows && !t.midtones, at = adv.tone || {};
+  const changed = [], dropped = [];
+  if (lim(c.hue) || lim(c.light)) changed.push('Hue/Light');
+  if (c.wb && (Math.abs(c.wb.a_b) > 5 || Math.abs(c.wb.g_m) > 5)) changed.push('WB');
+  if (c.grain && c.grain !== 'off') dropped.push('noise filter');
+  if (c.effect) dropped.push(c.effect.type);
+  if (c.art_effect && c.art_effect !== 'off') dropped.push('Art Effect');
+  const L = mkLook({
+    name: String(c.name).slice(0, 15), blurb: c.notes || '', src: 'Caduceus import', hue: c.hue, light: c.light, sat: c.sat,
+    ab: c.wb ? c.wb.a_b : 0, gm: c.wb ? c.wb.g_m : 0, blacks: t.blacks || 0, whites: t.whites || 0,
+    hl: tz ? at.highlights || 0 : t.highlights || 0, sh: tz ? at.shadows || 0 : t.shadows || 0, mid: tz ? at.midtones || 0 : t.midtones || 0,
+    contrast: adv.contrast || 0, sharp: 0, shading: c.vignette || 0,
+  });
+  return { L, changed, dropped };
+}
+/** Add imported looks: colour looks to the "Imported from Caduceus" list (and a single look straight into this COLOR). */
+function cadImport(looks, from) {
+  const mono = looks.filter((l) => l.kind === 'mono'), colour = looks.filter((l) => l.kind !== 'mono');
+  if (!colour.length) return from + ': no colour looks' + (mono.length ? ' (' + mono.length + ' monochrome left out: the OM-3 Color Lab is for COLOR 1–4 only).' : '.');
+  const res = colour.map(cadToOm3), lim = res.filter((r) => r.changed.length), drop = res.filter((r) => r.dropped.length);
+  const names = new Set(res.map((r) => r.L.name));          // a look imported again replaces the older copy
+  state.imported = [...res.map((r) => r.L), ...state.imported.filter((L) => !names.has(L.name))].slice(0, 60);
+  let placed = '';
+  const list = state.prof[state.cp];
+  if (res.length === 1 && list.length < PER) {
+    list.push(dupOf(res[0].L, res[0].L.name)); state.cj = list.length - 1;
+    placed = ' Added as COLOR ' + (state.cp + 1) + ', profile ' + list.length + '.';
+  } else placed = ' Pick one under "Imported from Caduceus" and press Add to this COLOR.';
+  renderStarters('i0'); renderAll(); save();
+  const parts = [from + ': imported ' + res.length + ' look' + (res.length === 1 ? '' : 's') + '.' + placed];
+  const few = (rs) => rs.length <= 3 ? rs.map((r) => r.L.name).join(', ') : rs.length + ' looks';
+  if (lim.length) parts.push('Strong Hue/Light/WB values limited to the OM-3 range ±5: ' + few(lim) + '.');
+  if (drop.length) {
+    const kinds = {}; drop.forEach((r) => r.dropped.forEach((k) => { (kinds[k] = kinds[k] || []).push(r); }));
+    parts.push('Not in the OM-3 firmware, left out: ' + Object.entries(kinds).map(([k, rs]) => k + ' (' + few(rs) + ')').join(', ') + '.');
+  }
+  if (mono.length) parts.push(mono.length + ' monochrome look' + (mono.length === 1 ? '' : 's') + ' left out (COLOR profiles only).');
+  return parts.join(' ');
+}
+async function cadFromText(text) {
+  const t = String(text).trim();
+  if (!t) throw new Error('paste a look code or a pack link first.');
+  if (/(^|#)\s*pk\d+_/.test(t)) return cadImport(await cadDecodePack(t), 'Pack link');
+  if (t[0] === '{') return cadImport(cadPackJson(t), 'Pack');
+  return cadImport([cadDecodeCode(t)], 'Look code');
+}
+{
+  const dlg = $('cad-dlg'), m = (t, err) => { const e = $('cad-msg'); e.textContent = t; e.className = 'msg' + (err ? ' err' : ''); };
+  $('b-cad').onclick = () => { m(''); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); $('cad-code').focus(); };
+  $('cad-close').onclick = () => dlg.close ? dlg.close() : dlg.removeAttribute('open');
+  $('cad-go').onclick = async () => {
+    try { const note = await cadFromText($('cad-code').value); m(note); setMsg(note); $('cad-code').value = ''; } catch (err) { m('Could not import: ' + err.message, true); }
+  };
+  $('cad-file').onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try {
+      const b = new Uint8Array(await f.arrayBuffer()), magic = String.fromCharCode(...b.subarray(0, 4));
+      const note = cadImport(magic === 'EP7B' ? cadLooksBin(b) : cadPackJson(new TextDecoder().decode(b)), f.name); m(note); setMsg(note);
+    } catch (err) { m('Could not import ' + f.name + ': ' + err.message, true); }
+  };
+}
+
 // ---------- persistence: the artifact's db when available, else this browser ----------
 let db = null, saveTimer = null, loaded = false;
-const snapshot = () => ({ v: 3, prof: state.prof, own: state.own, photos: state.photos, photo: state.photo === 'own' ? 'frames' : state.photo, base: state.base ? Array.from(state.base) : null });
+const snapshot = () => ({ v: 3, prof: state.prof, imported: state.imported, own: state.own, photos: state.photos, photo: state.photo === 'own' ? 'frames' : state.photo, base: state.base ? Array.from(state.base) : null });
 function restore(s) {
   if (!s) return false;
   if (s.v === 3 && Array.isArray(s.prof) && s.prof.length === 4) {
@@ -854,6 +1042,7 @@ function restore(s) {
     state.own = state.prof.map((p) => p[0].id);
   } else return false;
   state.base = Array.isArray(s.base) && s.base.length === 544 ? new Uint8Array(s.base) : null;
+  state.imported = Array.isArray(s.imported) ? s.imported.slice(0, 60).map(mkLook) : [];
   state.photos = Array.isArray(s.photos) ? s.photos.filter((q) => q && /^[0-9a-f]{32}$/.test(q.id)).map((q) => ({ id: q.id, name: String(q.name || 'Photo').slice(0, 24) })) : [];
   if (s.photo && (PHOTOS.some((p) => p[0] === s.photo) || state.photos.some((q) => 'u:' + q.id === s.photo))) state.photo = s.photo;
   state.cp = 0; state.cj = 0; return true;
@@ -874,6 +1063,10 @@ function save() {
   let local = null; try { local = JSON.parse(localStorage.getItem('om3-looklab') || 'null'); } catch {}
   if (!restore(local)) defaults();
   renderAll(); loaded = true; status('', 'Connecting…');
+  // A Caduceus look code or pack link in the address (…/#1BM9Y… or …/#pk1_…): import it.
+  const hash = decodeURIComponent(location.hash.slice(1));
+  if (hash.length > 5) cadFromText(hash).then((note) => setMsg(note)).catch((err) => setMsg('Could not import the link: ' + err.message, true))
+    .finally(() => { try { history.replaceState(null, '', location.pathname + location.search); } catch {} });
   const timer = setTimeout(() => status('warn', 'Saved in this browser only'), 10000);
   const cl = window.claude;
   if (cl && cl.use) {

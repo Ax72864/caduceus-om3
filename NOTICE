@@ -10,7 +10,8 @@ official firmware file that each user downloads themselves; patches/*.json hold 
 Based on Caduceus (cakelesscoder/caduceus-ep7, Apache-2.0, Copyright 2026 cakelesscoder), firmware patches for the
 Olympus PEN E-P7: the on-camera look editor design, the BUNDLES.BIN slot layout (firmware/vendor/
 caduceus-bundles-layout.json), the tone-curve model and base LUT in the Look Lab (looklab/data.js, ported from its
-webapp), the 29 starter colour looks in the Look Lab, and the official-firmware download request in patch.py.
+webapp), the 29 starter colour looks in the Look Lab, the Look Lab's importer for Caduceus look codes, pack links and LOOKS.BIN
+(ported from its webapp/src/sharecode.ts, pack.ts and format.ts), and the official-firmware download request in patch.py.
 
 Test photos in looklab/samples are public domain (CC0 1.0); see looklab/samples/CREDITS.md.
 
