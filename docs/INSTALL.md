@@ -93,8 +93,8 @@ OM3MOD/GUIDES.BIN
 6. On a computer, delete `DCOLYMP/E1479999.BIN` from the card so it isn't flashed again by accident. **Keep
    `OM3MOD`.**
 
-If the light blinks straight away with no steady phase, the camera rejected the file and nothing was written: make
-the files again and copy them again.
+If the light blinks straight away with no steady phase, the camera most likely rejected the file without writing
+anything (that is how the same updater behaves on the E-P7): make the files again, copy them again and retry.
 
 ## First use
 
