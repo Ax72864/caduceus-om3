@@ -151,7 +151,11 @@ Green-cyan, Green, Yellow-green.
    profile.
 3. Turn to another number, or **half-press**, and the profile is kept. The bank saves to the card at the next
    half-press.
-4. An empty number loads neutral, so that's how you make a new profile on the camera. Each COLOR has its own five.
+4. An empty number (its label says **Empty**) loads neutral, so that's how you make a new profile on the camera.
+   Each COLOR has its own five.
+5. The label under the wheel shows the selected profile's name. Names come from the Look Lab (`NAMES.BIN`): to name
+   a profile you made on the camera, open the card's `PROFILES.BIN` in the Look Lab, type the name and save both
+   files back. Step by step: [Profiles and their names](docs/USING.md#profiles-and-their-names).
 
 **Reset:** hold **OK** on the wheel, or on the "COLOR n" item of the Picture Mode list, to put that COLOR's wheels
 back to 0. A `*` next to a COLOR means it has been changed.
