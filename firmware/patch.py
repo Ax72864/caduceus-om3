@@ -11,6 +11,9 @@ Output (in --out, default "SD card files" next to this script):
   OM3MOD/GUIDES.BIN      page labels for the wheel editor
   restore/E1479999.BIN   the official firmware under the SD-update name, to go back to stock
 
+With no --stock, it looks for the official file next to this script, in the project folder and in Downloads, and
+otherwise asks OM's update server for it (the download is checked byte for byte like a local file).
+
 usage: patch.py [--stock OLY_E_147_1100_0000_0000_3.BIN | --download] [--patch FILE.json] [--out DIR]
 """
 import argparse, hashlib, json, shutil, struct, sys, time
@@ -157,11 +160,20 @@ def main():
             raw = fetch_stock(patch['stock_size'])
         else:
             p = find_stock()
-            if not p:
-                raise Refuse(f'put {STOCK_NAME} (OM-3 firmware 1.1) next to this script or in Downloads, '
-                             'or run with --download or --stock FILE.')
-            print(f'Using {p}')
-            raw = p.read_bytes()
+            if p:
+                print(f'Using {p}')
+                raw = p.read_bytes()
+            else:
+                print(f'{STOCK_NAME} is not next to this script or in Downloads, so asking OM for it.')
+                try:
+                    raw = fetch_stock(patch['stock_size'])
+                except Refuse as e:
+                    raise Refuse(f'{e}\nPut {STOCK_NAME} (OM-3 firmware 1.1) next to this script or in Downloads '
+                                 'and run it again.')
+                try:                                   # keep a copy so the next run doesn't download again
+                    (ROOT / STOCK_NAME).write_bytes(raw)
+                except OSError:
+                    pass
         pkg = apply(raw, patch)
     except Refuse as e:
         print('Stopped:', e)
