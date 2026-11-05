@@ -1,5 +1,7 @@
 # Using the colour editor on the camera
 
+> **Color profiles only:** this is for Picture Mode COLOR 1–4. The Monochrome profiles keep the camera's own editor.
+
 Picture Mode › **COLOR 1–4** › press **▼** to open the Color Profile wheel. **INFO** changes the page:
 
 Saturation → (Saturation ALL) → **Hue** → **Light** → **WB/BW** → **Profiles** → Saturation

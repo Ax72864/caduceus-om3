@@ -4,6 +4,13 @@ On-camera colour editing for the **OM SYSTEM OM-3** (firmware **1.1**): Hue, Lig
 COLOR 1–4, plus a bank of **5 full profiles per COLOR** that you can build on the camera or in the
 **Look Lab** web tool and switch between with one dial.
 
+**▶ Open the Look Lab: https://androidfanman.github.io/om3-color-lab/**
+
+> [!NOTE]
+> **Color profiles only.** Everything here works on Picture Mode **COLOR 1–4** (the Color Profiles). The
+> **Monochrome** profiles (MONO 1–4) are not changed: they keep the camera's own editor and have no Hue, Light,
+> WB/BW or Profiles pages.
+
 > [!WARNING]
 > **Unofficial, experimental firmware modification. Use at your own risk.** Flashing modified firmware can crash
 > or freeze the camera, corrupt photos or the card, or leave the camera needing a restore. It is provided "as is",
@@ -43,7 +50,8 @@ How to use the new pages: [docs/USING.md](docs/USING.md). File formats: [docs/FO
 
 ## Look Lab
 
-`looklab/index.html` is a self-contained page: open it from a web server (for example GitHub Pages) in any browser.
+**https://androidfanman.github.io/om3-color-lab/** — it starts with 20 of the Caduceus film looks (5 per COLOR) to
+try and edit. `looklab/index.html` is a self-contained page: open it from a web server (for example GitHub Pages) in any browser.
 In Chrome or Edge on a computer, **Save to the SD card…** writes `OM3MOD/PROFILES.BIN` straight onto the card;
 elsewhere, **Save card files (.zip)** downloads it. Work is kept in the browser. On a Mac, Safari's File › Add to
 Dock makes it an app.

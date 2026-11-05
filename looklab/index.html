@@ -139,7 +139,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     <h1>Profiles for the camera's Profiles page</h1>
     <div class="status"><span class="dot" id="sdot"></span><span id="stext">Loading…</span></div>
   </div>
-  <p class="shared">Each of COLOR 1–4 has its <b>own 5 profiles</b>. On the camera's <b>Profiles</b> page, the 12 o'clock (Yellow) spot picks one: <b>0</b> is nothing (all neutral), <b>1–5</b> load a whole profile: every wheel plus Contrast, Sharpness, Shading and Shadows / Midtones / Highlights. Changes you make on the camera are kept in the selected profile. Drag the dots on a wheel to edit, and check the preview on the left.</p>
+  <p class="shared">Each of COLOR 1–4 has its <b>own 5 profiles</b>. On the camera's <b>Profiles</b> page, the 12 o'clock (Yellow) spot picks one: <b>0</b> is nothing (all neutral), <b>1–5</b> load a whole profile: every wheel plus Contrast, Sharpness, Shading and Shadows / Midtones / Highlights. Changes you make on the camera are kept in the selected profile. Drag the dots on a wheel to edit, and check the preview on the left. <b>For the COLOR 1–4 profiles only</b>: Monochrome profiles are not supported.</p>
 </header>
 
 <nav class="profiles" id="pills" aria-label="Profiles by COLOR"></nav>
@@ -212,6 +212,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   <p><b>Wheels</b> run clockwise from Yellow at 12 o'clock, the same as the camera: Yellow, Orange, Orange-red, Red, Magenta, Violet, Blue, Blue-cyan, Cyan, Green-cyan, Green, Yellow-green. The dashed ring is 0; points outside it are +, inside are −. Drag a dot in or out, or select a slice and use the − / + buttons (or the arrow keys).</p>
   <p><b>Hue</b> + rotates a slice clockwise toward its next neighbour (Yellow → Orange, Blue → Blue-cyan). <b>Light</b> steps grow as they go out: ±3 is four times ±1.</p>
   <p><b>WB / B·W</b>: A/B at 12, Blacks at 3, G/M at 6, Whites at 9. A/B + is amber and − is blue; G/M + is green and − is magenta. Blacks + lifts (fades) and − crushes; Whites + brightens and − softens.</p>
+  <p><b>Color profiles only.</b> Everything here is for Picture Mode COLOR 1–4. The Monochrome profiles are not changed and have no Profiles page.</p>
   <p><b>Profiles page on the camera</b> (INFO after WB/BW): only the 12 o'clock (Yellow) spot works. 0, or anything below 0, is nothing: everything neutral. 1–5 load that COLOR's profile 1–5; an empty number loads neutral, ready to build a new profile on the camera. Turning away from a profile keeps what it has, and a half-press saves the bank to the card. Exposure comp is shared by the whole mode, so it is a preview setting only.</p>
   <p>Test photos, all public domain (CC0 1.0): Portrait, Market, Lake and Sunset from Wikimedia Commons (Wilfredor, Fons Heijnsbroek, Bonnie Moreland) via the Caduceus project; the other 16 are Unsplash photos from 2014–2016, when Unsplash published under CC0, via the cslr/cc0pictures archive; Mossy falls and Autumn falls are from the WordPress.org photo directory (CC0). See samples/CREDITS.md. Starter looks, the tone model and the preview are adapted from <a href="https://github.com/cakelesscoder/caduceus-ep7">cakelesscoder/caduceus-ep7</a> (Apache-2.0). Photos you add are kept with this Look Lab; it is private to you unless you share it.</p>
 </section>
@@ -237,7 +238,9 @@ function mkLook(o = {}) {
 }
 const state = { photos: [], prof: [[], [], [], []], cp: 0, cj: 0, sel: { sat: 0, hue: 0, light: 0, wb: 0 }, photo: 'portrait', own: [null, null, null, null], base: null };
 function defaults() {
-  state.prof = RECIPES.map((r) => [mkLook(r)]);
+  state.prof = typeof DEFAULT_BANK !== 'undefined'
+    ? DEFAULT_BANK.map((list) => list.map((n) => STARTERS.find((S) => S.name === n)).filter(Boolean).map((S) => mkLook({ ...S, src: 'Caduceus' })))
+    : RECIPES.map((r) => [mkLook(r)]);
   state.own = state.prof.map((p) => p[0].id); state.cp = 0; state.cj = 0;
 }
 
@@ -821,7 +824,7 @@ function restore(s) {
   if (!s) return false;
   if (s.v === 3 && Array.isArray(s.prof) && s.prof.length === 4) {
     state.prof = s.prof.map((list) => (Array.isArray(list) ? list : []).slice(0, PER).map(mkLook)); state.own = (s.own || [null, null, null, null]).slice(0, 4);
-  } else if (Array.isArray(s.looks) && s.looks.length) {   // v1/v2 (one shared list): each COLOR gets its card recipe as look 1
+  } else if (Array.isArray(s.looks) && s.looks.length && typeof RECIPES !== 'undefined') {   // v1/v2 (one shared list): each COLOR gets its card recipe as look 1
     const by = (n) => s.looks.find((L) => L.name === n);
     state.prof = RECIPES.map((r) => [mkLook({ ...(s.v === 2 && by(r.name) ? by(r.name) : r), id: null })]);
     state.own = state.prof.map((p) => p[0].id);
