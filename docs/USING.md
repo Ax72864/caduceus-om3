@@ -74,21 +74,22 @@ Without `NAMES.BIN` (or with a damaged one) the label just says "Film".
 
 ### Make looks in the Control Panel
 
-1. Open cakelesscoder's [Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/). The first time, its setup pop-up asks for your camera:
-   choose **OM SYSTEM OM-3** (later: the **Camera** button).
-2. Your looks are one list, and its order is the Film page: the first 20 colour looks go to COLOR 1 looks 1–5,
-   COLOR 2 looks 1–5, and so on. Drag looks in the list to give them other numbers. Add looks from the built-in
-   library, a Caduceus look code or link, or start a new one.
-3. Give each look a name (up to 15 letters, numbers and symbols). Long names are squeezed to fit, and if one
-   COLOR's five names don't fit the camera's space, its lettering is made a little smaller.
+1. Open the [Caduceus Control Panel](https://androidfanman.github.io/caduceus-om3/) and check **OM SYSTEM OM-3** is
+   selected at the very top (the other choice is the E-P7). The left side lists COLOR 1–4 with looks 1–5.
+2. Click a number. For one that says **Empty**, choose **Blank look**, **From the built-in library…** or
+   **Paste a code…** (a Caduceus look code or link). Click a look to edit it; × empties its number; drag or ↑ ↓
+   moves it to another number.
+3. Give it a name (up to 15 letters, numbers and symbols). Long names are squeezed to fit, and if one COLOR's five
+   names don't fit the camera's space, its lettering is made a little smaller.
 4. Set the **Extras** the same way as on the camera: NR, Glow ↔ Clarity, Art Effect and the WB shift (Blacks and
-   Whites are with the tone).
-5. **Export** › **Card folder (.zip)** downloads `OM3MOD/LOOKS.BIN` and `OM3MOD/NAMES.BIN`: unzip it at the card's
-   top level (never into `DCOLYMP`), or use the single-file buttons and put both files in `OM3MOD`.
+   Whites are in the Tone panel).
+5. **Export › Save to card…** (Chrome or Edge on a computer) writes `LOOKS.BIN` and `NAMES.BIN` into the card's
+   `OM3MOD` folder. Elsewhere, **Card folder (.zip)** downloads both: copy them into `OM3MOD` on the card.
 6. Put the card in the camera, switch on and half-press once. Every COLOR starts at 0; turn the Film dial to a
    number to load that look.
 
-Always copy both files together: the names only match their looks if `NAMES.BIN` is copied too.
+Always copy both files together. Moving or emptying looks in the Control Panel changes their numbers, and the
+names follow only if `NAMES.BIN` is copied too.
 
 ### Make a look on the camera
 
@@ -101,10 +102,8 @@ Always copy both files together: the names only match their looks if `NAMES.BIN`
 It works straight away, but the label still says **Empty**: the camera has no way to type a name, and it doesn't
 change `NAMES.BIN`. To name it:
 
-1. Put the card in your computer and open the card's `OM3MOD/LOOKS.BIN` in the Control Panel (**Open…**). The
-   camera's looks appear in the list in their order; one you made shows as "Look n". Empty numbers close up, so
-   check the order (drag looks back) before you export.
-2. Type its name, then export both files back to the card as above.
+1. Put the card in your computer and open the card's `OM3MOD/LOOKS.BIN` in the Control Panel (**Open…**). The camera's looks appear with their numbers; one you made shows as "Look n".
+2. Type its name, then save both files back to the card as above.
 
 Don't change looks on the camera between opening the card's `LOOKS.BIN` and copying the new files back: the
 copy replaces the camera's whole bank. If you save it from the Control Panel without a name, it is labelled "Look n".
@@ -113,7 +112,7 @@ copy replaces the camera's whole bank. If you save it from the Control Panel wit
 
 - **On the camera:** select it on the Film page and change anything; the next half-press saves it. Its name
   stays.
-- **In the Control Panel:** open the card's `LOOKS.BIN`, change or rename it, and export both files back.
+- **In the Control Panel:** open the card's `LOOKS.BIN`, change or rename it, and save both files back.
 
 ## Files on the card (`OM3MOD`)
 

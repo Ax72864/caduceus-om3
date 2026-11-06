@@ -7,7 +7,7 @@ noise reduction, glow / clarity, WB shift, Art Effects, Blacks and Whites, laid 
 of five complete looks for each of COLOR 1–4** that you build on the camera, or in the browser with the **Caduceus
 Control Panel**, and switch between with one dial on the **Film** page.
 
-**Latest: v0.20** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://cakelesscoder.github.io/caduceus-ep7/)** · **[Install guide](docs/INSTALL.md)** ·
+**Latest: v0.20** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
 **[Using it](#using-it)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]
@@ -37,7 +37,7 @@ Control Panel**, and switch between with one dial on the **Film** page.
 | **Look bank** | A **Film** page with 0–5: **1–5** load a whole look (every wheel and Extras value plus Contrast, Sharpness, Shading and Shadows/Midtones/Highlights), **0** is neutral. Five per COLOR, 20 in all. Changes you make are kept in the selected look; a `*` marks a changed look and hold **OK** resets it. | Camera-tested |
 | **Look names** | On the Film page, the label under the wheel shows the selected look's name ("Velvia", "Empty" …) in the camera's own label style, from `NAMES.BIN` made by the Control Panel. | Camera-tested |
 | **Saved on the card** | Your edits and the bank save to `OM3MOD` on the SD card at the next half-press, written to a new file and read back before the old one is replaced. | Camera-tested |
-| **Control Panel** | cakelesscoder's [Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/), one panel for every Caduceus camera: pick **OM SYSTEM OM-3** in its setup pop-up and Export makes the OM-3's `LOOKS.BIN` and `NAMES.BIN`. It edits and previews looks on test photos (or your own) and has the whole Caduceus film-look library. | Works in any browser |
+| **Control Panel** | The Caduceus Control Panel, shared with Caduceus for the E-P7: a switch at the top picks **OM SYSTEM OM-3** or **Olympus PEN E-P7**. On the OM-3 it makes and previews looks on test photos (or your own), then saves them for the card. It starts with 20 Caduceus film looks and takes Caduceus look codes and packs. | Works in any browser |
 
 ## Install
 
@@ -107,22 +107,28 @@ More detail, troubleshooting and FAQ: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 ## Make your own looks: the Control Panel
 
-Looks are made in cakelesscoder's **[Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/)**, the one panel for every Caduceus
-camera. It runs in your browser (nothing is uploaded).
+The **[Caduceus Control Panel](https://androidfanman.github.io/caduceus-om3/)** is where you make and edit looks
+in your browser. It is the same tool as Caduceus for the E-P7: the switch at the very top picks the camera. With
+**OM SYSTEM OM-3** selected:
 
-1. The first time, a setup pop-up asks for your camera: choose **OM SYSTEM OM-3** (later: the **Camera** button).
-2. Your looks are one list. On export, the first 20 colour looks fill the Film page in list order: list positions
-   1–5 become COLOR 1 looks 1–5, 6–10 COLOR 2, and so on. Drag looks in the list to choose their numbers.
-3. Edit Hue, Light and Saturation for each of the 12 colours, the tone, Contrast, Sharpness and Shading, the
-   **Extras** (NR, Glow ↔ Clarity, Art Effect) and the WB shift, with a preview on test photos or your own.
-4. **Export** (with the camera set to OM-3) › **Card folder (.zip)**: unzip at the card's top level, or download
-   `LOOKS.BIN` and `NAMES.BIN` and put both in `OM3MOD`. Keep the `GUIDES.BIN` and `LABELS.BIN` from the release.
-5. **Open…** the card's `OM3MOD/LOOKS.BIN` to edit looks you made on the camera. Empty numbers close up when it
-   opens, so check the order before you export again.
+- The left side shows COLOR 1–4 with looks 1–5, numbered as on the camera's Film page ("Empty" for an unused
+  number). Drag a look to another number, or use ↑ ↓; × empties a number.
+- Edit Hue, Lightness and Saturation for each of the 12 colours, the tone (Highlights, Shadows, Midtones, Blacks,
+  Whites), the camera's Contrast, Sharpness and Shading, the **Extras** (NR, Glow ↔ Clarity, Art Effect) and the WB
+  shift, with a live preview on test photos or your own (hold **Hold: original** to compare; glow and clarity are
+  previewed, Art Effects and NR are not).
+- **Export › Save to card…** (Chrome or Edge on a computer) writes `OM3MOD/LOOKS.BIN` and `NAMES.BIN` (the name
+  pictures for the camera) straight onto the card; **Card folder (.zip)** downloads both.
+- **Open…** the card's `OM3MOD/LOOKS.BIN` to edit looks you made on the camera, then save them back.
+- **Caduceus looks:** **Paste code** takes a Caduceus look code or pack link, and **Open…** a Caduceus pack or E-P7
+  `LOOKS.BIN`. Each colour look becomes an OM-3 look: Hue, Light, Saturation, WB, the tone, Contrast, Vignette
+  (as Shading), NR, glow / clarity and Star Light / Pin Hole carry over; values beyond the OM-3's ±5 are limited, a
+  halation (coloured) glow becomes a plain glow, Blur and monochrome looks are left out, and it says which.
+- **Share looks** / **Share** make a link to all your looks or to one.
 
-What changes for the OM-3: Hue, Light and WB shifts are limited to ±5, Contrast and Sharpness to ±2, a halation
-(coloured) glow becomes a plain glow, and Blur and monochrome looks are left out; the export lists each change.
-The preview is an approximation of the camera: judge the final look in live view.
+Your work stays in the browser (nothing is uploaded). Looks from the earlier OM-3 Look Lab are brought over the
+first time you open it. The preview is an approximation of the camera, good for direction and strength: judge the
+final look in live view. On a Mac, Safari's **File › Add to Dock** makes the Control Panel an app.
 
 ## Using it
 
@@ -232,7 +238,7 @@ Full page-by-page guide: [docs/USING.md](docs/USING.md). Card file formats: [doc
   the bytes this project writes).
 - `card/`: generators for `GUIDES.BIN` (page labels), `LABELS.BIN` (Extras labels) and `LOOKS.BIN`.
 - `tools/mkpatch.py`: makes a release's `patch.json` from a build.
-- `webapp/`: this project's earlier Control Panel source (TypeScript + Vite, from cakelesscoder/caduceus-ep7 with the OM-3
+- `webapp/`: the Caduceus Control Panel source (TypeScript + Vite, from cakelesscoder/caduceus-ep7 with the OM-3
   mode added; see [webapp/README.md](webapp/README.md)). `looklab/` is its build, served by GitHub Pages
   (`VITE_DEFAULT_CAMERA=om3 npm run build`, then copy `dist/` to `looklab/`).
 - `tools/emulator/`: test harness for [om-emu](https://github.com/flatpanda/om-emu) (E147 model).

@@ -3,14 +3,6 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
-## Control Panel moves to cakelesscoder's (no new firmware)
-- Looks for the OM-3 are now made in cakelesscoder's **[Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/)**,
-  the one panel for every Caduceus camera: choose **OM SYSTEM OM-3** in its setup pop-up and **Export** writes
-  `OM3MOD/LOOKS.BIN` and `NAMES.BIN` (it uses this project's OM-3 translator and name pictures). The project page
-  and the docs link there. Looks in the list fill the Film page in order: positions 1–5 are COLOR 1 looks 1–5, and so on.
-- This project's own panel stays reachable at `androidfanman.github.io/caduceus-om3/looklab/` so looks kept in its
-  browser storage can be taken along (Share looks, or Export › LOOKS.BIN and Open… in the new panel).
-
 ## v0.20
 The Color Profile wheel now matches Caduceus for the E-P7: a **Film** page, the colour pages and one **Extras** page
 with the look's effects. Camera-tested.
