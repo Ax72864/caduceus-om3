@@ -13,7 +13,7 @@
 4. Camera off, full battery: **hold OK and switch on**. Steady light = writing (about two minutes, don't touch
    anything); blinking = done. Switch off and on again.
 5. Delete `DCOLYMP/E1479999.BIN` from the card, keep `OM3MOD`.
-6. **Half-press once** after every power-on, then Picture Mode › COLOR 1–4 › **▼**: the wheel opens on the Looks
+6. **Half-press once** after every power-on, then Picture Mode › COLOR 1–4 › **▼**: the wheel opens on the Film
    page, and **INFO** steps through the others.
 
 To undo: flash `SD card files/restore/E1479999.BIN` the same way.
@@ -113,8 +113,8 @@ anything (that is how the same updater behaves on the E-P7): make the files agai
    Saturation (All) → **Hue** → **Light** → **Extras** → back to **Film**. The label under the wheel names the page.
 4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card.
 
-To bring in looks from the [Control Panel](https://androidfanman.github.io/caduceus-om3/) (OM SYSTEM OM-3 selected at
-the top): save `LOOKS.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD` folder, then on the Film page turn the 12 o'clock spot to 1–5. See
+To bring in looks from the [Caduceus Control Panel](https://cakelesscoder.github.io/caduceus-ep7/) (camera set to OM SYSTEM OM-3 in its setup pop-up):
+**Export** `LOOKS.BIN` and `NAMES.BIN`, put them in the card's `OM3MOD` folder, then on the Film page turn the 12 o'clock spot to 1–5. See
 [USING.md](USING.md) for every page.
 
 ## Restore stock firmware
@@ -169,11 +169,11 @@ itself; v0.20 needed that room for the Extras.) Looks saved by v0.19 or earlier 
 
 **Does it change the Monochrome profiles?** No. Only COLOR 1–4. The MONO profiles keep the camera's own editor.
 
-**Can I share looks?** Yes: send a `LOOKS.BIN`, or use **Share looks** in the Control Panel to send a link.
+**Can I share looks?** Yes: send a `LOOKS.BIN`, or share a look code or link from the Control Panel.
 Copying one onto a card replaces that camera's whole bank.
 
-**Can I use Caduceus looks?** Yes: it's the same Control Panel. In OM-3 mode, **Paste code** takes Caduceus look
-codes and pack links, and **Open…** takes packs and E-P7 `LOOKS.BIN` files; each colour look becomes an OM-3 look.
+**Can I use Caduceus looks?** Yes: it's the same Control Panel for both cameras. With the camera set to OM-3, Export
+turns each colour look into an OM-3 look (and lists anything that had to change).
 
 **Why do I have to make the file myself?** OM's licence doesn't allow sharing their firmware, so this project only
 publishes its own changes and the patcher applies them to your copy of the official file.
