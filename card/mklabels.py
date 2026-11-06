@@ -20,7 +20,8 @@ LABELS = ['NR', 'NR Std', 'NR Low', 'NR Off',                     # slice 1: 0 c
           'M', 'G', 'G/M',                                      # slice 4 (G-M): magenta, green, zero
           'Art Off', 'Star', 'Pin Hole', 'Art Off', 'W. Edge', 'Frame',   # slice 5: Caduceus Art Effect ids 0..5
           'Blacks', 'Whites',                                   # slices 6, 7
-          'Vig Cam', 'Vig Off']                                 # slice 8 (VigFix, v0.21): 0 camera, 1 off
+          'Vig Cam', 'Vig Off',                                 # slice 8 (VigFix, v0.21): 0 camera, 1 off
+          'Grain']                                              # slice 9 (v0.21)
 
 
 def font(size):

@@ -74,7 +74,7 @@ EXT1 = (0x6031e920, 0x6031eff0)          # section-1 tail (FF from 0x6031e910, e
 EXT4 = (0x60a8f100, 0x60a8f7f0)
 EXT10 = (0x61aa4300, 0x61aa47f0)
 EXT8 = (0x617e45f0, 0x617e47f0)            # section-8 tail (FF from 0x617e45e0, end 0x617e4800)
-EXT3 = (0x6081fe10, 0x6081fff0)            # section-3 tail (FF from 0x6081fe00, end 0x60820000)
+EXT3 = (0x6081fe10, 0x6081fffc)            # section-3 tail (FF from 0x6081fe00, end 0x60820000)
 EXT5 = (0x60adb5b0, 0x60adb7f0)            # section-5 tail (FF from 0x60adb5a0, end 0x60adb800)
 EXT6 = (0x60f49590, 0x60f497f0)            # section-6 tail (FF from 0x60f49580, end 0x60f49800)          # section-10 tail (FF from 0x61aa42f0, end 0x61aa4800)          # section-4 tail (FF from 0x60a8f088, end 0x60a8f800)
 STATE = 0x62b4dd16
@@ -82,13 +82,13 @@ MAGIC = b'OM3B'
 RANGES = {'hue': (-7, 7), 'light': (-7, 7), 'grain': (0, 6), 'wb_flags': (0, 1), 'wb_ab': (-7, 7),
           'wb_gm': (-7, 7), 'effect_id': (0, 3), 'effect_strength': (0, 5), 'vignette': (-5, 5),
           'flags': (0, 3), 'colour': (0, 1), 'sat': (-5, 5), 'bloom_tint': (0, 4), 'art_effect': (0, 5),
-          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1)}
+          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1), 'fgrain': (0, 5)}
 
 
 def range_table():
     lay = json.loads(LAYOUT.read_text())
     fields = dict(lay['fields']); fields.update(lay['color_fields'])
-    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1]})   # OM-3 Extras (v0.20; VigFix v0.21)
+    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1], 'fgrain': [53, 1]})   # OM-3 Extras (v0.20; VigFix v0.21)
     lo, hi = [0] * 64, [0] * 64
     for name, (off, n, *_) in fields.items():
         a, b = RANGES[name]
@@ -186,6 +186,9 @@ def build(defaults, testfile, out):
         m[o(a) + 1:o(a) + 5] = struct.pack('<i', sy['s_nr'] - a)
     hits = [i for i in range(len(m) - 6) if m[i:i + 6] == b'\xfc\xcc\x21\x8c\x00\x00']
     assert len(hits) == 7, [hex(P.BASE + i) for i in hits]
+    # GRAIN PROBE g1: the classes 0-3 Soft Focus blend setup word in the work-list builder -> g_sf
+    assert bytes(m[o(0x604b9286):o(0x604b928c)]) == b'\xfc\xdd' + struct.pack('<I', 0x604be2aa)
+    struct.pack_into('<I', m, o(0x604b9288), sy['g_sf'])
     ISDEF_SITES = [0x611d18a7, 0x611d18e8, 0x611d18f6, 0x611d1939, 0x611d1946, 0x611d1953, 0x611d1ac3]   # 0x6129ba33 (near call) via .hook_pmod
     for a in ISDEF_SITES:
         assert m[o(a)] == 0xdd and (a + struct.unpack_from('<i', m, o(a) + 1)[0]) & 0xffffffff == 0x6129bad6, hex(a)
@@ -260,7 +263,7 @@ def make_xblock(out, sy, xtag):
     """Assemble the code block, link it at two bases, find the 32-bit fields that move (+delta absolute, -delta
     PC-relative to the firmware), check that relocating the first link gives the second, and pack the block."""
     ext = dict(getter=0x60063380, facade=0x60b8696a, fopen=0x608d4d22, fread=0x608d4eb7, fclose=0x608d4d2b, malloc=0x60024068, sd_crc=sy['sd_crc'], gd_mode=sy['gd_mode'], VDESC=0xa4cf688c, VSTOCK_P=0xa4cf6210, VSTOCK_S=1660, AXIS=684, EDK=687, fx_tail=sy['fx_tail'], fx_back=sy['fx_back'], lv_skip=sy['lv_skip'], c11_ret=0x60504edb,
-               STATE=sy['STATE'], HMAX=sy['HMAX'], POOL=sy['POOL'], MAGIC=sy['MAGIC'])
+               STATE=sy['STATE'], HMAX=sy['HMAX'], POOL=sy['POOL'], MAGIC=sy['MAGIC'], BUFIDX=0x604afdf9, SF_ENT=0x604be2aa, LOCK=0x60075f73, UNLOCK=0x60075fbc, WINMAP=0x60071018, FLUSH=0x60070e69, free=0x6002409a)
     subprocess.run([P.AS, '-o', out / 'xb.o', XB_SRC], check=True)
     imgs, xs = [], None
     for L in (XB_L1, XB_L2):

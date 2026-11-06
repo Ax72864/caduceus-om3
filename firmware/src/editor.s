@@ -109,7 +109,7 @@
  bne 71f
  mov d2,d3
  and 63,d3
- cmp 8,d3
+ cmp 9,d3
  bcc \none
  and 0xc0,d2
  add a2,d2                        /* P + 64*slot */
@@ -430,7 +430,7 @@ s_x:                              /* Extras page: d2 = 64*slot + slice, d1 = val
                                    * xt_tab {slot byte, min, max}; A-B / G-M also turn the slot's WB override on */
  mov d2,d3
  and 63,d3
- cmp 8,d3
+ cmp 9,d3
  bcc s_bad
  mov xt_tab,a3
  add d3,a3
@@ -1408,7 +1408,7 @@ ed_event:
  mov a2,a0
  add d0,a0                        /* slot entry: hue[12] +0, light[12] +12 */
  clr d0
- mov 53,d1                        /* slot +0..52 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix) */
+ mov 54,d1                        /* slot +0..53 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix) */
 2:
  movbu d0,(a0)
  inc a0
@@ -1518,7 +1518,7 @@ ed_isdef:
  movbu (47,a0),d3                 /* Blacks, Whites, Extras Glow/Clarity, Art Effect, NR, VigFix: any non-zero */
  mov (48,a0),d1                   /* +48..51 (slot entries are 4-aligned: P + 32 + 64k) */
  or d1,d3
- movbu (52,a0),d1
+ mov (52,a0),d1                   /* +52..55: VigFix, Grain, two zero bytes */
  or d1,d3
  cmp 0,d3
  bne 7f
@@ -1878,6 +1878,8 @@ pf_cap:
  movbu d0,(49,a3)
  movbu (28,a0),d0                 /* v0.21: slot +52 VigFix -> record +50 */
  movbu d0,(50,a3)
+ movbu (29,a0),d0                 /* slot +53 Grain -> record +51 */
+ movbu d0,(51,a3)
  clr d3
 2:
  mov pf_ids,a0
@@ -2105,7 +2107,7 @@ pf_put:
 7:
  movbu d0,(d3,a0)
  add 2,a1
- cmp pf_bt+18,a1
+ cmp pf_bt+20,a1
  bne 8b
  movbu (7,a0),d0
  or 2,d0
@@ -2141,7 +2143,7 @@ pf_put:
  bne 5b
  ret [d2,d3,a2,a3],40
 pf_bt:                            /* record offset, slot offset - 24 */
- .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28
+ .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28, 51,29
 
 .section .ext1,"ax"
 /* pf_wb: `call pf_wb,[d2,d3,a2,a3],24` from ed_trig, a2 = P: every COLOR on profile 1..5 -> its record (pf_cap);
@@ -2313,7 +2315,7 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
 pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
                                      (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
- .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, 0,0,0,0,0,0,0,0,0,0,0,0,0
+ .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, -5, 0,0,0,0,0,0,0,0,0,0,0,0
 pf_pnew:
  .asciz "C:\\OM3MOD\\LOOKS.NEW"
 pf_pbin:
@@ -2704,7 +2706,7 @@ vl_s:
  * for Frame, in the Art Effect -> flag converter 0x60555e47 (test 2 showed both render on COLOR stills).
  * Stores: the slot bytes (editor), the job flag word in the converter's params block (as stock), own stack. */
 .section .ext9,"ax"
-xt_tab:                           /* Extras slices 1..8: slot byte, min, max (0 = no cell) */
+xt_tab:                           /* Extras slices 1..9: slot byte, min, max (0 = no cell) */
  .byte 51,0,3                     /* 1 NR: 0 Camera, 1 Std, 2 Low, 3 Off (stored; applied in a later test) */
  .byte 49,-5,5                    /* 2 Glow (-) / Clarity (+) */
  .byte 26,-5,5                    /* 3 WB A-B */
@@ -2713,6 +2715,7 @@ xt_tab:                           /* Extras slices 1..8: slot byte, min, max (0 
  .byte 47,-5,5                    /* 6 Blacks */
  .byte 48,-5,5                    /* 7 Whites */
  .byte 52,0,1                     /* 8 VigFix: 0 Camera (Shading Comp. as set), 1 Off (v0.21) */
+ .byte 53,0,5                     /* 9 Grain: 0 off, 1..5 (v0.21) */
 
 /* ------------------------------------------------------------------ v0.20 test 5: code block from the card
  * The Extras effects run from a code block at the end of GUIDES.BIN (built with this firmware; tag XTAG), loaded
@@ -2802,6 +2805,18 @@ s_wt:                             /* leaf: MDR = return, a0 = combiner context; 
  mov (48,a0),a1
  mov 600,d0
  jmp wt_back                      /* 0x605048c7: cmp 0x01010065,a1 */
+
+.section .ext3,"ax"
+g_sf:                             /* grain: the Soft Focus blend setup (work-list word 0x604b9288), `calls` */
+ add -4,sp
+ call xp,[],0
+ add 4,sp
+ cmp 0,a1
+ beq 9f
+ add 56,a1
+ jmp (a1)
+9:
+ jmp 0x604be2aa
 
 .section .ext8,"ax"
 s_cap:                            /* a3 = capture, a2 = params+12 (flags), (-4,a2) = key */
