@@ -2,6 +2,10 @@
 """Developer build of the OM-3 colour editor firmware (needs an MN10300 binutils build) from the official OM-3 1.1
 firmware file, plus a neutral BUNDLES.BIN. Users don't need this: patch.py applies the prebuilt patch.
 
+v0.20 also: the white Frame layers in component 2 (frames.py), the Extras code block (src/xblock.s, linked twice to
+list its relocations) appended to GUIDES.BIN (card/mkguides.py pictures), and LABELS.BIN (card/mklabels.py).
+Outputs in NEW_DIR: E1479999.BIN, main.bin, GUIDES.BIN, LABELS.BIN, BUNDLES.BIN, build.json, xblock.json.
+
 usage: build.py --stock OLY_E_147_1100_0000_0000_3.BIN --toolchain BINUTILS_BUILD_DIR --out NEW_DIR
        (BINUTILS_BUILD_DIR = a binutils build for --target=mn10300-elf: gas/as-new, ld/ld-new, binutils/objcopy, binutils/nm-new)
 
@@ -30,12 +34,22 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_shutter': (0x60415216, bytes.fromhex('cd2d01f024')),
          '.hook_set': (0x60b8798b, bytes.fromhex('dd04d90200f044')),
          '.hook_pmod': (0x6129ba07, bytes.fromhex('0cfcde10ec')),
-         '.hook_tone': (0x605197d7, bytes.fromhex('f1eccdcbf7f038'))}
+         '.hook_tone': (0x605197d7, bytes.fromhex('f1eccdcbf7f038')),
+         '.hook_fx': (0x60555e50, bytes.fromhex('f041a000c068')),
+         '.hook_lv': (0x6046b8bb, bytes.fromhex('f040a064c205cc8e00f8b808a001c905cc84005c04fa408402a001c879')),
+         '.hook_wt': (0x605048c1, bytes.fromhex('f824302c5802')),
+         '.hook_nr1': (0x603c8038, bytes.fromhex('dd48b3c9ffc00c')),
+         '.hook_nr2': (0x603e7891, bytes.fromhex('ddefbac7ffc00c'))}
+XB_SRC = HERE / 'src' / 'xblock.s'
+XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
+ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
 # data words (flash image, patched at build time): stock target -> our symbol
 WORDS = {0x60e57480: (0x60b86de7, 'ed_get'), 0x60e57490: (0x60b86e09, 'pf_cnt'), 0x60e57494: (0x60b87031, 'pf_vbi'), 0x60e57510: (0x60b86e44, 'ed_default'),
          **{a + 4: (0x6122393a, 'ed_init') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
          **{a + 44: (0x6122661b, 'ed_info') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
          **{a + 36: (0x61225d52, 'ed_event') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)}}
+EXT2 = (0x607187a8, 0x60718800)            # section-2 tail (FF from 0x607187a4, end 0x60718800; v0.20)
+EXT7 = (0x6164afd0, 0x6164b000)            # section-7 tail (FF from 0x6164afcc, end 0x6164b000; v0.20)
 EXT9 = (0x619a9670, 0x619a97f0)            # section-9 tail (FF from 0x619a966c, end 0x619a9800)
 # readout value tables (display types 5397/1011/5399): `mov table,a0; mov 11,d3` -> our 22-entry copies
 READOUT = {}
@@ -68,12 +82,13 @@ MAGIC = b'OM3B'
 RANGES = {'hue': (-7, 7), 'light': (-7, 7), 'grain': (0, 6), 'wb_flags': (0, 1), 'wb_ab': (-7, 7),
           'wb_gm': (-7, 7), 'effect_id': (0, 3), 'effect_strength': (0, 5), 'vignette': (-5, 5),
           'flags': (0, 3), 'colour': (0, 1), 'sat': (-5, 5), 'bloom_tint': (0, 4), 'art_effect': (0, 5),
-          'blacks': (-5, 5), 'whites': (-5, 5)}
+          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5)}
 
 
 def range_table():
     lay = json.loads(LAYOUT.read_text())
     fields = dict(lay['fields']); fields.update(lay['color_fields'])
+    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1]})      # v0.20 OM-3 Extras (Glow/Clarity, Frame)
     lo, hi = [0] * 64, [0] * 64
     for name, (off, n, *_) in fields.items():
         a, b = RANGES[name]
@@ -123,7 +138,7 @@ def build(defaults, testfile, out):
     subprocess.run([P.AS, '-I', out, '-o', out / 'p.o', HERE / 'src' / 'editor.s'], check=True)
     subprocess.run([P.LD, '-T', HERE / 'src' / 'editor.ld', '-o', out / 'p.elf', out / 'p.o'], check=True)
     blobs = {}
-    for s in list(HOOKS) + ['.ext1', '.ext4', '.ext10', '.ext6', '.ext5', '.ext3', '.ext8', '.ext9']:
+    for s in list(HOOKS) + ['.ext1', '.ext4', '.ext10', '.ext6', '.ext5', '.ext3', '.ext8', '.ext9', '.ext2', '.ext7']:
         subprocess.run([P.OBJCOPY, '-O', 'binary', '-j', s, out / 'p.elf', out / (s[1:] + '.bin')], check=True)
         blobs[s] = (out / (s[1:] + '.bin')).read_bytes()
     raw = Path(P.STOCK).read_bytes()
@@ -142,7 +157,8 @@ def build(defaults, testfile, out):
     for a, (stock, name) in WORDS.items():
         assert struct.unpack_from('<I', m, o(a))[0] == stock, hex(a)
         assert bytes(m).count(struct.pack('<I', stock)) == sum(1 for v in WORDS.values() if v[0] == stock), hex(stock)
-    for (lo_, hi_), s, ff_from, end in ((EXT1, '.ext1', 0x6031e910, 0x6031f000), (EXT4, '.ext4', 0x60a8f088, 0x60a8f800), (EXT10, '.ext10', 0x61aa42f0, 0x61aa4800), (EXT6, '.ext6', 0x60f49580, 0x60f49800), (EXT5, '.ext5', 0x60adb5a0, 0x60adb800), (EXT3, '.ext3', 0x6081fe00, 0x60820000), (EXT8, '.ext8', 0x617e45e0, 0x617e4800), (EXT9, '.ext9', 0x619a966c, 0x619a9800)):
+    for (lo_, hi_), s, ff_from, end in ((EXT1, '.ext1', 0x6031e910, 0x6031f000), (EXT4, '.ext4', 0x60a8f088, 0x60a8f800), (EXT10, '.ext10', 0x61aa42f0, 0x61aa4800), (EXT6, '.ext6', 0x60f49580, 0x60f49800), (EXT5, '.ext5', 0x60adb5a0, 0x60adb800), (EXT3, '.ext3', 0x6081fe00, 0x60820000), (EXT8, '.ext8', 0x617e45e0, 0x617e4800), (EXT9, '.ext9', 0x619a966c, 0x619a9800), (EXT2, '.ext2', 0x607187a4, 0x60718800), (EXT7, '.ext7', 0x6164afcc, 0x6164b000)):
+        print('SIZE', s, len(blobs[s]), hi_ - lo_, file=sys.stderr)
         assert lo_ + len(blobs[s]) <= hi_, (s, len(blobs[s]))
         assert set(m[o(ff_from):o(end)]) == {0xff} and m[o(ff_from) - 1] != 0xff, s
     for v in (STATE, STATE + 1, STATE + 0x40000000, STATE + 0x40000001):
@@ -178,6 +194,8 @@ def build(defaults, testfile, out):
     m[o(EXT3[0]):o(EXT3[0]) + len(blobs['.ext3'])] = blobs['.ext3']
     m[o(EXT8[0]):o(EXT8[0]) + len(blobs['.ext8'])] = blobs['.ext8']
     m[o(EXT9[0]):o(EXT9[0]) + len(blobs['.ext9'])] = blobs['.ext9']
+    m[o(EXT2[0]):o(EXT2[0]) + len(blobs['.ext2'])] = blobs['.ext2']
+    m[o(EXT7[0]):o(EXT7[0]) + len(blobs['.ext7'])] = blobs['.ext7']
     for a, (stock, name) in READOUT.items():
         assert m[o(a):o(a) + 2] == b'\xfc\xdc' and struct.unpack_from('<I', m, o(a) + 2)[0] == stock, hex(a)
         assert m[o(a) + 6:o(a) + 8] == b'\x8f\x0b', hex(a)
@@ -186,14 +204,34 @@ def build(defaults, testfile, out):
         assert tab == bytes(m[o(stock):o(stock) + 40]) + tab[40:48] + bytes(m[o(stock) + 48:o(stock) + 88]) or True
         struct.pack_into('<I', m, o(a) + 2, sy[name])
         m[o(a) + 7] = 22
+    # v0.20: the code-block tag = 'X' + 3 bytes of the image's SHA-256 (with the placeholder in place)
+    tr = sy['x_tagref']
+    assert m[o(tr):o(tr) + 2] == b'\xfc\xc8' and struct.unpack_from('<I', m, o(tr) + 2)[0] == 0x58000000
+    xtag = 0x58000000 | int.from_bytes(hashlib.sha256(bytes(m)).digest()[:3], 'little')
+    struct.pack_into('<I', m, o(tr) + 2, xtag)
+    xblock = make_xblock(out, sy, xtag)
+    subprocess.run([sys.executable, ROOT / 'card' / 'mkguides.py', out / 'pictures.bin'], check=True)
+    subprocess.run([sys.executable, ROOT / 'card' / 'mklabels.py', out / 'LABELS.BIN'], check=True)
+    g = bytearray((out / 'pictures.bin').read_bytes()); assert g[:4] == b'OM3G' and len(g) % 4 == 0
+    g += xblock
+    struct.pack_into('<I', g, 4, len(g)); struct.pack_into('<I', g, 8, zlib.crc32(bytes(g[12:])) & 0xffffffff)
+    assert len(g) <= 24576
+    (out / 'GUIDES.BIN').write_bytes(bytes(g))
     hdr, trl = mc['hdr'], bytearray(mc['trl'])
     struct.pack_into('<I', trl, 28, 0)
     struct.pack_into('<I', trl, 28, (-(wordsum(hdr) + wordsum(bytes(m)) + wordsum(bytes(trl)))) & 0xFFFFFFFF)
-    pkg = b''.join((hdr + encode(bytes(m)) + bytes(trl)) if i == 0 else (c['hdr'] + c['enc'] + c['trl'])
-                   for i, c in enumerate(comps))
+    import frames                                   # v0.20: white Frame Art Effect layers in component 2
+    c2 = comps[2]; assert c2['addr'] == frames.BASE
+    d2 = frames.patch(c2['dec']); t2 = bytearray(c2['trl'])
+    struct.pack_into('<I', t2, 28, 0)
+    struct.pack_into('<I', t2, 28, (-(wordsum(c2['hdr']) + wordsum(d2) + wordsum(bytes(t2)))) & 0xFFFFFFFF)
+    new = {0: hdr + encode(bytes(m)) + bytes(trl), 2: c2['hdr'] + encode(d2) + bytes(t2)}
+    pkg = b''.join(new.get(i, c['hdr'] + c['enc'] + c['trl']) for i, c in enumerate(comps))
     again = parse(pkg)
     assert all(c['checksum_ok'] for c in again) and again[0]['dec'] == bytes(m) and len(pkg) == len(raw)
-    assert all(again[i]['dec'] == comps[i]['dec'] for i in range(1, len(comps)))
+    assert again[2]['dec'] == d2
+    assert all(again[i]['dec'] == comps[i]['dec'] for i in range(1, len(comps)) if i != 2)
+    (out / 'comp2.sha').write_text(hashlib.sha256(c2['dec']).hexdigest() + ' ' + hashlib.sha256(d2).hexdigest() + '\n')
     (out / 'main.bin').write_bytes(bytes(m)); (out / 'E1479999.BIN').write_bytes(pkg)
     nm = subprocess.run([P.TC / 'binutils/nm-new', out / 'p.elf'], capture_output=True, text=True).stdout
     syms = {l.split()[2]: int(l.split()[0], 16) for l in nm.splitlines() if len(l.split()) == 3}
@@ -205,6 +243,52 @@ def build(defaults, testfile, out):
     (out / 'build.json').write_text(json.dumps(rep, indent=1))
     print(json.dumps({k: v for k, v in rep.items() if k != 'symbols'}, indent=1))
     return syms
+
+
+def make_xblock(out, sy, xtag):
+    """Assemble the code block, link it at two bases, find the 32-bit fields that move (+delta absolute, -delta
+    PC-relative to the firmware), check that relocating the first link gives the second, and pack the block."""
+    ext = dict(getter=0x60063380, facade=0x60b8696a, fopen=0x608d4d22, fread=0x608d4eb7, fclose=0x608d4d2b, malloc=0x60024068, sd_crc=sy['sd_crc'], gd_mode=sy['gd_mode'], VDESC=0xa4cf688c, VSTOCK_P=0xa4cf6210, VSTOCK_S=1660, AXIS=684, EDK=687, fx_tail=sy['fx_tail'], fx_back=sy['fx_back'], lv_skip=sy['lv_skip'], c11_ret=0x60504edb,
+               STATE=sy['STATE'], HMAX=sy['HMAX'], POOL=sy['POOL'], MAGIC=sy['MAGIC'])
+    subprocess.run([P.AS, '-o', out / 'xb.o', XB_SRC], check=True)
+    imgs, xs = [], None
+    for L in (XB_L1, XB_L2):
+        d = {**ext, 'XB_LINK': L}
+        subprocess.run([P.LD, '-Ttext', hex(L), '-e', '_start', *[f'--defsym={k}={v:#x}' for k, v in d.items()],
+                        '-o', out / f'xb{L:x}.elf', out / 'xb.o'], check=True)
+        subprocess.run([P.OBJCOPY, '-O', 'binary', '-j', '.text', out / f'xb{L:x}.elf', out / f'xb{L:x}.bin'], check=True)
+        imgs.append((out / f'xb{L:x}.bin').read_bytes())
+        if xs is None:
+            nm = subprocess.run([P.TC / 'binutils/nm-new', out / f'xb{L:x}.elf'], capture_output=True, text=True).stdout
+            xs = {l.split()[2]: int(l.split()[0], 16) - L for l in nm.splitlines() if len(l.split()) == 3 and int(l.split()[0], 16) >= L}
+    a, b = imgs; assert len(a) == len(b)
+    delta = (XB_L2 - XB_L1) & 0xffffffff
+    rel, i = [], 0
+    while i < len(a):
+        if a[i] == b[i]:
+            i += 1; continue
+        for p in range(max(0, i - 3), i + 1):
+            if p + 4 > len(a): continue
+            va, vb = struct.unpack_from('<I', a, p)[0], struct.unpack_from('<I', b, p)[0]
+            dd = (vb - va) & 0xffffffff
+            if dd == delta: rel.append(p | 0x80000000); break
+            if dd == (-delta) & 0xffffffff: rel.append(p); break
+        else:
+            raise SystemExit(f'code block: unexplained difference at +{i:#x}')
+        i = p + 4
+    chk = bytearray(a)
+    for e in rel:
+        p, d = e & 0x7fffffff, delta if e >> 31 else -delta
+        struct.pack_into('<I', chk, p, (struct.unpack_from('<I', chk, p)[0] + d) & 0xffffffff)
+    assert bytes(chk) == b, 'relocation check'
+    n = xs['xb_end']; assert n % 4 == 0 and len(a) >= n and not any(a[n:]) and all((e & 0x7fffffff) + 4 <= n for e in rel)
+    code = bytearray(a[:n])
+    struct.pack_into('<I', code, xs['xb_nrel'], len(rel))
+    blk = bytes(code) + b''.join(struct.pack('<I', e) for e in rel)
+    blk += struct.pack('<IIII', xtag, len(blk) + 16, len(code), len(rel))
+    (out / 'xblock.json').write_text(json.dumps(dict(tag=hex(xtag), code=len(code), relocs=len(rel), link=hex(XB_L1),
+                                                    entries={k: hex(v) for k, v in xs.items() if k.startswith('xb_')}), indent=1))
+    return blk
 
 
 C1 = {'hue': [5] * 12, 'light': [0] * 12}

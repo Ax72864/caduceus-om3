@@ -9,7 +9,8 @@ Without --release it makes the newest version, and when run from a terminal it o
 
 Output (in --out, default "SD card files" next to this script):
   DCOLYMP/E1479999.BIN   the modified firmware: copy the DCOLYMP folder to the top of the SD card
-  OM3MOD/GUIDES.BIN      page labels for the wheel editor
+  OM3MOD/GUIDES.BIN      page labels for the wheel editor (from v0.20 also the Extras code: keep it with its firmware)
+  OM3MOD/LABELS.BIN      the Extras dial labels (v0.20)
   restore/E1479999.BIN   the official firmware under the SD-update name, to go back to stock
 
 With no --stock, it looks for the official file next to this script, in the project folder and in Downloads, and
@@ -120,6 +121,37 @@ def find_stock():
     return None
 
 
+def white_frames(comp, spec):
+    """The Frame Art Effect layers made white (frames.py: white outside the stock window, our own JPEG bytes). Only the
+    16-byte groups of the changed layers are decoded and re-encoded; the trailer checksum is moved by their sum."""
+    import frames
+    base = int(spec['base'], 16)
+    enc, trl = bytearray(comp['enc']), bytearray(comp['trl'])
+    def region(o, n):
+        lo, hi = o & ~15, (o + n + 15) & ~15
+        if hi > len(enc):
+            raise Refuse('the frame pictures are not where expected')
+        return lo, bytearray(decode(bytes(enc[lo:hi])))
+    dlo, d = region(0x400, 16 * 32)
+    delta = 0
+    for k, w, h, x0, x1, y0, y1 in spec['layers']:
+        a, n = struct.unpack_from('<II', d, 0x400 + 16 * k - dlo)
+        o = a - base
+        lo, reg = region(o, n)
+        hd = frames.header(w, h)
+        if bytes(reg[o + 0x20 - lo:o + 0x20 - lo + len(hd)]) != hd or any(reg[o - lo:o + 0x20 - lo]):
+            raise Refuse(f'frame picture {k} is not the expected one')
+        new = frames.layer(w, h, (x0, x1, y0, y1))
+        if len(new) > n - 0x20:
+            raise Refuse(f'frame picture {k}: no room')
+        old = bytes(reg)
+        reg[o + 0x20 - lo:o + n - lo] = new + bytes(n - 0x20 - len(new))
+        delta += wordsum(reg) - wordsum(old)
+        enc[lo:lo + len(reg)] = encode(reg)
+    struct.pack_into('<I', trl, 28, (struct.unpack_from('<I', trl, 28)[0] - delta) & 0xFFFFFFFF)
+    return comp['hdr'] + bytes(enc) + bytes(trl)
+
+
 def apply(raw, patch):
     if len(raw) != patch['stock_size'] or sha(raw) != patch['stock_sha256']:
         raise Refuse(f'this is not the official {patch["stock_file"]} (size or SHA-256 differs). '
@@ -137,7 +169,11 @@ def apply(raw, patch):
     hdr, trl = comps[0]['hdr'], bytearray(comps[0]['trl'])
     struct.pack_into('<I', trl, 28, 0)
     struct.pack_into('<I', trl, 28, (-(wordsum(hdr) + wordsum(main) + wordsum(trl))) & 0xFFFFFFFF)
-    pkg = hdr + encode(main) + bytes(trl) + raw[64 + len(comps[0]['enc']):]
+    parts = [hdr + encode(main) + bytes(trl)] + [c['hdr'] + c['enc'] + c['trl'] for c in comps[1:]]
+    if 'frames' in patch:                          # v0.20: white Frame layers in the resource component
+        k = patch['frames']['component']
+        parts[k] = white_frames(comps[k], patch['frames'])
+    pkg = b''.join(parts)
     if len(pkg) != len(raw) or sha(pkg) != patch['result_sha256']:
         raise Refuse('internal: the update package does not match the expected SHA-256')
     if decode(parse(pkg)[0]['enc']) != bytes(main):
@@ -201,9 +237,10 @@ def main():
         (out / sub).mkdir(parents=True, exist_ok=True)
     (out / 'DCOLYMP' / 'E1479999.BIN').write_bytes(pkg)
     (out / 'restore' / 'E1479999.BIN').write_bytes(raw)
-    g = rdir / 'GUIDES.BIN'
-    if g.is_file():
-        shutil.copyfile(g, out / 'OM3MOD' / 'GUIDES.BIN')
+    for name in ('GUIDES.BIN', 'LABELS.BIN'):          # page labels + Extras code (v0.20), Extras dial labels (v0.20)
+        g = rdir / name
+        if g.is_file():
+            shutil.copyfile(g, out / 'OM3MOD' / name)
     (out / 'VERSION.txt').write_text(f'{patch["name"]} {patch["version"]}\n')
     print(f'Done ({patch["version"]}): {out}')
     print('  Copy DCOLYMP and OM3MOD to the top of the SD card, then hold OK while turning the camera on.')

@@ -2,6 +2,7 @@
 *.BIN
 *.bin
 !card/GUIDES.BIN
+!card/LABELS.BIN
 SD card files/
 out*/
 __pycache__/
@@ -9,6 +10,7 @@ __pycache__/
 .DS_Store
 *.omsd
 !releases/*/GUIDES.BIN
+!releases/*/LABELS.BIN
 
 # web app (build output is published as looklab/)
 webapp/node_modules/

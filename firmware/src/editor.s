@@ -86,7 +86,7 @@
  bne \miss
  movbu (AXIS,a2),d3
  add -1,d3
- cmp 4,d3
+ cmp 4,d3                         /* 1..4: Light, Hue, Extras, Film */
  bcc \miss
  .endm
 
@@ -105,30 +105,23 @@
  add LIDX-32,a2
  bra 74f
 76:
- cmp 2,d3
+ cmp 2,d3                         /* v0.20 Extras page: slice 0..7 (1..8 clockwise from 12 o'clock) -> slot byte xt_tab */
  bne 71f
  mov d2,d3
  and 63,d3
+ cmp 8,d3
+ bcc \none
  and 0xc0,d2
- add d2,a2
- cmp 0,d3                         /* WB page: 12 o'clock A-B, 6 G-M, 3 Blacks, 9 Whites */
- bne 72f
- add 26,a2
- bra 74f
-72:
- cmp 6,d3
- bne 73f
- add 27,a2
- bra 74f
-73:
- cmp 3,d3
- bne 75f
- add 47,a2
- bra 74f
-75:
- cmp 9,d3
- bne \none
- add 48,a2
+ add a2,d2                        /* P + 64*slot */
+ mov xt_tab,a2
+ add d3,a2
+ add d3,a2
+ add d3,a2
+ movbu (a2),d3
+ cmp 0,d3
+ beq \none
+ mov d2,a2
+ add d3,a2
  bra 74f
 71:
  add d2,a2
@@ -334,13 +327,14 @@ ed_get:
  cmp 12,d2
  bcc 1f
  PVAL g_miss
- movbu (AXIS,a2),d3               /* only on the Hue / Light / WB / Looks pages: else stock, id unchanged */
+ movbu (AXIS,a2),d3               /* only on the Hue / Light / Extras / Film pages: else stock, id unchanged */
  add -1,d3
  cmp 4,d3
  bcc g_miss
  movbu (EDK,a2),d3                /* -> sector id 928 + 12k + slice of the open editor */
  cmp 4,d3
  bcc g_miss
+ call vl_s,[d2,d3,a2,a3],20       /* v0.20: the dial label ("Vivid") names the Extras slice (code block) */
  mov d3,d0
  add d0,d0
  add d3,d0
@@ -403,7 +397,7 @@ ed_set:
  jmp s_look                       /* Looks page (sec 3) */
 1:
  cmp 2,d3
- beq s_wb
+ beq s_x
  cmp 0,d3
  bne 4f
  add 12,d2                        /* Light */
@@ -432,35 +426,41 @@ s_dirty2:
  mov d3,a0
  mov a2,a1
  jmp manager
-s_wb:                             /* WB page: 12 o'clock -> wb_ab (+26), 6 o'clock -> wb_gm (+27),
-                                   * 3 o'clock -> Blacks (+47), 9 o'clock -> Whites (+48); others refused */
+s_x:                              /* Extras page: d2 = 64*slot + slice, d1 = value; a3 free (saved by the setter frame).
+                                   * xt_tab {slot byte, min, max}; A-B / G-M also turn the slot's WB override on */
  mov d2,d3
  and 63,d3
- and 0xc0,d2
- add 58,d2                        /* 64*slot + 32 + 26 */
+ cmp 8,d3
+ bcc s_bad
+ mov xt_tab,a3
+ add d3,a3
+ add d3,a3
+ add d3,a3
+ movbu (a3),d3
  cmp 0,d3
- beq 5f
- cmp 6,d3
- beq 6f
- add 21,d2                        /* 64*slot + 32 + 47 */
- cmp 3,d3
- beq 7f
- inc d2                           /* +48 */
- cmp 9,d3
- bne s_bad
-7:
- movbu d1,(d2,a2)                 /* Blacks / Whites: the value, no WB flag */
- bra s_dirty
-6:
- inc d2
-5:
- movbu d1,(d2,a2)                 /* the value first ... */
+ beq s_bad
  and 0xc0,d2
- add 57,d2                        /* wb_flags (+25): bit0 on, bit7 off */
+ add 32,d2
+ add d3,d2                        /* 64*slot + 32 + byte */
+ movbu (1,a3),d3
+ extb d3
+ cmp d3,d1
+ blt s_bad
+ movbu (2,a3),d3
+ extb d3
+ cmp d3,d1
+ bgt s_bad
+ movbu d1,(d2,a2)                 /* the value first ... */
+ movbu (a3),d3
+ cmp 28,d3
+ bcc 7f                           /* not WB */
+ and 0xc0,d2
+ add 57,d2                        /* ... then wb_flags (+25): bit0 on, bit7 off */
  movbu (d2,a2),d1
  or 1,d1
  and 0x7f,d1
  movbu d1,(d2,a2)
+7:
  bra s_dirty
 s_bad:
  clr d0
@@ -958,9 +958,7 @@ k_go:
  mov EMAGIC,d0
  mov d0,(EMARK,a2)
 6:
- call k_cur,[a2],8                  /* d0 = 0 ok, (16,sp) = cursor value */
- cmp 0,d0
- bne f_no
+ call k_ad,[a2],8                 /* (16,sp) = the ALL state (2201 + k), as the stock INFO handler reads it */
  mov (16,sp),d0
  cmp 255,d0
  beq k_all
@@ -976,9 +974,7 @@ k_all:
  mov (8,sp),a1
  calls stock_info                 /* keeps d2/d3/a2/a3 */
  mov d0,d2                        /* its result */
- call k_cur,[a2],8
- cmp 0,d0
- bne 7f
+ call k_ad,[a2],8
  mov (16,sp),d0
  cmp 255,d0
  bne k_step
@@ -987,7 +983,7 @@ k_all:
  ret [d2,d3,a2,a3],40
 k_step:
  mov (20,sp),a2
- movbu (AXIS,a2),d0               /* S -> H -> L -> WB/BW -> (Looks, when LOOKS.BIN loaded) -> S */
+ movbu (AXIS,a2),d0               /* S -> H -> L -> Extras -> (Film, when LOOKS.BIN loaded) -> S */
  mov 2,d1
  cmp 0,d0
  beq 8f
@@ -1019,7 +1015,7 @@ k_step:
  bne 9b
  call k_cur,[a2],8                  /* poke: the cursor setting re-written with its own value */
  cmp 0,d0
- bne 10f
+ bne 10f                          /* no value (yet): no poke */
  call facade,[],4
  mov (a0),a2
  mov (4,a2),a2                    /* SetValue(id, mode 0, value) */
@@ -1030,6 +1026,17 @@ k_step:
 10:
  mov 1,d0
  ret [d2,d3,a2,a3],40
+/* k_ad: `call k_ad,[a2],8` from ed_info's frame (as k_cur): (24,sp) <- the ALL state. The code block reads the stock
+ * INFO handler's setting 2201 + k (0x615ac0b4) and, when that is not 255, the cursor 2197 + k (the camera shows ALL in
+ * either, depending on the slice it was entered from). Without a code block: k_cur (2197 + k only). */
+k_ad:
+ call xp,[],0
+ cmp 0,a1
+ beq 9f
+ add 40,a1
+ jmp (a1)
+9:
+ jmp k_cur
 f_no:
  mov a3,a0
  mov 0x9014,d0
@@ -1039,6 +1046,7 @@ f_no:
  movm (sp),[d2,d3,a2,a3]
  jmp stock_info
 
+.section .ext1,"ax"                /* v0.20 test 5: k_cur moved from the sec-6 tail (x_load) */
 /* k_cur: `call k_cur,[a2],8` from ed_info's frame (sp = ed_info's sp - 8: its (12) is our (20), its (16) our (24)):
  * facade GetValue(cursor id, &value) -> d0 (0 = ok). Keeps d2/d3/a2/a3. */
 k_cur:
@@ -1090,6 +1098,7 @@ ext6_end:
 gd_load:
  clr d0
  mov d0,(GPTR,a2)
+ mov d0,(XPTR,a2)                 /* v0.20: no code block until this load has one */
  mov gd_path,a0
  mov gd_mode,a1
  call fopen,[],4
@@ -1134,6 +1143,7 @@ gd_load:
  bne 7f
  mov (8,sp),d0
  mov d0,(GPTR,a2)                 /* published last */
+ call x_load,[d2,d3],12           /* v0.20: the code block, if this file carries one for this firmware */
  bra 9f
 7:
  mov (8,sp),a0
@@ -1398,16 +1408,12 @@ ed_event:
  mov a2,a0
  add d0,a0                        /* slot entry: hue[12] +0, light[12] +12 */
  clr d0
- mov 28,d1                        /* hue[12], light[12], +24 grain, +25 wb_flags, +26 A-B, +27 G-M */
+ mov 52,d1                        /* v0.20: slot +0..51 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR) */
 2:
  movbu d0,(a0)
  inc a0
  add -1,d1
  bne 2b
- movbu d0,(a0)                    /* +28 effect id, +29 glow strength */
- movbu d0,(1,a0)
- movbu d0,(19,a0)                 /* +47 Blacks, +48 Whites (a0 = entry + 28) */
- movbu d0,(20,a0)
  mov 1,d0
  movbu d0,(DIRTY,a2)              /* saved to the card on the next half-press */
  cmp 0,d2
@@ -1509,13 +1515,15 @@ ed_isdef:
  add 64,a0
  bra 81b
 82:
- movbu (29,a0),d3                 /* Glow strength */
- cmp 0,d3
- bne 7f
- movbu (47,a0),d3                 /* Blacks / Whites */
- cmp 0,d3
- bne 7f
- movbu (48,a0),d3
+ movbu (47,a0),d3                 /* Blacks, Whites, v0.20 Extras Glow/Clarity, Art Effect, NR: any non-zero */
+ movbu (48,a0),d1
+ or d1,d3
+ movbu (49,a0),d1
+ or d1,d3
+ movbu (50,a0),d1
+ or d1,d3
+ movbu (51,a0),d1
+ or d1,d3
  cmp 0,d3
  bne 7f
  movbu (25,a0),d3                 /* WB on: bit0 set, bit7 clear */
@@ -1866,6 +1874,12 @@ pf_cap:
  movbu d0,(39,a3)
  movbu (24,a0),d0
  movbu d0,(40,a3)
+ movbu (25,a0),d0                 /* v0.20: slot +49 Glow/Clarity, +50 Frame -> record +47, +48 */
+ movbu d0,(47,a3)
+ movbu (26,a0),d0
+ movbu d0,(48,a3)
+ movbu (27,a0),d0                 /* slot +51 NR -> record +49 */
+ movbu d0,(49,a3)
  clr d3
 2:
  mov pf_ids,a0
@@ -2082,21 +2096,19 @@ pf_put:
  inc a0
  add -1,d1
  bne 2b
- mov 36,d2                        /* rec +36..40 -> slot +25..27, +47, +48 */
- mov 1,d3
- call pf_b,[],0
- mov 37,d2
- mov 2,d3
- call pf_b,[],0
- mov 38,d2
- mov 3,d3
- call pf_b,[],0
- mov 39,d2
- mov 23,d3
- call pf_b,[],0
- mov 40,d2
- mov 24,d3
- call pf_b,[],0
+ mov pf_bt,a1                     /* rec +36..40, +47, +48 -> slot +25..27, +47, +48, +49, +50 (0 for neutral) */
+8:
+ movbu (a1),d2
+ movbu (1,a1),d3
+ clr d0
+ cmp 0,a3
+ beq 7f
+ movbu (d2,a3),d0
+7:
+ movbu d0,(d3,a0)
+ add 2,a1
+ cmp pf_bt+16,a1
+ bne 8b
  movbu (7,a0),d0
  or 2,d0
  movbu d0,(7,a0)                  /* +31 flags: H/L on */
@@ -2130,17 +2142,8 @@ pf_put:
  cmp 18,d3
  bne 5b
  ret [d2,d3,a2,a3],40
-/* pf_b: `call pf_b,[],0` from pf_put: slot (a0 = entry + 24) + d3 <- record (the caller's (16,sp); same sp here) + d2,
- * 0 for neutral. Uses d0, d1, a1; returns with retf (MDR). */
-pf_b:
- clr d0
- mov (16,sp),a1
- cmp 0,a1
- beq 1f
- movbu (d2,a1),d0
-1:
- movbu d0,(d3,a0)
- retf [],0
+pf_bt:                            /* record offset, slot offset - 24 */
+ .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27
 
 .section .ext1,"ax"
 /* pf_wb: `call pf_wb,[d2,d3,a2,a3],24` from ed_trig, a2 = P: every COLOR on profile 1..5 -> its record (pf_cap);
@@ -2312,13 +2315,11 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
 pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
                                      (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
- .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, 0,0,0,0,0,0,0,0,0,0,0,0,0,0
 pf_pnew:
  .asciz "C:\\OM3MOD\\LOOKS.NEW"
 pf_pbin:
  .asciz "C:\\OM3MOD\\LOOKS.BIN"
-pf_pold:
- .asciz "C:\\OM3MOD\\PROFILES.BIN"
 
 /* ------------------------------------------------------------------ Profiles page dial range 0..5 (test 16b)
  * The dial's value list is built from the facade's count (+28) and value-by-index (+32) every time the editor's
@@ -2674,16 +2675,163 @@ ei_page:
  ret [],4
 
 /* pf_open (v0.19): `call pf_open,[],4` -> a0 = fopen(LOOKS.BIN), or when there is none fopen(PROFILES.BIN), the
- * name before v0.19 (read once; the next save writes LOOKS.BIN), or 0. Uses d0, d1, a0, a1 (as fopen). */
-.section .ext5,"ax"
-pf_open:
+ * name before v0.19 (read once; the next save writes LOOKS.BIN), or 0. Uses d0, d1, a0, a1 (as fopen).
+ * v0.20: moved to the section-7 tail (runs only from the gated half-press load). */
+.section .ext7,"ax"
+pf_open:                          /* v0.20: LOOKS.BIN only (a v0.17/v0.18 PROFILES.BIN: rename it, same format) */
  mov pf_pbin,a0
  mov gd_mode,a1
  call fopen,[],4
- cmp 0,a0
- bne 1f
- mov pf_pold,a0
- mov gd_mode,a1
- call fopen,[],4
-1:
  ret [],4
+
+/* vl_s: `call vl_s,[d2,d3,a2,a3],20` from ed_get's readout path, d2 = slice, a2 = P; keeps d0..d1? no: keeps a0, a1
+ * (and the frame's d2, d3, a2, a3). Code block +48 does the work; without one, nothing. */
+vl_s:
+ mov a0,a3
+ mov a1,d3
+ call xp,[],0
+ cmp 0,a1
+ beq 9f
+ add 48,a1
+ jmp (a1)
+9:
+ mov a3,a0
+ mov d3,a1
+ ret [d2,d3,a2,a3],20
+
+/* ------------------------------------------------------------------ v0.20 Extras (test 3)
+ * Extras page (axis 5, INFO after WB/BW): 12 o'clock Glow/Clarity -5..5 at slot +49 (- = Glow; + = Clarity, not yet
+ * rendered), 6 o'clock Frame at slot +50 (> 0 = on). Look records +47/+48. A COLOR still (no stock Art Effect)
+ * gets job flag 0x80 (the stock Soft Focus passes at the stock weight 600) for Glow and 0x8000 (the Frame passes)
+ * for Frame, in the Art Effect -> flag converter 0x60555e47 (test 2 showed both render on COLOR stills).
+ * Stores: the slot bytes (editor), the job flag word in the converter's params block (as stock), own stack. */
+.section .ext9,"ax"
+xt_tab:                           /* Extras slices 1..8: slot byte, min, max (0 = no cell) */
+ .byte 51,0,3                     /* 1 NR: 0 Camera, 1 Std, 2 Low, 3 Off (stored; applied in a later test) */
+ .byte 49,-5,5                    /* 2 Glow (-) / Clarity (+) */
+ .byte 26,-5,5                    /* 3 WB A-B */
+ .byte 27,-5,5                    /* 4 WB G-M */
+ .byte 50,0,5                     /* 5 Art Effect: 0 Off, 1 Star Light, 2 Pin Hole, 3 -, 4 White Edge, 5 Frame (Caduceus ids) */
+ .byte 47,-5,5                    /* 6 Blacks */
+ .byte 48,-5,5                    /* 7 Whites */
+ .byte 0,0,0                      /* 8 VigFix: not yet */
+
+/* ------------------------------------------------------------------ v0.20 test 5: code block from the card
+ * The Extras effects run from a code block at the end of GUIDES.BIN (built with this firmware; tag XTAG), loaded
+ * with the guide pictures at the half-press load, relocated in its heap buffer by its own entry 0, and published at
+ * P+XPTR (0 = none). Every hook below goes stock when there is no block. Stubs that run inside section-2 code live in
+ * the section-2 tail (always loaded there). Block entries: +0 relocate, +8 capture flags, +16 live-view flags,
+ * +24 Soft Focus weight, +32 stills NR read. Stores here: P+XPTR (x_load, gd_load) only. */
+.section .hook_fx,"ax"
+ jmp s_cap                        /* stock 0x60555e50: movbu (a1),d0; cmp 0,d0; blt 0x60555ebc */
+ nop
+
+/* 0x6046b8bb..0x6046b8d7 (record -> development request, Art Effect gate): the same checks in fewer bytes, plus
+ * COLOR (picture mode 11) -> s_lv. Stock: (8,sp) = d2 here (record+234 == 1), record+644 = (396,a3). */
+.section .hook_lv,"ax"
+ cmp 1,d2
+ beq lv_x                         /* 0x6046b8ee: bra 0x6046b94f (no Art Effect) */
+ movbu (396,a3),d0
+ cmp 1,d0
+ beq lv_x
+ movbu (a0),d0                    /* picture mode (record+250) */
+ cmp 11,d0
+ bne 1f
+ jmp s_lv
+1:
+ cmp 100,d0
+ blt lv_x
+ nop
+ nop                              /* -> 0x6046b8d8: movbu (4,a3),d0 (the Art Effect switch) */
+
+.section .hook_wt,"ax"
+ jmp s_wt                         /* stock 0x605048c1: mov (48,a0),a1; mov 600,d0 */
+ nop
+
+.section .hook_nr1,"ax"
+ call s_nr,[d2,d3],12             /* stock 0x603c8038: call getter (0x9719 stills Noise Filter) */
+.section .hook_nr2,"ax"
+ call s_nr,[d2,d3],12             /* stock 0x603e7891 (capture +37674) */
+
+.section .ext2,"ax"
+/* xp: `call xp,[],0` -> a1 = the code block (relocated) or 0. Uses d0; returns through MDR. */
+xp:
+ movhu (STATE),d0
+ add -1,d0
+ btst 3,d0
+ bne 1f
+ mov d0,a1
+ add POOL,a1
+ mov (XPTR,a1),a1
+ retf [],0
+1:
+ mov 0,a1
+ retf [],0
+
+s_lv:                             /* d0 = 11, a2 = request, a3 = record+248; d3 live */
+ call xp,[],0
+ cmp 0,a1
+ beq 9f
+ add 16,a1
+ jmp (a1)
+9:
+ jmp lv_skip                      /* 0x6046b94f */
+
+s_nr:                             /* the site's `call ...,[d2,d3],12` frame; d0 key, d1, a0 as for the getter */
+ mov d0,d3
+ call xp,[],0
+ mov d3,d0
+ cmp 0,a1
+ beq 9f
+ add 32,a1
+ jmp (a1)
+9:
+ jmp getter
+
+.section .ext5,"ax"
+s_wt:                             /* leaf: MDR = return, a0 = combiner context; keep a0 for the stock getter */
+ mov (48,a0),a1
+ cmp 11,a1                        /* job key 11: COLOR */
+ bne 9f
+ mov mdr,d1
+ call xp,[],0
+ mov d1,mdr
+ cmp 0,a1
+ beq 9f
+ add 24,a1
+ jmp (a1)
+9:
+ mov (48,a0),a1
+ mov 600,d0
+ jmp wt_back                      /* 0x605048c7: cmp 0x01010065,a1 */
+
+.section .ext8,"ax"
+s_cap:                            /* a3 = capture, a2 = params+12 (flags), (-4,a2) = key */
+ call xp,[],0
+ cmp 0,a1
+ beq 9f
+ add 8,a1
+ jmp (a1)
+9:
+ mov 38225,a1                     /* as stock 0x60555e4b */
+ add a3,a1
+ movbu (a1),d0
+ jmp fx_back
+
+.section .ext6,"ax"
+/* x_load: `call x_load,[d2,d3],12` from gd_load after the pictures are published, a2 = P. Block at the end of the
+ * file: ... code, relocations, {tag, end - code, code length, count}. */
+x_load:
+ mov (GPTR,a2),a0
+ mov (4,a0),d0
+ add d0,a0                        /* end */
+ mov (-16,a0),d0
+x_tagref:
+ cmp XTAG,d0
+ bne 9f
+ mov (-12,a0),d0
+ sub d0,a0                        /* code */
+ calls (a0)                       /* relocate in place -> d0 = code */
+ mov d0,(XPTR,a2)
+9:
+ ret [d2,d3],12

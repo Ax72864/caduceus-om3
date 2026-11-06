@@ -123,7 +123,7 @@ function blurredCopy(src: Float32Array, w: number, h: number, sw: number, sigma:
 }
 
 /** camera 'om3' (Caduceus for OM-3): hue turns toward the clockwise neighbour (OM-3 camera-tested direction), no
- *  noise filter / glow / clarity, and the profile's Sharpness and Shading (vignette) are previewed. */
+ *  noise filter preview; glow / clarity (v0.20) and the profile's Sharpness and Shading (vignette) are previewed. */
 export interface PreviewOptions { advice: boolean; camera?: 'ep7' | 'om3' }
 
 /** Render `look` from `src` (8-bit sRGB RGBA) into `dst` (same size). */
@@ -179,7 +179,7 @@ export function renderLook(src: ImageData, dst: ImageData, look: Look, opt: Prev
     img[q] = R; img[q + 1] = G; img[q + 2] = B;
   }
   // 5. bloom / halation (Soft Focus blend of a 160-px-wide blurred copy) or clarity (large-radius local contrast)
-  const e = om3 ? null : look.effect;
+  const e = look.effect;                     // OM-3 v0.20: glow (no colour) and clarity too
   if (e && e.strength >= 1) {
     const st = Math.min(5, e.strength) - 1;
     if (e.type === 'clarity') {

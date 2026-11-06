@@ -1,20 +1,26 @@
 // OM SYSTEM OM-3 with Caduceus for OM-3 (androidfanman/caduceus-om3): the profile bank and its card files.
-// The camera has 5 profiles for each of COLOR 1-4 (its Profiles page, dial 0-5). A profile holds the four wheels
-// (Saturation, Hue, Light, WB/BW), the tone (Shadows / Midtones / Highlights on the camera's own tone settings,
-// Blacks / Whites on the WB/BW page) and the camera's Contrast, Sharpness and Shading. Colour only: no noise filter,
-// glow / clarity, Art Effects or monochrome looks.
+// The camera has 5 looks for each of COLOR 1-4 (its Film page, dial 0-5). A look holds the wheels (Saturation, Hue,
+// Light), the tone (Shadows / Midtones / Highlights on the camera's own tone settings, Blacks / Whites on the Extras
+// page), the camera's Contrast, Sharpness and Shading and, from v0.20, the Extras page: NR (the camera's stills Noise
+// Filter: Camera / Std / Low / Off), Glow (-5..-1) / Clarity (1..5), WB A-B / G-M and an Art Effect (Star Light, Pin
+// Hole, White Edge, Frame). Colour only: no glow colour (tint) and no monochrome looks.
 //
 // Card files (C:\OM3MOD\, little-endian):
 //   PROFILES.BIN v1, 1632 B: 'OM3P' | 1632 | crc32(12..) | u16 1 | u16 20 | sel[4] | 12 zero | 20 x 64-B records
 //     (COLOR k profile v at 5k + v - 1: hue[12] +0, light[12] +12, sat[12] +24, +36 WB on, +37 A-B, +38 G-M,
-//     +39 Blacks, +40 Whites, +41 Contrast, +42 Sharpness, +43 Shading, +44 Shadows, +45 Midtones, +46 Highlights)
+//     +39 Blacks, +40 Whites, +41 Contrast, +42 Sharpness, +43 Shading, +44 Shadows, +45 Midtones, +46 Highlights,
+//     v0.20: +47 Glow (-5..-1) / Clarity (1..5), +48 Art Effect (0 Off, 1 Star Light, 2 Pin Hole, 4 White Edge, 5 Frame:
+//     the Caduceus ids), +49 NR (0 Camera, 1 Std, 2 Low, 3 Off); zero before v0.20, so older files read as before)
 //     | 20 x 16-B names at 1312. Written with sel = 0 so the camera never saves its own settings over these profiles.
-//   NAMES.BIN v1: the name pictures for the Profiles page (./om3names.ts).
-import { blankLook, cloneLook, toneIsZero, zeroTone, type Look, type Pack } from './pack';
+//   NAMES.BIN v1: the name pictures for the Film page (./om3names.ts).
+import { ARTS, blankLook, cloneLook, toneIsZero, zeroTone, type Grain, type Look, type Pack } from './pack';
 import { crc32, type Problem } from './format';
 
 export const COLORS = 4, PER = 5;
-export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5, hsm: 7, bw: 5 } as const;
+export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5, hsm: 7, bw: 5, fx: 5 } as const;
+/** v0.20 Extras: NR byte <-> the Caduceus look's noise reduction (grain field), Art Effects the OM-3 renders. */
+export const OM3_NR: Grain[] = ['off', 'standard', 'fine', 'film'];          // 0 Camera, 1 Std, 2 Low, 3 Off
+export const OM3_ARTS = ['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const;
 export type Bank = (Look | null)[][];          // [COLOR 0..3][profile 0..4]
 export interface BankFile { schema: 'caduceus-om3-bank/1'; name: string; bank: Bank }
 export const BANK_SCHEMA = 'caduceus-om3-bank/1';
@@ -42,10 +48,13 @@ export function toOm3(src: Look): { look: Look | null; changed: string[]; droppe
     if (Math.abs(l.wb.a_b) > OM3.wb || Math.abs(l.wb.g_m) > OM3.wb) changed.push('WB');
     l.wb = { a_b: clampI(l.wb.a_b, OM3.wb), g_m: clampI(l.wb.g_m, OM3.wb) };
   }
-  if (l.grain !== 'off') dropped.push('noise filter');
-  if (l.effect) dropped.push(l.effect.type);
-  if (l.art_effect !== 'off') dropped.push('Art Effect');
-  l.grain = 'off'; l.effect = null; l.art_effect = 'off';
+  if (l.effect) {                                   // v0.20: glow (bloom) and clarity, 1..5, no colour
+    if (l.effect.type === 'halation') { l.effect = { type: 'bloom', strength: l.effect.strength }; changed.push('halation as glow'); }
+    else if (l.effect.tint && l.effect.tint !== 'neutral') { changed.push('glow colour'); }
+    if (l.effect.tint !== undefined) delete l.effect.tint;
+    l.effect.strength = Math.max(1, Math.min(OM3.fx, Math.round(l.effect.strength)));
+  }
+  if (l.art_effect === 'blur') { dropped.push('Blur'); l.art_effect = 'off'; }
   if (toneIsZero(l.tone) && l.advice.tone) {        // older looks: the recipe's tone advice becomes the profile's tone
     l.tone = { ...l.tone, highlights: l.advice.tone.highlights, shadows: l.advice.tone.shadows, midtones: l.advice.tone.midtones };
   }
@@ -74,6 +83,10 @@ export function validateProfile(l: Look, at?: { k: number; v: number }): Problem
   if (!ok(l.advice.contrast ?? 0, OM3.contrast)) add('contrast', 'Contrast: -2..2.');
   if (!ok(l.advice.sharpness ?? 0, OM3.sharpness)) add('sharpness', 'Sharpness: -2..2.');
   if (!ok(l.vignette, OM3.shading)) add('shading', 'Shading: -5..5.');
+  if (l.effect && !(Number.isInteger(l.effect.strength) && l.effect.strength >= 1 && l.effect.strength <= OM3.fx && (l.effect.type === 'bloom' || l.effect.type === 'clarity')))
+    add('effect', 'Glow / Clarity: strength 1..5.');
+  if (!(OM3_ARTS as readonly string[]).includes(l.art_effect)) add('art_effect', 'Art Effect: Off, Star Light, Pin Hole, White Edge or Frame.');
+  if (!OM3_NR.includes(l.grain)) add('grain', 'NR: Camera, Std, Low or Off.');
   return p;
 }
 export function validateBank(bank: Bank): Problem[] {
@@ -96,6 +109,9 @@ export function profilesBin(bank: Bank): Uint8Array {
     s8(39, l.tone.blacks); s8(40, l.tone.whites);
     s8(41, l.advice.contrast ?? 0); s8(42, l.advice.sharpness ?? 0); s8(43, l.vignette);
     s8(44, l.tone.shadows); s8(45, l.tone.midtones); s8(46, l.tone.highlights);
+    s8(47, !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength);
+    b[o + 48] = Math.max(0, (ARTS as readonly string[]).indexOf(l.art_effect === 'blur' ? 'off' : l.art_effect));
+    b[o + 49] = Math.max(0, OM3_NR.indexOf(l.grain));
     const nm = l.name.replace(/[^\x20-\x7e]/g, '?').slice(0, 15);
     for (let i = 0; i < nm.length; i++) b[1312 + 16 * r + i] = nm.charCodeAt(i);
   }));
@@ -112,12 +128,17 @@ export function readProfiles(b: Uint8Array): Bank {
   for (let r = 0; r < 20; r++) {
     const o = 32 + 64 * r, s = (i: number) => d.getInt8(o + i), a = (at: number) => Array.from({ length: 12 }, (_, i) => s(at + i));
     let name = ''; for (let i = 0; i < 15; i++) { const c = b[1312 + 16 * r + i]; if (!c) break; name += String.fromCharCode(c); }
-    if (!name && !b.subarray(o, o + 47).some(Boolean)) continue;
+    if (!name && !b.subarray(o, o + 50).some(Boolean)) continue;
     const l = blankLook('colour', (name || `Look ${(r % 5) + 1}`).slice(0, OM3_NAME_MAX).trim() || 'Look');
     l.hue = a(0); l.light = a(12); l.sat = a(24);
     l.wb = b[o + 36] & 1 ? { a_b: s(37), g_m: s(38) } : null;
     l.tone = { ...zeroTone(), blacks: s(39), whites: s(40), shadows: s(44), midtones: s(45), highlights: s(46) };
     l.advice = { contrast: s(41), sharpness: s(42) }; l.vignette = s(43);
+    const fx = s(47);
+    l.effect = fx < 0 ? { type: 'bloom', strength: Math.min(OM3.fx, -fx) } : fx > 0 ? { type: 'clarity', strength: Math.min(OM3.fx, fx) } : null;
+    const art = ARTS[b[o + 48]] ?? 'off';
+    l.art_effect = art === 'blur' ? 'off' : art;
+    l.grain = OM3_NR[b[o + 49]] ?? 'off';
     bank[Math.floor(r / 5)][r % 5] = l;
   }
   return bank;

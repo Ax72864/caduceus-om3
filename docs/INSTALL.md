@@ -57,14 +57,16 @@ What it does:
 1. Finds the official file: next to the launcher, in the project folder or in Downloads. If it isn't there, it asks
    OM's update server for it, the way OM Workspace does, and keeps a copy in the project folder for next time.
 2. Checks the file's size and SHA-256 against the official OM-3 1.1 firmware. **Any other file is refused.**
-3. Applies the chosen release's patch (`releases/vX/patch.json`: only the bytes this project adds, nothing of OM's), rebuilds the
+3. Applies the chosen release's patch (`releases/vX/patch.json`: only the bytes this project adds, nothing of OM's;
+   from v0.20 it also draws the white Frame pictures itself), rebuilds the
    update package and checks the result against its expected SHA-256.
 4. Writes the folder **`SD card files`** next to the launcher:
 
 ```
 SD card files/
   DCOLYMP/E1479999.BIN   the patched firmware update        → copy to the card
-  OM3MOD/GUIDES.BIN      the page labels under the wheel     → copy to the card
+  OM3MOD/GUIDES.BIN      the page labels + Extras code       → copy to the card
+  OM3MOD/LABELS.BIN      the Extras labels (v0.20)           → copy to the card
   restore/E1479999.BIN   the official firmware 1.1           → keep on your computer
 ```
 
@@ -74,8 +76,9 @@ SD card files/
 
 1. Put the camera's SD card in your computer.
 2. Copy the **`DCOLYMP`** and **`OM3MOD`** folders from `SD card files` to the **top level** of the card, next to
-   `DCIM`. If the card already has an `OM3MOD` folder from an earlier version, keep its `LOOKS.BIN` and
-   `BUNDLES.BIN` (your looks and edits) and only replace `GUIDES.BIN`.
+   `DCIM`. If the card already has an `OM3MOD` folder from an earlier version, keep its `LOOKS.BIN`, `NAMES.BIN`
+   and `BUNDLES.BIN` (your looks and edits) and replace `GUIDES.BIN` and `LABELS.BIN` with the new ones. From v0.20
+   `GUIDES.BIN` carries code for that exact firmware: always copy it with the firmware.
 3. Eject the card properly before taking it out.
 
 The card should look like this:
@@ -84,6 +87,7 @@ The card should look like this:
 DCIM/
 DCOLYMP/E1479999.BIN
 OM3MOD/GUIDES.BIN
+OM3MOD/LABELS.BIN
 ```
 
 ## Flash
@@ -105,12 +109,12 @@ anything (that is how the same updater behaves on the E-P7): make the files agai
 1. Switch on and **half-press the shutter once**. That loads your settings from the card. Nothing is read at power-on,
    so until the first half-press the wheel works exactly as stock.
 2. Picture Mode › **COLOR 1** (or 2–4) › press **▼** to open the Color Profile wheel.
-3. It opens on the **Looks** page with the selected look's name. Press **INFO** for the others: Saturation →
-   Saturation (All) → **Hue** → **Light** → **WB/BW** → back to **Looks**. The label under the wheel names the page.
+3. It opens on the **Film** page with the selected look's name. Press **INFO** for the others: Saturation →
+   Saturation (All) → **Hue** → **Light** → **Extras** → back to **Film**. The label under the wheel names the page.
 4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card.
 
 To bring in looks from the [Control Panel](https://androidfanman.github.io/caduceus-om3/) (OM SYSTEM OM-3 selected at
-the top): save `LOOKS.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD` folder, then on the Looks page turn the 12 o'clock spot to 1–5. See
+the top): save `LOOKS.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD` folder, then on the Film page turn the 12 o'clock spot to 1–5. See
 [USING.md](USING.md) for every page.
 
 ## Restore stock firmware
@@ -121,7 +125,8 @@ the top): save `LOOKS.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD
 3. Optionally remove the `OM3MOD` folder: stock firmware ignores it.
 
 The camera is then completely stock 1.1. Your COLOR profiles keep the camera's own settings (Saturation, Contrast and
-so on); the Hue, Light and WB/BW values only exist while Caduceus for OM-3 is installed.
+so on); the Hue, Light and Extras values only exist while Caduceus for OM-3 is installed. The stock Frame Art
+Effect gets its original picture back too.
 
 ## Troubleshooting
 
@@ -144,7 +149,11 @@ says 1.1 and that the flash finished (steady, then blinking).
 **My changes don't stay**: they save at the next half-press, and only when the card has an `OM3MOD` folder at its top
 level. A locked or full card can't be written.
 
-**The Looks page is missing**: the card's `LOOKS.BIN` failed the camera's check (damaged or edited by hand), so
+**The Extras values change but the photo doesn't**: the card's `GUIDES.BIN` isn't the one made with this firmware
+(it carries the Extras code). Copy the release's `GUIDES.BIN` again. **The Extras label says "Vivid"**: copy
+`LABELS.BIN` too.
+
+**The Film page is missing**: the card's `LOOKS.BIN` failed the camera's check (damaged or edited by hand), so
 the camera ignored it and left it alone. Open it in the Control Panel and save it again, or delete it: with no file, the
 camera starts a fresh, neutral bank.
 
@@ -154,8 +163,9 @@ switch on again. If that doesn't help, [restore stock firmware](#restore-stock-f
 ## FAQ
 
 **Will updating to a new version lose my looks?** No. Flash the new firmware the same way and keep the card's
-`OM3MOD/LOOKS.BIN` and `BUNDLES.BIN`. Coming from v0.16–v0.18, where the bank was called `PROFILES.BIN`: v0.19
-reads it when there is no `LOOKS.BIN` yet, and the next half-press save writes `LOOKS.BIN`.
+`OM3MOD/LOOKS.BIN` and `BUNDLES.BIN`, and copy the new `GUIDES.BIN` and `LABELS.BIN`. Coming from v0.16–v0.18,
+where the bank was called `PROFILES.BIN`: rename it to `LOOKS.BIN` (same format). (v0.19 read `PROFILES.BIN` by
+itself; v0.20 needed that room for the Extras.) Looks saved by v0.19 or earlier have every Extras value at 0.
 
 **Does it change the Monochrome profiles?** No. Only COLOR 1–4. The MONO profiles keep the camera's own editor.
 

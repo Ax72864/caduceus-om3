@@ -15,7 +15,7 @@ import { TARGETS, targetById } from './targets';
 import { recipeCard } from './targets/recipe';
 import { previewToneLut } from './tone';
 import {
-  BANK_SCHEMA, COLORS, OM3, OM3_NAME_MAX, PER, om3NameProblem, blankProfile, defaultBank, emptyBank, fromOldLookLab, parseBank, profilesBin, readProfiles,
+  BANK_SCHEMA, COLORS, OM3, OM3_ARTS, OM3_NAME_MAX, OM3_NR, PER, om3NameProblem, blankProfile, defaultBank, emptyBank, fromOldLookLab, parseBank, profilesBin, readProfiles,
   toOm3, validateBank, type Bank,
 } from './om3';
 import { namesBin } from './om3names';
@@ -58,7 +58,7 @@ let CAM: Cam = (() => {
 const isOm3 = () => CAM === 'om3';
 const samples = () => (isOm3() ? OM3_SAMPLES : SAMPLES);
 if (isOm3()) S.image = 'frames';
-/** The OM-3 look bank: 4 COLORs x 5 numbers, positional like the camera's Looks page. */
+/** The OM-3 look bank: 4 COLORs x 5 numbers, positional like the camera's Film page. */
 const O = { name: 'OM-3 looks', bank: startBank(), k: 0, v: 0 };
 function startBank(): Bank {
   try {
@@ -606,7 +606,7 @@ function tonePanel(l: Look, changed: () => void): HTMLElement {
     ...rows.slice(3),
     isOm3() ? h('p', { class: 'help' },
       'Highlights / Shadows / Midtones (±7) are the look\'s own tone settings; Blacks / Whites (±5) move the ends of the curve ',
-      '(the WB/BW page\'s 3 and 9 o\'clock). Choosing the look on the camera\'s Looks page sets them all. ',
+      '(Extras sectors 6 and 7 on the camera). Choosing the look on the camera\'s Film page sets them all. ',
       'The graph shows stock → this look; dots mark the Blacks and Whites ends.') :
     h('p', { class: 'help' },
       'Highlights / Shadows / Midtones (±7): picking the look sets the profile\'s own tone settings to these. ',
@@ -639,7 +639,7 @@ function effectPanel(l: Look, changed: () => void): HTMLElement {
     },
   }, ...TINTS.map((t) => h('option', { value: t, selected: (e?.tint ?? (e?.type === 'halation' ? 'red' : 'neutral')) === t }, t[0].toUpperCase() + t.slice(1))));
   const tintRow = h('label', { class: 'field inline' }, h('span', { class: 'lbl' }, 'Glow colour'), tintSel);
-  tintRow.hidden = !(e && e.type !== 'clarity');
+  tintRow.hidden = isOm3() || !(e && e.type !== 'clarity');
   const { inp, out } = slider(-5, 5, v, (x) => {
     if (x === 0) l.effect = null;
     else if (x > 0) l.effect = { type: 'clarity', strength: x };
@@ -647,7 +647,7 @@ function effectPanel(l: Look, changed: () => void): HTMLElement {
       const keep = l.effect && l.effect.type !== 'clarity' ? l.effect : null;
       l.effect = { type: keep?.type ?? 'bloom', strength: -x, ...(keep?.tint ? { tint: keep.tint } : {}) };
     }
-    tintRow.hidden = !(l.effect && l.effect.type !== 'clarity');
+    tintRow.hidden = isOm3() || !(l.effect && l.effect.type !== 'clarity');
     changed();
   }, fmt, 'Glow to clarity');
   return h('div', { class: 'group' },
@@ -668,7 +668,7 @@ function wbPanel(l: Look, changed: () => void): HTMLElement {
   }) : [];
   return h('div', { class: 'group' },
     h('label', { class: 'check' }, box, h('span', {}, 'White balance shift'),
-      h('span', { class: 'help' }, isOm3() ? (on ? 'the look\'s shift, added to the camera\'s own WB (WB/BW page, 12 and 6 o\'clock)' : 'off: no shift')
+      h('span', { class: 'help' }, isOm3() ? (on ? 'the look\'s shift, added to the camera\'s own WB (Extras sectors 3 A–B and 4 G–M)' : 'off: no shift')
         : on ? 'overrides the camera\'s WB fine-tune for this look' : 'off: your own WB fine-tune applies')),
     ...rows);
 }
@@ -1055,7 +1055,7 @@ function ep7Body(): HTMLElement {
 const fmtProblem = (p: Problem) => (p.look !== undefined ? `Look ${p.look + 1} (${S.pack.looks[p.look]?.name || 'no name'}): ` : '') + p.message;
 
 // ---------------------------------------------------------------- OM-3 (Caduceus for OM-3)
-// The OM-3 has no look list: each of COLOR 1-4 holds five numbered looks (the camera's Looks page, dial 1-5).
+// The OM-3 has no look list: each of COLOR 1-4 holds five numbered looks (the camera's Film page, dial 1-5).
 const OB_PREFIX = 'ob1_', OP_PREFIX = 'op1_';
 const OM3_GH = 'https://github.com/androidfanman/caduceus-om3';
 const at = (k: number, v: number) => `COLOR ${k + 1}, look ${v + 1}`;
@@ -1138,7 +1138,7 @@ function renderBank() {
   el.replaceChildren(
     h('div', { class: 'list-head' }, h('span', {}, 'Looks'), h('span', { class: 'count' }, `${used} / ${COLORS * PER}`)),
     ...groups,
-    h('p', { class: 'help' }, 'The number is the Looks page dial (1–5) for that COLOR; 0 on the camera is "nothing". Drag a look to another number, or use ↑ ↓. An empty number shows "Empty" on the camera and loads neutral there.'));
+    h('p', { class: 'help' }, 'The number is the Film page dial (1–5) for that COLOR; 0 on the camera is "nothing". Drag a look to another number, or use ↑ ↓. An empty number shows "Empty" on the camera and loads neutral there.'));
 }
 
 /** The editor for a number with no look: make one. */
@@ -1152,7 +1152,7 @@ function emptySlotPanel(): HTMLElement {
       h('button', { class: 'primary', onclick: () => put(blankProfile(`Look ${v + 1}`), `New blank look in ${at(k, v)}`) }, 'Blank look'),
       h('button', { onclick: om3LibraryPicker }, 'From the built-in library…'),
       h('button', { onclick: pasteDialog }, 'Paste a code…')),
-    h('p', { class: 'help' }, 'Library looks come from Caduceus (E-P7) and are converted for the OM-3: Hue, Light and WB shifts are limited to ±5, and noise filter, glow / clarity and Art Effects are left out.'));
+    h('p', { class: 'help' }, 'Library looks come from Caduceus (E-P7) and are converted for the OM-3: Hue, Light and WB shifts are limited to ±5, a halation glow becomes a plain glow (the OM-3 glow has no colour), and Blur is left out. NR, Glow / Clarity and Art Effects carry over (firmware v0.20).'));
 }
 
 function om3Changes(c: { changed: string[]; dropped: string[] }): string {
@@ -1187,7 +1187,7 @@ function renderOm3Editor(l: Look) {
     oninput: (e: Event) => draft(() => {
       l.name = (e.target as HTMLInputElement).value;
       const p = om3NameProblem(l.name);
-      $('#name-help').textContent = p ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Looks page`;
+      $('#name-help').textContent = p ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Film page`;
       $('#name-help').className = p ? 'help err' : 'help';
       const row = document.querySelector(`#list li[data-at="${k * PER + v}"] .nm`);
       if (row) row.textContent = l.name || '(no name)';
@@ -1203,7 +1203,7 @@ function renderOm3Editor(l: Look) {
   el.replaceChildren(
     h('div', { class: 'ed-head' },
       h('label', { class: 'field grow' }, h('span', { class: 'lbl' }, `Name · ${at(k, v)}`), nameInput,
-        h('span', { id: 'name-help', class: np ? 'help err' : 'help' }, np ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Looks page`)),
+        h('span', { id: 'name-help', class: np ? 'help err' : 'help' }, np ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Film page`)),
       h('div', { class: 'ed-btns' },
         h('button', {
           class: 'share-btn', title: orig ? `Restore the built-in "${orig.name}" values (OM-3 version)` : 'Set every value to neutral',
@@ -1222,6 +1222,16 @@ function renderOm3Editor(l: Look) {
       setting('Sharpness', OM3.sharpness, () => l.advice.sharpness ?? 0, (x) => { l.advice.sharpness = x; }, 'The camera\'s Sharpness for this look'),
       setting('Shading', OM3.shading, () => l.vignette, (x) => { l.vignette = x; }, 'The camera\'s Shading (− darker corners, + lighter)'),
       h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast, Sharpness and Shading (Picture Mode menu items) to these.')),
+    h('div', { class: 'group' },
+      h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20)'),
+      seg('NR', OM3_NR.map((g) => [g, ({ off: 'Camera', standard: 'Std', fine: 'Low', film: 'Off' } as Record<string, string>)[g]] as [string, string]), l.grain,
+        (x) => { l.grain = x as Look['grain']; renderEditor(); changed(); }),
+      h('p', { class: 'help' }, 'The camera\'s noise reduction (Noise Filter) for each photo with this look; Camera leaves your menu setting. Extras sector 1.')),
+    effectPanel(l, changed),
+    h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
+      h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; changed(); } },
+        ...OM3_ARTS.map((a) => h('option', { value: a, selected: a === l.art_effect }, ({ off: 'Off', star_light: 'Star Light', pin_hole: 'Pin Hole', white_edge: 'White Edge', frame: 'Frame (white)' } as Record<string, string>)[a]))),
+      h('span', { class: 'help' }, 'The camera\'s own Art Effect on COLOR photos (Extras sector 5); Frame draws a clean white border. Shows in live view; not in this preview.')),
     wbPanel(l, changed),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Notes'),
       h('textarea', {
@@ -1278,7 +1288,7 @@ function confirmPackToBank(p: Pack, fromE7 = true) {
   const dlg = modal('Caduceus pack → OM-3 looks', h('div', {},
     h('p', {}, `"${p.name}": ${p.looks.length} looks. The first ${r.n} colour looks become COLOR 1–4, looks 1–5, in order.`),
     h('p', { class: 'help' }, [r.mono ? `${r.mono} monochrome look(s) are skipped (COLOR looks only). ` : '', r.extra ? `${r.extra} more colour look(s) don't fit (20 looks). ` : '',
-      'Hue, Light and WB are limited to ±5; noise filter, glow / clarity and Art Effects are left out. This replaces your current looks (Undo brings them back).'].join(''))),
+      'Hue, Light and WB are limited to ±5; a halation glow becomes a plain glow and Blur is left out. This replaces your current looks (Undo brings them back).'].join(''))),
   [no, ...(fromE7 ? [e7] : []), yes]);
   yes.addEventListener('click', () => { replaceBank(r.bank, `Loaded ${r.n} looks from "${p.name}"`); dlg.close(); });
   e7.addEventListener('click', () => { dlg.close(); switchCamera('ep7'); replacePack(p, `Opened "${p.name}"`); });
@@ -1379,7 +1389,7 @@ function om3InstallDialog() {
       step('Build',
         h('p', {}, 'Run ', code('firmware/patch.py'), ' (the guide shows how). It gets OM\'s official firmware, applies the patch, checks every file and writes an ', code('SD card files'), ' folder: copy ', code('DCOLYMP'), ' and ', code('OM3MOD'), ' to the root of the card. Keep ', code('restore/'), ' on your computer.')),
       step('Your looks: LOOKS.BIN + NAMES.BIN (optional)',
-        h('p', {}, 'Looks can be made on the camera itself (Looks page). To use the ones here instead:'),
+        h('p', {}, 'Looks can be made on the camera itself (Film page). To use the ones here instead:'),
         h('ol', { class: 'substeps' },
           h('li', {}, 'To keep looks made on the camera, first ', h('b', {}, 'Open…'), ' the card\'s ', code('OM3MOD/LOOKS.BIN'), ' here (', code('PROFILES.BIN'), ' before v0.19).'),
           h('li', {}, 'Edit, then ', h('b', {}, 'Export'), ' › Save to the SD card (or download the card folder zip).'),
@@ -1388,7 +1398,7 @@ function om3InstallDialog() {
       step('Flash',
         h('p', {}, 'Put the card in the camera, hold ', h('b', {}, 'OK'), ' and switch on. Wait for the update to finish (blinking LED) and don\'t switch off meanwhile. Then delete ', code('DCOLYMP/E1479999.BIN'), ' from the card.')),
       step('Shoot',
-        h('p', {}, 'Picture Mode › COLOR 1–4 › press ', h('b', {}, '▼'), ' for the wheel; it opens on ', h('b', {}, 'Looks'), '. Turn the front dial to 1–5 to load a look; ', h('b', {}, 'INFO'), ' changes page (Saturation, Hue, Light, WB/BW).')))
+        h('p', {}, 'Picture Mode › COLOR 1–4 › press ', h('b', {}, '▼'), ' for the wheel; it opens on ', h('b', {}, 'Film'), '. Turn the front dial to 1–5 to load a look; ', h('b', {}, 'INFO'), ' changes page (Saturation, Hue, Light, Extras).')))
   );
   const dlg = modal('Install Caduceus for OM-3', body, [
     h('a', { class: 'btn', href: `${OM3_GH}/blob/main/docs/INSTALL.md`, target: '_blank', rel: 'noopener' }, 'Full guide on GitHub'),
@@ -1435,7 +1445,7 @@ function om3ExportDialog() {
   modal('Export for the OM-3', h('div', { class: 'export' },
     probs.length
       ? h('div', { class: 'problems-box' }, h('b', {}, `${probs.length} problem(s) to fix first:`), h('ul', { class: 'problems' }, ...probs.slice(0, 12).map((p) => h('li', {}, fmt(p)))))
-      : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; on v0.17–v0.18 use the PROFILES.BIN file below).`),
+      : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; NR, Glow / Clarity and Art Effects need v0.20, older firmware ignores them; on v0.17–v0.18 use the PROFILES.BIN file below).`),
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'Save to the SD card'), h('p', { class: 'help' }, 'Pick the card (or its OM3MOD folder): writes OM3MOD/LOOKS.BIN and NAMES.BIN. This replaces the looks on the card, including ones made on the camera: Open… the card\'s LOOKS.BIN first to keep those. Chrome / Edge.')),
       toCard),

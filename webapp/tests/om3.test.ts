@@ -22,6 +22,8 @@ const pyJson = (bank: Bank) => ({
     name: l.name, hue: l.hue, light: l.light, sat: l.sat, wb: !!(l.wb && (l.wb.a_b || l.wb.g_m)), ab: l.wb?.a_b ?? 0, gm: l.wb?.g_m ?? 0,
     blacks: l.tone.blacks, whites: l.tone.whites, contrast: l.advice.contrast ?? 0, sharp: l.advice.sharpness ?? 0, shading: l.vignette,
     sh: l.tone.shadows, mid: l.tone.midtones, hi: l.tone.highlights,
+    fx: !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength,
+    art: ['off', 'star_light', 'pin_hole', 'blur', 'white_edge', 'frame'].indexOf(l.art_effect), nr: ['off', 'standard', 'fine', 'film'].indexOf(l.grain),
   })),
 });
 function rnd(seed: number) { let s = seed; return (n: number) => { s = (s * 1103515245 + 12345) & 0x7fffffff; return (s % (2 * n + 1)) - n; }; }
@@ -34,6 +36,9 @@ function randomBank(seed: number): Bank {
     l.wb = r(1) ? { a_b: r(5), g_m: r(5) } : null;
     l.tone = { highlights: r(7), shadows: r(7), midtones: r(7), blacks: r(5), whites: r(5) };
     l.advice = { contrast: r(2), sharpness: r(2) }; l.vignette = r(5);
+    const fx = r(5); l.effect = fx < 0 ? { type: 'bloom', strength: -fx } : fx > 0 ? { type: 'clarity', strength: fx } : null;
+    l.art_effect = (['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const)[Math.abs(r(4))];
+    l.grain = (['off', 'standard', 'fine', 'film'] as const)[Math.abs(r(3))];
     b[k][v] = l;
   }
   return b;
@@ -47,16 +52,19 @@ describe('OM-3 profile bank', () => {
     expect(b[0][0]!.name).toBe('Velvia');
   });
 
-  it('toOm3: mono refused, ranges limited, E-P7-only parts dropped', () => {
+  it('toOm3: mono refused, ranges limited, v0.20 Extras kept (glow without colour, no Blur)', () => {
     expect(toOm3(blankLook('mono')).look).toBeNull();
     const l = blankLook('colour', 'X');
-    l.hue[0] = 7; l.light[3] = -6; l.wb = { a_b: 7, g_m: -1 }; l.grain = 'film'; l.effect = { type: 'bloom', strength: 2 }; l.art_effect = 'pin_hole';
+    l.hue[0] = 7; l.light[3] = -6; l.wb = { a_b: 7, g_m: -1 }; l.grain = 'film'; l.effect = { type: 'halation', strength: 2, tint: 'red' }; l.art_effect = 'pin_hole';
     const c = toOm3(l);
     expect(c.look!.hue[0]).toBe(5); expect(c.look!.light[3]).toBe(-5); expect(c.look!.wb).toEqual({ a_b: 5, g_m: -1 });
-    expect(c.look!.grain).toBe('off'); expect(c.look!.effect).toBeNull(); expect(c.look!.art_effect).toBe('off');
-    expect(c.changed).toEqual(['Hue/Light', 'WB']);
-    expect(c.dropped).toEqual(['noise filter', 'bloom', 'Art Effect']);
-    expect(validateBank([[c.look]])).toEqual([]);
+    expect(c.look!.grain).toBe('film'); expect(c.look!.effect).toEqual({ type: 'bloom', strength: 2 }); expect(c.look!.art_effect).toBe('pin_hole');
+    expect(c.changed).toEqual(['Hue/Light', 'WB', 'halation as glow']);
+    expect(c.dropped).toEqual([]);
+    const b = blankLook('colour', 'Y'); b.art_effect = 'blur'; b.effect = { type: 'clarity', strength: 3 };
+    const d = toOm3(b);
+    expect(d.look!.art_effect).toBe('off'); expect(d.dropped).toEqual(['Blur']); expect(d.look!.effect).toEqual({ type: 'clarity', strength: 3 });
+    expect(validateBank([[c.look, d.look]])).toEqual([]);
   });
 
   it('PROFILES.BIN round-trips', () => {
@@ -66,7 +74,7 @@ describe('OM-3 profile bank', () => {
         const a = b[k][v], z = back[k][v];
         if (!a) { expect(z).toBeNull(); continue; }
         expect(z!.name).toBe(a.name);
-        for (const f of ['hue', 'light', 'sat', 'tone', 'vignette'] as const) expect(z![f]).toEqual(a[f]);
+        for (const f of ['hue', 'light', 'sat', 'tone', 'vignette', 'effect', 'art_effect', 'grain'] as const) expect(z![f]).toEqual(a[f]);
         expect(z!.advice).toEqual(a.advice);
         expect(z!.wb && (z!.wb.a_b || z!.wb.g_m) ? z!.wb : null).toEqual(a.wb && (a.wb.a_b || a.wb.g_m) ? a.wb : null);
       }

@@ -2,44 +2,67 @@
 
 > **Color profiles only:** this is for Picture Mode COLOR 1–4. The Monochrome profiles keep the camera's own editor.
 
-Picture Mode › **COLOR 1–4** › press **▼** to open the Color Profile wheel. It opens on the **Looks** page (v0.18;
-on a card without a usable `LOOKS.BIN`, on Saturation). **INFO** changes the page:
+Picture Mode › **COLOR 1–4** › press **▼** to open the Color Profile wheel. It opens on the **Film** page (on a card
+without a usable `LOOKS.BIN`, on Saturation). **INFO** changes the page, wherever the selector is:
 
-**Looks** → Saturation → (Saturation ALL) → **Hue** → **Light** → **WB/BW** → **Looks**
+**Film** → Saturation → (Saturation ALL) → **Hue** → **Light** → **Extras** → **Film**
 
-The label under the wheel shows the page. The rear dial picks a colour slice and the front dial changes the value,
-the same as the stock Saturation wheel. Slices run clockwise from Yellow at 12 o'clock: Yellow, Orange, Orange-red,
-Red, Magenta, Violet, Blue, Blue-cyan, Cyan, Green-cyan, Green, Yellow-green.
+The label under the wheel shows the page. The **front dial** moves the selector around the wheel and the **rear
+dial** changes the value, as on the stock Saturation wheel. On Saturation, the first INFO is the camera's own step to
+"all colours" and the second goes on to Hue.
+
+Colour slices run clockwise from Yellow at 12 o'clock: Yellow, Orange, Orange-red, Red, Magenta, Violet, Blue,
+Blue-cyan, Cyan, Green-cyan, Green, Yellow-green.
 
 ## Pages
 
+- **Film** (0..5, 12 o'clock only): picks a look. **0** = nothing (everything neutral), **1–5** = that COLOR's look,
+  with its name under the wheel. See [Looks and their names](#looks-and-their-names).
 - **Saturation**: the camera's own.
 - **Hue** (−5..+5): + turns a slice toward its clockwise neighbour (Yellow → Orange, Blue → Blue-cyan).
 - **Light** (−5..+5): darker / brighter for that slice. Steps grow as they go out.
-- **WB/BW**: 12 o'clock A/B (+ amber, − blue), 6 o'clock G/M (+ green, − magenta), 3 o'clock **Blacks**
-  (+ lifts/fades, − crushes), 9 o'clock **Whites** (+ brighter, − softer). Other slices do nothing.
-- **Looks** (0..5, 12 o'clock only):
-  - **0**: nothing. Everything goes neutral.
-  - **1–5**: loads that COLOR's look: all wheels plus Contrast, Sharpness, Shading and
-    Shadows/Midtones/Highlights. An empty number loads neutral, ready to build a new look.
-  - Whatever you change while a look is selected (wheels or the normal menu items) belongs to that look.
-    Turning to another number keeps it, and the next half-press saves the bank to the card.
-  - Each COLOR has its own five looks.
-  - The label under the wheel shows the selected look's name ("Empty" for a number with no look), from
-    `NAMES.BIN`. At 0 it says "Looks".
+- **Extras**: eight effect sectors (below).
 
-Holding **OK** on the wheel, or on the "COLOR n" item of the picture-mode list, resets that COLOR's wheels
-(Saturation, Hue, Light and WB/BW) to 0. A `*` next to a COLOR means it has been changed.
+## The Extras page
+
+Sector 1 is at 12 o'clock and the others follow clockwise, one per hour. The label next to the value (where the
+stock wheel says "Vivid") names the sector and what its value does.
+
+| Sector | Clock | What it does | Values | Label |
+|---|---|---|---|---|
+| 1 | 12 | **NR**: the camera's noise reduction (Noise Filter) for each photo with this look | 0 Camera (your menu setting), 1 Std, 2 Low, 3 Off (most texture) | NR / NR Std / NR Low / NR Off |
+| 2 | 1 | **Glow ← → Clarity** | −1..−5 glow (soft highlight bloom, −5 strongest), +1..+5 clarity (local contrast), 0 off | Glow / Clarity / Glo/Cla |
+| 3 | 2 | **WB amber / blue** | + amber, − blue (−5..+5) | A / B / A/B |
+| 4 | 3 | **WB green / magenta** | + green, − magenta (−5..+5) | G / M / G/M |
+| 5 | 4 | **Art Effect** | 0 Off, 1 Star Light, 2 Pin Hole, 4 White Edge, 5 Frame (a clean white border); 3 does nothing (Caduceus numbers) | Art Off / Star / Pin Hole / W. Edge / Frame |
+| 6 | 5 | **Blacks**: the dark end of the tone curve | + lifts / fades, − crushes (−5..+5) | Blacks |
+| 7 | 6 | **Whites**: the bright end | + brighter, − softer (−5..+5) | Whites |
+| 8 | 7 | (reserved) | – | Vivid |
+
+- NR, Glow and Art Effects are set per look, at every shot, without changing your menu settings. NR shows in the
+  photo's recorded settings; its effect is mostly visible at high ISO.
+- **Live view** shows Glow and the Art Effects as you frame. Clarity shows only in the saved photo.
+- The WB shift is added to the camera's own white balance and fine-tune.
+- The labels come from `OM3MOD/LABELS.BIN`, and the effects from code at the end of `OM3MOD/GUIDES.BIN`. Copy both
+  from the same release as the firmware: with an older `GUIDES.BIN` the Extras values still save but the effects
+  don't run, and without `LABELS.BIN` the label just says "Vivid".
+
+## Reset and the `*`
+
+Hold **OK** on the wheel, or on the "COLOR n" item of the Picture Mode list, to reset that COLOR: Saturation, Hue,
+Light and every Extras value go back to 0. A `*` next to the COLOR (and the look name) means something has been
+changed, Extras included.
 
 ## Looks and their names
 
-Each of COLOR 1–4 has five look numbers. A look holds everything: the four wheels (Saturation, Hue, Light,
-WB/BW) plus Contrast, Sharpness, Shading and Shadows/Midtones/Highlights. On the **Looks** page, the 12 o'clock
-spot picks one, and the label under the wheel shows its name:
+Each of COLOR 1–4 has five look numbers. A look holds everything: the wheels (Saturation, Hue, Light), the Extras
+page (NR, Glow/Clarity, WB shift, Art Effect, Blacks, Whites) plus Contrast, Sharpness, Shading and
+Shadows/Midtones/Highlights. On the **Film** page, the 12 o'clock spot picks one, and the label under the wheel shows
+its name:
 
 | Dial | What loads | Label under the wheel |
 |---|---|---|
-| 0 | nothing: everything neutral | **Looks** |
+| 0 | nothing: everything neutral | **Film** |
 | 1–5 with a look | that look | its name, e.g. **Velvia** |
 | 1–5 with no look | neutral, ready to build a new one | **Empty** |
 
@@ -47,7 +70,7 @@ The names come from `OM3MOD/NAMES.BIN`. The camera can't draw text in that spot,
 Panel draws each name as a small picture in the camera's own label style and saves them in `NAMES.BIN` next to
 `LOOKS.BIN`. The camera reads both at the first half-press after you switch on. It saves `LOOKS.BIN` itself
 when you change looks, but it never changes `NAMES.BIN`: names only change when you save from the Control Panel.
-Without `NAMES.BIN` (or with a damaged one) the label just says "Looks".
+Without `NAMES.BIN` (or with a damaged one) the label just says "Film".
 
 ### Make looks in the Control Panel
 
@@ -58,9 +81,11 @@ Without `NAMES.BIN` (or with a damaged one) the label just says "Looks".
    moves it to another number.
 3. Give it a name (up to 15 letters, numbers and symbols). Long names are squeezed to fit, and if one COLOR's five
    names don't fit the camera's space, its lettering is made a little smaller.
-4. **Export › Save to card…** (Chrome or Edge on a computer) writes `LOOKS.BIN` and `NAMES.BIN` into the card's
+4. Set the **Extras** the same way as on the camera: NR, Glow ↔ Clarity, Art Effect and the WB shift (Blacks and
+   Whites are in the Tone panel).
+5. **Export › Save to card…** (Chrome or Edge on a computer) writes `LOOKS.BIN` and `NAMES.BIN` into the card's
    `OM3MOD` folder. Elsewhere, **Card folder (.zip)** downloads both: copy them into `OM3MOD` on the card.
-5. Put the card in the camera, switch on and half-press once. Every COLOR starts at 0; turn the Looks dial to a
+6. Put the card in the camera, switch on and half-press once. Every COLOR starts at 0; turn the Film dial to a
    number to load that look.
 
 Always copy both files together. Moving or emptying looks in the Control Panel changes their numbers, and the
@@ -68,7 +93,7 @@ names follow only if `NAMES.BIN` is copied too.
 
 ### Make a look on the camera
 
-1. Open the COLOR's wheel, press **INFO** to the Looks page and turn to a number that says **Empty**. Everything
+1. Open the COLOR's wheel, press **INFO** to the Film page and turn to a number that says **Empty**. Everything
    goes neutral.
 2. Build the look on the wheel pages and in the normal Picture Mode settings (Contrast, Sharpness, Shading,
    Shadows/Midtones/Highlights). Everything you change belongs to that number.
@@ -85,7 +110,7 @@ copy replaces the camera's whole bank. If you save it from the Control Panel wit
 
 ### Change or rename a look
 
-- **On the camera:** select it on the Looks page and change anything; the next half-press saves it. Its name
+- **On the camera:** select it on the Film page and change anything; the next half-press saves it. Its name
   stays.
 - **In the Control Panel:** open the card's `LOOKS.BIN`, change or rename it, and save both files back.
 
@@ -95,9 +120,13 @@ copy replaces the camera's whole bank. If you save it from the Control Panel wit
 |---|---|
 | `BUNDLES.BIN` | the wheels' current values (written by the camera; `.NEW` / `.BAK` are its safety copies) |
 | `LOOKS.BIN` | the look bank: 4 COLORs × 5 looks. Made by the camera, or by the Control Panel |
-| `GUIDES.BIN` | the page labels under the wheel (optional; without it the stock label shows) |
-| `NAMES.BIN` | the look names for the Looks page, made by the Control Panel with `LOOKS.BIN` (optional; the camera never changes it) |
+| `GUIDES.BIN` | the page labels under the wheel and, from v0.20, the Extras effects code (keep it with its firmware) |
+| `LABELS.BIN` | the Extras labels next to the value (v0.20; optional, without it the label says "Vivid") |
+| `NAMES.BIN` | the look names for the Film page, made by the Control Panel with `LOOKS.BIN` (optional; the camera never changes it) |
 
 Copying a `LOOKS.BIN` from the Control Panel replaces the camera's bank. To keep looks made on the camera, open
 the card's `LOOKS.BIN` in the Control Panel first, edit, then save back. Its file starts every COLOR at 0, so
 your current camera settings stay until you pick a look.
+
+Coming from v0.17 or v0.18? Your bank there is `PROFILES.BIN`; from v0.20 the camera reads only `LOOKS.BIN`. Rename
+`PROFILES.BIN` to `LOOKS.BIN` (same format), or open it in the Control Panel and save `LOOKS.BIN`.

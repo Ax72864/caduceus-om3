@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GUIDES.BIN for the OM-3 colour editor: the guide pictures shown under the wheel ("Hue [INFO]", "Light [INFO]",
-"WB/BW [INFO]", "Looks [INFO]"), drawn from scratch (no camera graphics are copied).
+"Extras [INFO]", "Film [INFO]"), drawn from scratch (no camera graphics are copied).
 
 Picture: 175 x 50 px, OM-3 OSD palette indices (0 clear, 7 dark edge, 9 faint rim, 10 white fill, 11 light edge,
 12 grey). The word is fitted to the camera's own guide metrics (cap height 31 px, baseline row 40, right edge col 102);
@@ -129,14 +129,14 @@ def encode11(px, w, h):
     return bytes(out)
 
 
-PAGES = ['Hue', 'Light', 'WB/BW', 'Looks']                # streams 1..4 = pages Hue, Light, WB/BW, Looks (v0.19; before: Profiles)
+PAGES = ['Hue', 'Light', 'Extras', 'Film']               # streams 1..4 = pages Hue, Light, Extras (v0.20; before: WB/BW), Film (v0.20; before: Looks, Profiles)
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--preview')
     a = ap.parse_args()
     imgs = [build(t) for t in PAGES]
     st = [encode11(bytes(i.flatten()), W, H) for i in imgs]
-    body = struct.pack('<HHIIII', W, H, *map(len, st))
+    body = struct.pack('<HHIIII', W, H, *map(len, st[:4]))
     for s in st: body += s + bytes((-len(s)) % 4)
     body += bytes((-len(body)) % 4)
     out = b'OM3G' + struct.pack('<II', 12 + len(body), zlib.crc32(body) & 0xffffffff) + body

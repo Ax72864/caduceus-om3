@@ -6,6 +6,13 @@ SECTIONS {
   .hook_set     0x60b8798b : { *(.hook_set) }
   .hook_pmod    0x6129ba07 : { *(.hook_pmod) }
   .hook_tone    0x605197d7 : { *(.hook_tone) }
+  .hook_fx      0x60555e50 : { *(.hook_fx) }
+  .hook_lv      0x6046b8bb : { *(.hook_lv) }
+  .hook_wt      0x605048c1 : { *(.hook_wt) }
+  .hook_nr1     0x603c8038 : { *(.hook_nr1) }
+  .hook_nr2     0x603e7891 : { *(.hook_nr2) }
+  .ext2         0x607187a8 : { *(.ext2) }
+  .ext7         0x6164afd0 : { *(.ext7) }
   .ext3         0x6081fe10 : { *(.ext3) }
   .ext8         0x617e45f0 : { *(.ext8) }
   .ext5         0x60adb5b0 : { *(.ext5) }
@@ -84,3 +91,10 @@ TBUF          = 836;
 stock_up      = 0x61223ef7;
 stock_down    = 0x612241b6;
 stock_event   = 0x61225d52;
+fx_back       = 0x60555e56;
+fx_tail       = 0x60555ed6;
+XPTR          = 692;
+lv_x          = 0x6046b8ee;
+lv_skip       = 0x6046b94f;
+wt_back       = 0x605048c7;
+XTAG          = 0x58000000;
