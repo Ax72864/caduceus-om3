@@ -24,6 +24,7 @@ const pyJson = (bank: Bank) => ({
     sh: l.tone.shadows, mid: l.tone.midtones, hi: l.tone.highlights,
     fx: !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength,
     art: ['off', 'star_light', 'pin_hole', 'blur', 'white_edge', 'frame'].indexOf(l.art_effect), nr: ['off', 'standard', 'fine', 'film'].indexOf(l.grain),
+    vig: l.lens_correction ? 0 : 1,
   })),
 });
 function rnd(seed: number) { let s = seed; return (n: number) => { s = (s * 1103515245 + 12345) & 0x7fffffff; return (s % (2 * n + 1)) - n; }; }
@@ -39,6 +40,7 @@ function randomBank(seed: number): Bank {
     const fx = r(5); l.effect = fx < 0 ? { type: 'bloom', strength: -fx } : fx > 0 ? { type: 'clarity', strength: fx } : null;
     l.art_effect = (['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const)[Math.abs(r(4))];
     l.grain = (['off', 'standard', 'fine', 'film'] as const)[Math.abs(r(3))];
+    if (r(1)) l.lens_correction = true;
     b[k][v] = l;
   }
   return b;
@@ -74,11 +76,18 @@ describe('OM-3 profile bank', () => {
         const a = b[k][v], z = back[k][v];
         if (!a) { expect(z).toBeNull(); continue; }
         expect(z!.name).toBe(a.name);
-        for (const f of ['hue', 'light', 'sat', 'tone', 'vignette', 'effect', 'art_effect', 'grain'] as const) expect(z![f]).toEqual(a[f]);
+        for (const f of ['hue', 'light', 'sat', 'tone', 'vignette', 'effect', 'art_effect', 'grain', 'lens_correction'] as const) expect(z![f]).toEqual(a[f]);
         expect(z!.advice).toEqual(a.advice);
         expect(z!.wb && (z!.wb.a_b || z!.wb.g_m) ? z!.wb : null).toEqual(a.wb && (a.wb.a_b || a.wb.g_m) ? a.wb : null);
       }
     }
+  });
+
+  it('LOOKS.BIN for firmware v0.20 leaves VigFix out', () => {
+    const b = randomBank(4), old = profilesBin(b, false), cur = profilesBin(b);
+    for (let r = 0; r < 20; r++) expect(old[32 + 64 * r + 50]).toBe(0);
+    expect(b.flat().some((l) => l && !l.lens_correction)).toBe(true);
+    expect([...cur].some((x, i) => i >= 32 && i < 1312 && (i - 32) % 64 === 50 && x === 1)).toBe(true);
   });
 
   it('bank files parse back', () => {

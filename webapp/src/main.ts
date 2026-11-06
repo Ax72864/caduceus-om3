@@ -1223,10 +1223,16 @@ function renderOm3Editor(l: Look) {
       setting('Shading', OM3.shading, () => l.vignette, (x) => { l.vignette = x; }, 'The camera\'s Shading (− darker corners, + lighter)'),
       h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast, Sharpness and Shading (Picture Mode menu items) to these.')),
     h('div', { class: 'group' },
-      h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20)'),
+      h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20; lens correction v0.21)'),
       seg('NR', OM3_NR.map((g) => [g, ({ off: 'Camera', standard: 'Std', fine: 'Low', film: 'Off' } as Record<string, string>)[g]] as [string, string]), l.grain,
         (x) => { l.grain = x as Look['grain']; renderEditor(); changed(); }),
       h('p', { class: 'help' }, 'The camera\'s noise reduction (Noise Filter) for each photo with this look; Camera leaves your menu setting. Extras sector 1.')),
+    h('div', { class: 'group' },
+      seg('Lens vignette correction', [['off', 'Off (default)'], ['on', 'Keep camera\'s']], l.lens_correction ? 'on' : 'off', (v) => {
+        if (v === 'on') l.lens_correction = true; else delete l.lens_correction;
+        renderEditor(); changed();
+      }),
+      h('p', { class: 'help' }, 'Off turns the camera\'s lens shading correction (Shading Comp.) off for photos with this look, for natural corners, without changing the menu setting; Keep follows your menu setting. Extras sector 8 (VigFix, firmware v0.21). Not shown in the preview.')),
     effectPanel(l, changed),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
       h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; changed(); } },
@@ -1428,7 +1434,13 @@ function om3ExportDialog() {
   const fname = (O.name || 'om3-looks').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'om3-looks';
   const n = O.bank.flat().filter(Boolean).length;
   const bankJson = () => JSON.stringify({ schema: BANK_SCHEMA, name: O.name, bank: O.bank.map((r) => r.map((l) => (l ? plainLook(l) : null))) }, null, 1) + '\n';
-  const cardFiles = async () => [{ name: 'LOOKS.BIN', data: profilesBin(O.bank) }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
+  let fw21 = true; try { fw21 = localStorage.getItem('caduceus.om3.fw') !== '20'; } catch { /* storage blocked */ }
+  const looksBin = () => profilesBin(O.bank, fw21);
+  const fwSel = h('select', { onchange: (e: Event) => {
+    fw21 = (e.target as HTMLSelectElement).value === '21';
+    try { localStorage.setItem('caduceus.om3.fw', fw21 ? '21' : '20'); } catch { /* storage blocked */ }
+  } }, h('option', { value: '21', selected: fw21 }, 'v0.21 or later'), h('option', { value: '20', selected: !fw21 }, 'v0.20 or older'));
+  const cardFiles = async () => [{ name: 'LOOKS.BIN', data: looksBin() }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
   const busy = async (b: HTMLButtonElement, f: () => Promise<void>) => { b.disabled = true; try { await f(); } catch (e) { toast((e as Error).message, 'err'); } finally { b.disabled = probs.length > 0; } };
   const looks = O.bank.flat().filter(Boolean) as Look[];
   const rrAll = () => makeZip(looks.map((l, i) => ({ name: `${String(i + 1).padStart(2, '0')}-${rrName(l.name)}.rrpreset`, data: new TextEncoder().encode(rrpreset(bankPack(looks), i)) })));
@@ -1447,6 +1459,9 @@ function om3ExportDialog() {
       ? h('div', { class: 'problems-box' }, h('b', {}, `${probs.length} problem(s) to fix first:`), h('ul', { class: 'problems' }, ...probs.slice(0, 12).map((p) => h('li', {}, fmt(p)))))
       : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; NR, Glow / Clarity and Art Effects need v0.20, older firmware ignores them; on v0.17–v0.18 use the PROFILES.BIN file below).`),
     h('div', { class: 'ex-row' },
+      h('div', {}, h('b', {}, 'Firmware on the camera'), h('p', { class: 'help' }, 'v0.21 adds the lens vignette correction choice to LOOKS.BIN. Firmware v0.20 and older would reject such a file, so for them it is left out (every look keeps the camera\'s correction).')),
+      fwSel),
+    h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'Save to the SD card'), h('p', { class: 'help' }, 'Pick the card (or its OM3MOD folder): writes OM3MOD/LOOKS.BIN and NAMES.BIN. This replaces the looks on the card, including ones made on the camera: Open… the card\'s LOOKS.BIN first to keep those. Chrome / Edge.')),
       toCard),
     h('div', { class: 'ex-row' },
@@ -1455,8 +1470,8 @@ function om3ExportDialog() {
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'Single files'), h('p', { class: 'help' }, 'LOOKS.BIN: the 20 looks. NAMES.BIN: their names as the camera shows them under the wheel ("Empty" for unused numbers). Both go in OM3MOD/. Still on firmware v0.17–v0.18? It reads the same looks as PROFILES.BIN.')),
       h('div', { class: 'ex-btns' },
-        h('button', { disabled: probs.length > 0, onclick: () => download('LOOKS.BIN', profilesBin(O.bank)) }, 'LOOKS.BIN'),
-        h('button', { disabled: probs.length > 0, title: 'For firmware v0.17–v0.18', onclick: () => download('PROFILES.BIN', profilesBin(O.bank)) }, 'PROFILES.BIN'),
+        h('button', { disabled: probs.length > 0, onclick: () => download('LOOKS.BIN', looksBin()) }, 'LOOKS.BIN'),
+        h('button', { disabled: probs.length > 0, title: 'For firmware v0.17–v0.18', onclick: () => download('PROFILES.BIN', profilesBin(O.bank, false)) }, 'PROFILES.BIN'),
         names)),
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'Looks file (.json)'), h('p', { class: 'help' }, 'Everything, including notes. Open it here later or send it to someone.')),

@@ -64,6 +64,7 @@ export interface Look {
   art_effect: Art;     // COLOR slots of BUNDLES.BIN only: LOOKS.BIN has no field for it
   tone: Tone;          // LOOKS.BIN tone block when non-zero (H/S/M/B/W); B/W also go into COLOR slots of BUNDLES.BIN
   advice: Advice;      // camera settings the look recommends (preview only; not in any card file)
+  lens_correction?: boolean;   // Caduceus v0.25 / OM-3 v0.21: true = keep the camera's lens vignette correction (default: off)
   origin?: string;     // app-only: the built-in library look this one came from (for Reset look); not exported
   lib?: string;        // app-only: fingerprint of the library values it was copied from (unmodified = still equal)
 }
