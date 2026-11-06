@@ -4,7 +4,7 @@
  * XB_LINK; the build links it twice and lists every 32-bit field that moves (absolute: + delta, PC-relative to the
  * firmware: - delta). Entries are 8 bytes apart and reached from the firmware stubs with every register as the stub
  * documents. Slot entry S = P + 32 + 64k of the effective COLOR profile k+1: +49 Glow (-1..-5) / Clarity (+1..+5),
- * +50 Art Effect id (Caduceus: 1 Star Light, 2 Pin Hole, 4 White Edge, 5 Frame), +51 NR (1 Std, 2 Low, 3 Off).
+ * +50 Art Effect id (Caduceus: 1 Star Light, 2 Pin Hole, 4 White Edge, 5 Frame), +51 NR (1 Std, 2 Low, 3 Off), +52 VigFix (1: Shading Comp. reads Off).
  * Stores: the job flag word in the stock params / request (as the stock Art Effect code), own stack, the relocation
  * fields of this block (entry 0, once, before the block is published). No mul/div (MDR is the weight getter's return).
  */
@@ -21,7 +21,7 @@ xb_base:
  .balign 8
  jmp xb_wt                        /* +24 Soft Focus weight (s_wt) */
  .balign 8
- jmp xb_nr                        /* +32 stills Noise Filter read (s_nr) */
+ jmp xb_nr                        /* +32 stills Noise Filter / Shading Comp. read (s_nr) */
  .balign 8
  jmp xb_kad                       /* +40 editor ALL state read (k_ad) */
  .balign 8
@@ -161,30 +161,46 @@ xb_wt:
  mov d1,mdr
  retf [],0
 
-/* stills Noise Filter read (property 0x9719; capture and Exif sites): the site's `call getter,[d2,d3],12` frame,
- * d0 key, d1, a0 as for the getter. NR 1..3 -> the real read, then d0 = 0 Standard / -1 Low / -2 Off. */
+/* property reads (s_nr): the site's `call getter,[d2,d3],12` frame, d0 key, d1, a0 as for the getter. Key 0x9719
+ * (stills Noise Filter; capture and Exif sites): NR 1..3 -> the real read, then d0 = 0 Standard / -1 Low / -2 Off.
+ * Key 0x8c21 (Shading Comp., sid 61; capture and lens-request sites, v0.21): VigFix 1 -> the real read, then d0 = 0
+ * (Off, a stock value). Otherwise the getter as stock. */
 xb_nr:
  mov d1,d2
  mov a0,d3
+ add -8,sp                        /* (0) call slot, (4) the key */
+ mov d0,(4,sp)
  call xb_slot,[d2,d3],12
+ mov (4,sp),d1                    /* d1 = key */
+ add 8,sp
  cmp 0,a1
  beq 9f
- movbu (51,a1),d0
+ cmp 38681,d1
+ bne 5f
+ movbu (51,a1),d0                 /* NR 1..3 */
  add -1,d0
  cmp 3,d0
  bcc 9f
  mov xb_nm,a1
  movbu (d0,a1),d0
  extb d0
+ bra 6f
+5:
+ movbu (52,a1),d0                 /* v0.21 VigFix 1: Shading Comp. reads 0 (Off) */
+ cmp 1,d0
+ bne 9f
+ clr d0
+6:
+ mov d1,a1                        /* key */
  mov d2,d1
  mov d3,a0
- mov d0,d2
- mov 38681,d0
+ mov d0,d2                        /* the value to return */
+ mov a1,d0
  call getter,[d2,d3],12
  mov d2,d0
  ret [d2,d3],12
 9:
- mov 38681,d0
+ mov d1,d0
  mov d2,d1
  mov d3,a0
  jmp getter
@@ -281,7 +297,7 @@ xb_reloc:                         /* a2 = P (x_load) */
 /* ---- dial labels: OM3MOD/LABELS.BIN v2 = 'OM3V' | u32 total | u32 CRC-32 of bytes 12.. | u32 n (21) | n bitmaps
  * 30 rows x 9 bytes (70 px, MSB first, 1 = letter fill). One heap copy (XL_FILE B) and one 2 KB stream buffer; the
  * label is drawn and encoded (OSD type 11, 70 x 30) only when it changes. */
- .set XL_N, 21
+ .set XL_N, 23
  .set XL_BM, 270
  .set XL_FILE, 16+XL_N*XL_BM
  .set XL_OUT, 2048
@@ -537,7 +553,7 @@ xb_rend:
  ret [d2,d3,a2,a3],64
 
 /* label vl (vl_s jump; frame [d2,d3,a2,a3],20 of vl_s): d2 = slice, a2 = P, a3 = the caller's a0, d3 its a1.
- * On the Extras page, slices 1..7: the "Vivid" picture's descriptor (VDESC, 70 x 30) shows the label for the slice
+ * On the Extras page, slices 1..8: the "Vivid" picture's descriptor (VDESC, 70 x 30) shows the label for the slice
  * and its value; anywhere else the stock picture. Only a descriptor that is 70 x 30 with the stock payload or ours is
  * touched. Stores: VDESC +12 size, +16 payload (as gd_set does for the guide picture), xb_lc, the stream buffer. */
 xb_vl:
@@ -566,7 +582,7 @@ xb_vl:
  movbu (AXIS,a2),d3
  cmp 3,d3
  bne 7f
- cmp 7,d2
+ cmp 8,d2
  bcc 7f
  movbu (EDK,a2),d3
  asl 6,d3
@@ -643,7 +659,7 @@ xb_lc:
  .long -1                         /* the label in it */
 xb_ll:
  .long 0                          /* its length */
-xb_vt:                            /* slice 1..7: slot byte, mode, first label, max */
+xb_vt:                            /* slice 1..8: slot byte, mode, first label, max */
  .byte 51,0,0,3                   /* 1 NR: Camera, Std, Low, Off */
  .byte 49,1,4,0                   /* 2 Glow (-), Clarity (+), Glow/Clar. (0) */
  .byte 26,1,7,0                   /* 3 Blue (-), Amber (+), A-B (0) */
@@ -651,6 +667,7 @@ xb_vt:                            /* slice 1..7: slot byte, mode, first label, m
  .byte 50,0,13,5                  /* 5 Art Effect: Off, Star Light, Pin Hole, (Off), White Edge, Frame */
  .byte 47,2,19,0                  /* 6 Blacks */
  .byte 48,2,20,0                  /* 7 Whites */
+ .byte 52,0,21,1                  /* 8 VigFix: Camera, Off (v0.21) */
 xb_lpath:
  .asciz "C:\\OM3MOD\\LABELS.BIN"
  .balign 2

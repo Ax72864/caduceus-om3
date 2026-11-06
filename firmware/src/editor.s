@@ -1408,7 +1408,7 @@ ed_event:
  mov a2,a0
  add d0,a0                        /* slot entry: hue[12] +0, light[12] +12 */
  clr d0
- mov 52,d1                        /* v0.20: slot +0..51 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR) */
+ mov 53,d1                        /* slot +0..52 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix) */
 2:
  movbu d0,(a0)
  inc a0
@@ -1515,14 +1515,10 @@ ed_isdef:
  add 64,a0
  bra 81b
 82:
- movbu (47,a0),d3                 /* Blacks, Whites, v0.20 Extras Glow/Clarity, Art Effect, NR: any non-zero */
- movbu (48,a0),d1
+ movbu (47,a0),d3                 /* Blacks, Whites, Extras Glow/Clarity, Art Effect, NR, VigFix: any non-zero */
+ mov (48,a0),d1                   /* +48..51 (slot entries are 4-aligned: P + 32 + 64k) */
  or d1,d3
- movbu (49,a0),d1
- or d1,d3
- movbu (50,a0),d1
- or d1,d3
- movbu (51,a0),d1
+ movbu (52,a0),d1
  or d1,d3
  cmp 0,d3
  bne 7f
@@ -1880,6 +1876,8 @@ pf_cap:
  movbu d0,(48,a3)
  movbu (27,a0),d0                 /* slot +51 NR -> record +49 */
  movbu d0,(49,a3)
+ movbu (28,a0),d0                 /* v0.21: slot +52 VigFix -> record +50 */
+ movbu d0,(50,a3)
  clr d3
 2:
  mov pf_ids,a0
@@ -2096,7 +2094,7 @@ pf_put:
  inc a0
  add -1,d1
  bne 2b
- mov pf_bt,a1                     /* rec +36..40, +47, +48 -> slot +25..27, +47, +48, +49, +50 (0 for neutral) */
+ mov pf_bt,a1                     /* rec +36..40, +47..50 -> slot +25..27, +47, +48, +49..52 (0 for neutral) */
 8:
  movbu (a1),d2
  movbu (1,a1),d3
@@ -2107,7 +2105,7 @@ pf_put:
 7:
  movbu d0,(d3,a0)
  add 2,a1
- cmp pf_bt+16,a1
+ cmp pf_bt+18,a1
  bne 8b
  movbu (7,a0),d0
  or 2,d0
@@ -2143,7 +2141,7 @@ pf_put:
  bne 5b
  ret [d2,d3,a2,a3],40
 pf_bt:                            /* record offset, slot offset - 24 */
- .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27
+ .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28
 
 .section .ext1,"ax"
 /* pf_wb: `call pf_wb,[d2,d3,a2,a3],24` from ed_trig, a2 = P: every COLOR on profile 1..5 -> its record (pf_cap);
@@ -2315,7 +2313,7 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
 pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
                                      (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
- .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, 0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, 0,0,0,0,0,0,0,0,0,0,0,0,0
 pf_pnew:
  .asciz "C:\\OM3MOD\\LOOKS.NEW"
 pf_pbin:
@@ -2714,7 +2712,7 @@ xt_tab:                           /* Extras slices 1..8: slot byte, min, max (0 
  .byte 50,0,5                     /* 5 Art Effect: 0 Off, 1 Star Light, 2 Pin Hole, 3 -, 4 White Edge, 5 Frame (Caduceus ids) */
  .byte 47,-5,5                    /* 6 Blacks */
  .byte 48,-5,5                    /* 7 Whites */
- .byte 0,0,0                      /* 8 VigFix: not yet */
+ .byte 52,0,1                     /* 8 VigFix: 0 Camera (Shading Comp. as set), 1 Off (v0.21) */
 
 /* ------------------------------------------------------------------ v0.20 test 5: code block from the card
  * The Extras effects run from a code block at the end of GUIDES.BIN (built with this firmware; tag XTAG), loaded

@@ -2,7 +2,7 @@
 """LABELS.BIN for the OM-3 Extras wheel (v0.20): the dial label next to the value ("Vivid" on the stock wheel) names
 the selected Extras slice and what its value does. Drawn from scratch to the stock label's metrics (70 x 30, OM-3 OSD
 palette: 0 clear, 7 dark edge, 8 grey, 9 faint, 10 white fill, 11/12 soft fill); no camera graphics are copied.
-LABELS.BIN v2: 'OM3V' | u32 total | u32 crc32(bytes 12..) | u32 n (21) | n bitmaps of 30 rows x 9 bytes (70 px + 2 spare
+LABELS.BIN v2: 'OM3V' | u32 total | u32 crc32(bytes 12..) | u32 n (23 from v0.21) | n bitmaps of 30 rows x 9 bytes (70 px + 2 spare
 bits, MSB first, 1 = letter fill). The camera draws the label from its bitmap (firmware code block): fill 10, a 1 px
 dark edge 7 (8 neighbours), then grey 8 out to 2 px, and encodes it as an OSD type-11 stream (render() below is the
 same rule, for the preview and the tests).
@@ -19,7 +19,8 @@ LABELS = ['NR', 'NR Std', 'NR Low', 'NR Off',                     # slice 1: 0 c
           'B', 'A', 'A/B',                                      # slice 3 (A-B): blue, amber, zero
           'M', 'G', 'G/M',                                      # slice 4 (G-M): magenta, green, zero
           'Art Off', 'Star', 'Pin Hole', 'Art Off', 'W. Edge', 'Frame',   # slice 5: Caduceus Art Effect ids 0..5
-          'Blacks', 'Whites']                                   # slices 6, 7
+          'Blacks', 'Whites',                                   # slices 6, 7
+          'Vig Cam', 'Vig Off']                                 # slice 8 (VigFix, v0.21): 0 camera, 1 off
 
 
 def font(size):

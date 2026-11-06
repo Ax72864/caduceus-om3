@@ -82,13 +82,13 @@ MAGIC = b'OM3B'
 RANGES = {'hue': (-7, 7), 'light': (-7, 7), 'grain': (0, 6), 'wb_flags': (0, 1), 'wb_ab': (-7, 7),
           'wb_gm': (-7, 7), 'effect_id': (0, 3), 'effect_strength': (0, 5), 'vignette': (-5, 5),
           'flags': (0, 3), 'colour': (0, 1), 'sat': (-5, 5), 'bloom_tint': (0, 4), 'art_effect': (0, 5),
-          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5)}
+          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1)}
 
 
 def range_table():
     lay = json.loads(LAYOUT.read_text())
     fields = dict(lay['fields']); fields.update(lay['color_fields'])
-    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1]})      # v0.20 OM-3 Extras (Glow/Clarity, Frame)
+    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1]})   # OM-3 Extras (v0.20; VigFix v0.21)
     lo, hi = [0] * 64, [0] * 64
     for name, (off, n, *_) in fields.items():
         a, b = RANGES[name]
@@ -175,6 +175,17 @@ def build(defaults, testfile, out):
         back = bytes(m[o(a) - 14:o(a)])
         assert struct.pack('<I', 34041) in back or struct.pack('<I', 38521) in back, hex(a)
         m[o(a) + 1:o(a) + 5] = struct.pack('<i', sy['wb_get'] - a)
+    # v0.21 VigFix: the seven reads of Shading Comp. (key 0x8c21, sid 61: the setting-ID table 0x6062555c matches the
+    # E-P7's for its first 252 entries) -> s_nr, which passes the key on to the block (+32) or the getter
+    SC_SITES = [0x603d4f84, 0x603dc2ed, 0x603eab70, 0x603eac45, 0x60457e83, 0x6070c6ce, 0x6070c855]
+    assert struct.unpack_from('<I', m, o(0x6062555c) + 4 * 61)[0] == 0x8c21
+    for a in SC_SITES:
+        assert m[o(a)] == 0xdd and m[o(a) + 5:o(a) + 7] == b'\xc0\x0c', hex(a)
+        assert (a + struct.unpack_from('<i', m, o(a) + 1)[0]) & 0xffffffff == 0x60063380, hex(a)
+        assert struct.pack('<I', 0x8c21) in bytes(m[o(a) - 14:o(a)]), hex(a)
+        m[o(a) + 1:o(a) + 5] = struct.pack('<i', sy['s_nr'] - a)
+    hits = [i for i in range(len(m) - 6) if m[i:i + 6] == b'\xfc\xcc\x21\x8c\x00\x00']
+    assert len(hits) == 7, [hex(P.BASE + i) for i in hits]
     ISDEF_SITES = [0x611d18a7, 0x611d18e8, 0x611d18f6, 0x611d1939, 0x611d1946, 0x611d1953, 0x611d1ac3]   # 0x6129ba33 (near call) via .hook_pmod
     for a in ISDEF_SITES:
         assert m[o(a)] == 0xdd and (a + struct.unpack_from('<i', m, o(a) + 1)[0]) & 0xffffffff == 0x6129bad6, hex(a)

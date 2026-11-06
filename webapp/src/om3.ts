@@ -3,14 +3,16 @@
 // Light), the tone (Shadows / Midtones / Highlights on the camera's own tone settings, Blacks / Whites on the Extras
 // page), the camera's Contrast, Sharpness and Shading and, from v0.20, the Extras page: NR (the camera's stills Noise
 // Filter: Camera / Std / Low / Off), Glow (-5..-1) / Clarity (1..5), WB A-B / G-M and an Art Effect (Star Light, Pin
-// Hole, White Edge, Frame). Colour only: no glow colour (tint) and no monochrome looks.
+// Hole, White Edge, Frame), and from v0.21 VigFix (the lens vignette correction off for the look, as Caduceus v0.25:
+// off unless the look keeps it, `lens_correction`). Colour only: no glow colour (tint) and no monochrome looks.
 //
 // Card files (C:\OM3MOD\, little-endian):
 //   PROFILES.BIN v1, 1632 B: 'OM3P' | 1632 | crc32(12..) | u16 1 | u16 20 | sel[4] | 12 zero | 20 x 64-B records
 //     (COLOR k profile v at 5k + v - 1: hue[12] +0, light[12] +12, sat[12] +24, +36 WB on, +37 A-B, +38 G-M,
 //     +39 Blacks, +40 Whites, +41 Contrast, +42 Sharpness, +43 Shading, +44 Shadows, +45 Midtones, +46 Highlights,
 //     v0.20: +47 Glow (-5..-1) / Clarity (1..5), +48 Art Effect (0 Off, 1 Star Light, 2 Pin Hole, 4 White Edge, 5 Frame:
-//     the Caduceus ids), +49 NR (0 Camera, 1 Std, 2 Low, 3 Off); zero before v0.20, so older files read as before)
+//     the Caduceus ids), +49 NR (0 Camera, 1 Std, 2 Low, 3 Off); zero before v0.20, so older files read as before),
+//     v0.21: +50 VigFix (0 Camera: keep the lens vignette correction, 1 Off; v0.20 and older reject a file with a 1)
 //     | 20 x 16-B names at 1312. Written with sel = 0 so the camera never saves its own settings over these profiles.
 //   NAMES.BIN v1: the name pictures for the Film page (./om3names.ts).
 import { ARTS, blankLook, cloneLook, toneIsZero, zeroTone, type Grain, type Look, type Pack } from './pack';
@@ -97,7 +99,8 @@ export function validateBank(bank: Bank): Problem[] {
 
 // ---- PROFILES.BIN
 export const PF_LEN = 1632;
-export function profilesBin(bank: Bank): Uint8Array {
+/** vigfix false: leave +50 at 0 (the camera's correction) so firmware v0.20 and older accept the file. */
+export function profilesBin(bank: Bank, vigfix = true): Uint8Array {
   const b = new Uint8Array(PF_LEN), d = new DataView(b.buffer);
   b.set([0x4f, 0x4d, 0x33, 0x50]); d.setUint32(4, PF_LEN, true); d.setUint16(12, 1, true); d.setUint16(14, 20, true);
   bank.forEach((row, k) => row.forEach((l, j) => {
@@ -112,6 +115,7 @@ export function profilesBin(bank: Bank): Uint8Array {
     s8(47, !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength);
     b[o + 48] = Math.max(0, (ARTS as readonly string[]).indexOf(l.art_effect === 'blur' ? 'off' : l.art_effect));
     b[o + 49] = Math.max(0, OM3_NR.indexOf(l.grain));
+    if (vigfix) b[o + 50] = l.lens_correction ? 0 : 1;
     const nm = l.name.replace(/[^\x20-\x7e]/g, '?').slice(0, 15);
     for (let i = 0; i < nm.length; i++) b[1312 + 16 * r + i] = nm.charCodeAt(i);
   }));
@@ -128,7 +132,7 @@ export function readProfiles(b: Uint8Array): Bank {
   for (let r = 0; r < 20; r++) {
     const o = 32 + 64 * r, s = (i: number) => d.getInt8(o + i), a = (at: number) => Array.from({ length: 12 }, (_, i) => s(at + i));
     let name = ''; for (let i = 0; i < 15; i++) { const c = b[1312 + 16 * r + i]; if (!c) break; name += String.fromCharCode(c); }
-    if (!name && !b.subarray(o, o + 50).some(Boolean)) continue;
+    if (!name && !b.subarray(o, o + 51).some(Boolean)) continue;
     const l = blankLook('colour', (name || `Look ${(r % 5) + 1}`).slice(0, OM3_NAME_MAX).trim() || 'Look');
     l.hue = a(0); l.light = a(12); l.sat = a(24);
     l.wb = b[o + 36] & 1 ? { a_b: s(37), g_m: s(38) } : null;
@@ -139,6 +143,7 @@ export function readProfiles(b: Uint8Array): Bank {
     const art = ARTS[b[o + 48]] ?? 'off';
     l.art_effect = art === 'blur' ? 'off' : art;
     l.grain = OM3_NR[b[o + 49]] ?? 'off';
+    if (b[o + 50] === 0) l.lens_correction = true;
     bank[Math.floor(r / 5)][r % 5] = l;
   }
   return bank;
