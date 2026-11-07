@@ -1,5 +1,18 @@
 # Caduceus for OM-3
 
+> [!CAUTION]
+> **Development branch: v0.23-alpha, picture-mode sliders. Untested on a camera. Do not flash builds from this branch.**
+>
+> This branch moves the Extras settings onto the camera's own Picture Mode slider rows (like Contrast and Shading),
+> one setting at a time. So far: **Sharp** runs on the restored Sharpness row (−5 to +2), kept in step with the Extras
+> wheel. Emulator-tested only.
+>
+> **Known issue (blocking):** the new code is placed in a part of the firmware image that the camera may not load into
+> memory (the emulator does). It must move to verified space before any camera test; see the
+> [`experiment/firmware-space-probe`](../../tree/experiment/firmware-space-probe) branch.
+>
+> For the current release, use [`main`](../../tree/main) (v0.22).
+
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
 the camera's Color Profile wheel into a full colour editor (per-colour Hue and Light, and an **Extras** page with

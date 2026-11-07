@@ -3,6 +3,11 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## Unreleased: v0.23-alpha (branch `feature/v0.23-alpha-profile-sliders`, untested)
+- **Picture Mode sliders** (in progress): the Extras settings move onto the camera's own slider rows, one at a time.
+  First: **Sharp** on the Sharpness row of COLOR 1–4, −5 to +2 (the bar's dot, ends and readout follow the wider
+  range), the same value as the Extras wheel's Sharp. Emulator-tested; not safe to flash yet (code placement).
+
 ## v0.22
 Sharpness as part of the look. Camera-tested.
 
