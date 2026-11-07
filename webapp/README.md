@@ -30,9 +30,13 @@ camera's Looks page.
 - The left pane shows COLOR 1–4 with numbers 1–5 (an unused number is "Empty", as on the camera). Drag, ↑ ↓ or
   Alt+↑/↓ swap numbers; × empties one. An empty number offers a blank look, a library look or a pasted code.
 - The editor keeps what the OM-3 has: Hue / Lightness / Saturation ±5, Tone (Highlights / Shadows / Midtones ±7,
-  Blacks / Whites ±5), the camera's Contrast and Sharpness (±2) and Shading (±5), and a WB shift (±5). No noise
-  filter, glow / clarity, Art Effect or monochrome. Names are up to 15 characters.
-- The preview turns hue the OM-3 way (+ toward the clockwise neighbour) and includes Contrast, Sharpness and Shading.
+  Blacks / Whites ±5), the camera's Contrast and Sharpness (±2) and Shading (±5), a WB shift (±5) and the Extras:
+  NR, Glow / Clarity, Art Effect (v0.20), lens vignette correction and Grain Off / Low / Med / High (v0.21). No
+  monochrome. Names are up to 15 characters. A look with Grain and Glow / Clarity or an Art Effect gets a note: the
+  camera saves those photos about 3 s more slowly and can't shoot fast bursts with them.
+- The preview turns hue the OM-3 way (+ toward the clockwise neighbour) and includes Contrast, Sharpness, Shading and
+  the Grain (`research/grain/model.py`, at the camera's strength). Drag the line on the photo to compare before and
+  after.
 - Open: the card's `OM3MOD/LOOKS.BIN` (to keep looks made on the camera), a looks file (`*.om3.json`), or a
   Caduceus pack / `LOOKS.BIN` / pack link: its first 20 colour looks become the 20 looks (limited to the OM-3 ranges).
   Pasted Caduceus look codes go into the selected empty number.

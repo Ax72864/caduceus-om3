@@ -3,6 +3,67 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.21
+Film grain on colour photos, looks you save on purpose, and a `*` that means "not factory". Camera-tested.
+
+**Grain (Extras sector 9)**
+- **Grain 0 Off, 1 Low, 2 Med, 3 High** on COLOR photos: the camera's own Monochrome grain (same texture, its Low /
+  Medium / High strengths), on colour. The label reads "Grain" and the value shows the level.
+- On its own, or with NR, the WB shift, Blacks / Whites or VigFix, the grain is made by the camera's image
+  processor while it develops the photo: no extra time, and every other setting still applies.
+- **With Glow / Clarity or an Art Effect** in the same look, the camera's processor can't add it there, so it is
+  added to the finished photo in software (brightness only, the same pattern and strengths). **Each photo then takes
+  about 3 seconds longer to save, and fast sequential (burst) shooting isn't possible with that look.** Making this
+  fast is on the roadmap.
+- Grain shows in the saved photo, not in live view.
+
+**VigFix (Extras sector 8)**
+- 0 Camera (your Shading Comp. menu setting) or 1 Off: the lens's vignette correction turned off for photos with this
+  look, for natural corners, without changing the menu setting (as Caduceus's VigFix). Labels "Vig Cam" / "Vig Off".
+
+**Saving looks on purpose**
+- **Hold OK on the Film page** (a look 1–5 selected) saves the COLOR's current settings into that look. This is now
+  the only way a look changes: turn to another look without it and your changes are dropped, so the saved look
+  stays as it was. You can try things out without losing a look.
+- The Film page never resets, and shows no "Reset" hint.
+- **Hold OK on Saturation, Hue, Light or Extras** resets the wheels and Extras as before; the selected look stays.
+- **Hold OK on the "COLOR n" item** resets the whole COLOR to the factory settings, Picture Mode settings included,
+  and sets the Film page back to 0.
+
+**The `*`**
+- The `*` after "COLOR n" now means **something differs from the camera's factory settings** for that COLOR, on every
+  page (the Film page included). After a reset, or on Film 0, it's gone; change anything and it's back. A selected
+  look usually shows one, since the look changes settings.
+- **Film 0** now loads the COLOR's own factory settings. Before, it set everything to 0, which on COLOR 2–4 (whose
+  factory saturation and tone aren't 0) left a `*` that wouldn't go away.
+
+**Fixes and smaller changes**
+- **WB amber / blue and green / magenta now work with Auto WB.** Before, the WB shift was ignored in Auto WB and only
+  applied to the other white balance modes.
+- The rear dial stops at each Extras sector's first and last value (before, it could go past the end, and the next
+  turns back did nothing).
+- A reset could leave a saturation value off its factory setting when the wheel was last on the Film or Extras page
+  (COLOR 4 kept a `*` after a reset on "COLOR 4"). The wheel now switches to Saturation for the reset and back
+  afterwards.
+
+**Control Panel**
+- **Grain** (Off / Low / Med / High) and the **lens vignette correction** in the Extras, both written to `LOOKS.BIN`.
+- The preview shows the grain, at the camera's strength.
+- **Drag the line on the photo** to compare before and after (it replaces the "Hold: original" button).
+- A note under Grain when a look combines it with Glow / Clarity or an Art Effect: slower saving and no fast burst.
+- Looks files keep Grain and the lens correction setting (the lens correction setting was lost on reopening before).
+- Export › **Firmware on the camera**: v0.20 or older leaves Grain and the lens correction out of `LOOKS.BIN`
+  (older firmware would ignore a file with them set).
+
+**Card files and upgrading**
+- Copy `DCOLYMP` (flash it) and both new `OM3MOD` files: `GUIDES.BIN` (the Extras code, made for this firmware) and
+  `LABELS.BIN` (adds the VigFix and Grain labels). Keep your `LOOKS.BIN`, `NAMES.BIN` and `BUNDLES.BIN`: looks from
+  v0.20 load with Grain off and the lens correction as before.
+- Going back to v0.20 or older: those reject a `LOOKS.BIN` with Grain or VigFix set. Save it from the Control Panel
+  with **v0.20 or older** chosen in Export.
+- `patch.py` accepts the official firmware under the name OM's server uses now, `OLY_E_147_1100_0000_0000.BIN`, as
+  well as the earlier `…_3.BIN` (issue #2).
+
 ## v0.20
 The Color Profile wheel now matches Caduceus for the E-P7: a **Film** page, the colour pages and one **Extras** page
 with the look's effects. Camera-tested.

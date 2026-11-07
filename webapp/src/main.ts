@@ -16,7 +16,7 @@ import { recipeCard } from './targets/recipe';
 import { previewToneLut } from './tone';
 import {
   BANK_SCHEMA, COLORS, OM3, OM3_ARTS, OM3_NAME_MAX, OM3_NR, PER, om3NameProblem, blankProfile, defaultBank, emptyBank, fromOldLookLab, parseBank, profilesBin, readProfiles,
-  toOm3, validateBank, type Bank,
+  slowGrain, toOm3, validateBank, type Bank,
 } from './om3';
 import { namesBin } from './om3names';
 import { parseLook } from './pack';
@@ -42,7 +42,7 @@ const S = {
   tab: 'hue' as Tab,
   image: 'harbour',
   advice: true,
-  compare: false,
+  cut: 50,
 };
 
 // ---------------------------------------------------------------- camera (E-P7: Caduceus; OM-3: Caduceus for OM-3)
@@ -695,6 +695,8 @@ function refreshProblems() {
 let srcData: ImageData | null = null;
 let userPhoto: ImageData | null = null;
 let canvas: HTMLCanvasElement;
+let beforeCv: HTMLCanvasElement;
+let beforeOf: ImageData | null = null;
 let previewQueued = false;
 
 function buildPreview() {
@@ -704,20 +706,34 @@ function buildPreview() {
       h('img', { src: `./samples/${s.id}.jpg`, alt: s.label, loading: 'lazy' }))),
     h('button', { class: `thumb own${S.image === 'user' ? ' on' : ''}`, 'data-id': 'user', onclick: () => (userPhoto ? pickImage('user') : $<HTMLInputElement>('#photo').click()), title: 'Your photo (stays on this device)' },
       h('span', {}, '+ Your photo')));
-  const cmp = h('button', {
-    class: 'compare', title: 'Hold to see the original',
-    onpointerdown: () => { S.compare = true; schedulePreview(); },
-    onpointerup: () => { S.compare = false; schedulePreview(); },
-    onpointerleave: () => { if (S.compare) { S.compare = false; schedulePreview(); } },
-  }, 'Hold: original');
+  // before / after: the untouched photo on its own canvas, clipped at a line you drag on the photo (or arrow keys)
+  beforeCv = h('canvas', { class: 'before', 'aria-hidden': 'true' }); beforeOf = null;
+  const divider = h('div', { class: 'divider', role: 'slider', tabindex: '0', 'aria-label': 'Before and after divider', 'aria-valuemin': '0', 'aria-valuemax': '100' },
+    h('span', { class: 'knob', 'aria-hidden': 'true' }, '‹ ›'));
+  const frame = h('div', { class: 'pv-frame' }, canvas, beforeCv, divider);
+  const setCut = (v: number) => {
+    S.cut = Math.max(0, Math.min(100, v)); frame.style.setProperty('--cut', `${S.cut}%`);
+    divider.setAttribute('aria-valuenow', String(Math.round(S.cut))); divider.setAttribute('aria-valuetext', `${Math.round(S.cut)}% before`);
+  };
+  let dragging = false;
+  const at = (e: PointerEvent) => { const r = frame.getBoundingClientRect(); setCut(((e.clientX - r.left) / r.width) * 100); };
+  frame.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; dragging = true; frame.setPointerCapture(e.pointerId); at(e); e.preventDefault(); });
+  frame.addEventListener('pointermove', (e) => { if (dragging) at(e); });
+  frame.addEventListener('pointerup', () => { dragging = false; }); frame.addEventListener('pointercancel', () => { dragging = false; });
+  divider.addEventListener('keydown', (e) => {
+    const step = ({ ArrowLeft: -2, ArrowRight: 2, PageDown: -10, PageUp: 10 } as Record<string, number>)[e.key];
+    if (step) { setCut(S.cut + step); e.preventDefault(); }
+    else if (e.key === 'Home') { setCut(0); e.preventDefault(); } else if (e.key === 'End') { setCut(100); e.preventDefault(); }
+  });
+  setCut(S.cut);
   $('#preview').replaceChildren(
-    h('div', { class: 'pv-wrap' }, canvas, h('span', { class: 'badge' }, 'Approximate preview'), cmp),
+    h('div', { class: 'pv-wrap' }, frame, h('span', { class: 'badge' }, 'Before'), h('span', { class: 'badge r' }, 'After · approximate')),
     thumbs,
     h('div', { class: 'pv-opts' },
       isOm3() ? h('span', { class: 'help' }, 'Includes Contrast, Sharpness and Shading.') : h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: S.advice, onchange: (e: Event) => { S.advice = (e.target as HTMLInputElement).checked; schedulePreview(); } }),
         h('span', {}, 'Include advice (contrast)')),
       h('button', { class: 'link', onclick: () => $<HTMLInputElement>('#photo').click() }, 'Use your own photo…')),
-    h('p', { class: 'help' }, 'A rough desktop-sim port running on JPEGs, not the camera\'s pipeline: use it for direction and strength, then check on the camera. Your own photo never leaves this browser.'));
+    h('p', { class: 'help' }, 'Drag the line on the photo to compare before and after. A rough desktop-sim port running on JPEGs, not the camera\'s pipeline: use it for direction and strength, then check on the camera. Your own photo never leaves this browser.'));
   pickImage(S.image);
 }
 
@@ -763,9 +779,12 @@ function schedulePreview() {
     previewQueued = false;
     if (!srcData || !canvas) return;
     if (canvas.width !== srcData.width || canvas.height !== srcData.height) { canvas.width = srcData.width; canvas.height = srcData.height; }
+    if (beforeOf !== srcData) {           // the untouched photo, drawn once per photo
+      beforeCv.width = srcData.width; beforeCv.height = srcData.height; beforeCv.getContext('2d')!.putImageData(srcData, 0, 0); beforeOf = srcData;
+    }
     const ctx = canvas.getContext('2d')!;
     const l = cur();
-    if (S.compare || !l) { ctx.putImageData(srcData, 0, 0); return; }
+    if (!l) { ctx.putImageData(srcData, 0, 0); return; }
     const out = ctx.createImageData(srcData.width, srcData.height);
     renderLook(srcData, out, l, { advice: isOm3() || S.advice, camera: CAM });
     ctx.putImageData(out, 0, 0);
@@ -1177,6 +1196,14 @@ function om3LibraryPicker() {
 }
 
 function renderOm3Editor(l: Look) {
+  // v0.21: Grain with Glow / Clarity or an Art Effect takes the camera's slow route: say so next to the Grain setting
+  const grainWarn = h('p', { class: 'warn', role: 'status' });
+  const showWarn = () => {
+    grainWarn.replaceChildren(...(slowGrain(l) ? [h('b', {}, 'Slower saving: '), 'with Glow / Clarity or an Art Effect, the camera adds this grain in a slower way. Each photo takes about 3 seconds longer to save, and fast sequential (burst) shooting isn\'t possible with this look. Grain on its own, or with the other Extras, is as fast as normal.'] : []));
+    grainWarn.hidden = !slowGrain(l);
+  };
+  const fxChanged = () => { changed(); showWarn(); };
+  showWarn();
   const el = $('#editor');
   const k = O.k, v = O.v;
   const changed = () => { save(); schedulePreview(); refreshProblems(); refreshLookCode(); };
@@ -1223,7 +1250,7 @@ function renderOm3Editor(l: Look) {
       setting('Shading', OM3.shading, () => l.vignette, (x) => { l.vignette = x; }, 'The camera\'s Shading (− darker corners, + lighter)'),
       h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast, Sharpness and Shading (Picture Mode menu items) to these.')),
     h('div', { class: 'group' },
-      h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20; lens correction v0.21)'),
+      h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20; lens correction and Grain v0.21)'),
       seg('NR', OM3_NR.map((g) => [g, ({ off: 'Camera', standard: 'Std', fine: 'Low', film: 'Off' } as Record<string, string>)[g]] as [string, string]), l.grain,
         (x) => { l.grain = x as Look['grain']; renderEditor(); changed(); }),
       h('p', { class: 'help' }, 'The camera\'s noise reduction (Noise Filter) for each photo with this look; Camera leaves your menu setting. Extras sector 1.')),
@@ -1233,9 +1260,16 @@ function renderOm3Editor(l: Look) {
         renderEditor(); changed();
       }),
       h('p', { class: 'help' }, 'Off turns the camera\'s lens shading correction (Shading Comp.) off for photos with this look, for natural corners, without changing the menu setting; Keep follows your menu setting. Extras sector 8 (VigFix, firmware v0.21). Not shown in the preview.')),
-    effectPanel(l, changed),
+    h('div', { class: 'group' },
+      seg('Grain', [['0', 'Off'], ['1', 'Low'], ['2', 'Med'], ['3', 'High']], String(l.film_grain ?? 0), (v) => {
+        if (v === '0') delete l.film_grain; else l.film_grain = Number(v);
+        renderEditor(); changed();
+      }),
+      h('p', { class: 'help' }, 'Film grain from the camera\'s own grain engine, the same texture as its Monochrome grain, on the colour photo. Extras sector 9 (firmware v0.21). Shown in the preview.'),
+      grainWarn),
+    effectPanel(l, fxChanged),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
-      h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; changed(); } },
+      h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; fxChanged(); } },
         ...OM3_ARTS.map((a) => h('option', { value: a, selected: a === l.art_effect }, ({ off: 'Off', star_light: 'Star Light', pin_hole: 'Pin Hole', white_edge: 'White Edge', frame: 'Frame (white)' } as Record<string, string>)[a]))),
       h('span', { class: 'help' }, 'The camera\'s own Art Effect on COLOR photos (Extras sector 5); Frame draws a clean white border. Shows in live view; not in this preview.')),
     wbPanel(l, changed),
@@ -1404,7 +1438,7 @@ function om3InstallDialog() {
       step('Flash',
         h('p', {}, 'Put the card in the camera, hold ', h('b', {}, 'OK'), ' and switch on. Wait for the update to finish (blinking LED) and don\'t switch off meanwhile. Then delete ', code('DCOLYMP/E1479999.BIN'), ' from the card.')),
       step('Shoot',
-        h('p', {}, 'Picture Mode › COLOR 1–4 › press ', h('b', {}, '▼'), ' for the wheel; it opens on ', h('b', {}, 'Film'), '. Turn the front dial to 1–5 to load a look; ', h('b', {}, 'INFO'), ' changes page (Saturation, Hue, Light, Extras).')))
+        h('p', {}, 'Picture Mode › COLOR 1–4 › press ', h('b', {}, '▼'), ' for the wheel; it opens on ', h('b', {}, 'Film'), '. Turn the front dial to 1–5 to load a look; ', h('b', {}, 'INFO'), ' changes page (Saturation, Hue, Light, Extras). To keep changes in a look, go back to Film and hold ', h('b', {}, 'OK'), '.')))
   );
   const dlg = modal('Install Caduceus for OM-3', body, [
     h('a', { class: 'btn', href: `${OM3_GH}/blob/main/docs/INSTALL.md`, target: '_blank', rel: 'noopener' }, 'Full guide on GitHub'),
@@ -1457,9 +1491,9 @@ function om3ExportDialog() {
   modal('Export for the OM-3', h('div', { class: 'export' },
     probs.length
       ? h('div', { class: 'problems-box' }, h('b', {}, `${probs.length} problem(s) to fix first:`), h('ul', { class: 'problems' }, ...probs.slice(0, 12).map((p) => h('li', {}, fmt(p)))))
-      : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; NR, Glow / Clarity and Art Effects need v0.20, older firmware ignores them; on v0.17–v0.18 use the PROFILES.BIN file below).`),
+      : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; NR, Glow / Clarity and Art Effects need v0.20, Grain and lens correction v0.21, older firmware ignores them; on v0.17–v0.18 use the PROFILES.BIN file below).`),
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'Firmware on the camera'), h('p', { class: 'help' }, 'v0.21 adds the lens vignette correction choice to LOOKS.BIN. Firmware v0.20 and older would reject such a file, so for them it is left out (every look keeps the camera\'s correction).')),
+      h('div', {}, h('b', {}, 'Firmware on the camera'), h('p', { class: 'help' }, 'v0.21 adds Grain and the lens vignette correction choice to LOOKS.BIN. Firmware v0.20 and older would reject such a file, so for them both are left out (no grain; every look keeps the camera\'s correction).')),
       fwSel),
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'Save to the SD card'), h('p', { class: 'help' }, 'Pick the card (or its OM3MOD folder): writes OM3MOD/LOOKS.BIN and NAMES.BIN. This replaces the looks on the card, including ones made on the camera: Open… the card\'s LOOKS.BIN first to keep those. Chrome / Edge.')),

@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import libraryJson from '../src/data/library.json';
 import { blankLook, parsePack, type Look } from '../src/pack';
 import { fromLibrary } from '../src/reset';
-import { COLORS, PER, defaultBank, emptyBank, parseBank, profilesBin, readProfiles, toOm3, validateBank, type Bank } from '../src/om3';
+import { COLORS, PER, defaultBank, emptyBank, parseBank, profilesBin, readProfiles, slowGrain, toOm3, validateBank, type Bank } from '../src/om3';
 import { parseLook } from '../src/pack';
 
 const LIB = parsePack(libraryJson);
@@ -24,7 +24,7 @@ const pyJson = (bank: Bank) => ({
     sh: l.tone.shadows, mid: l.tone.midtones, hi: l.tone.highlights,
     fx: !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength,
     art: ['off', 'star_light', 'pin_hole', 'blur', 'white_edge', 'frame'].indexOf(l.art_effect), nr: ['off', 'standard', 'fine', 'film'].indexOf(l.grain),
-    vig: l.lens_correction ? 0 : 1,
+    vig: l.lens_correction ? 0 : 1, grain: l.film_grain ?? 0,
   })),
 });
 function rnd(seed: number) { let s = seed; return (n: number) => { s = (s * 1103515245 + 12345) & 0x7fffffff; return (s % (2 * n + 1)) - n; }; }
@@ -41,6 +41,7 @@ function randomBank(seed: number): Bank {
     l.art_effect = (['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const)[Math.abs(r(4))];
     l.grain = (['off', 'standard', 'fine', 'film'] as const)[Math.abs(r(3))];
     if (r(1)) l.lens_correction = true;
+    const g = Math.abs(r(3)); if (g) l.film_grain = g;
     b[k][v] = l;
   }
   return b;
@@ -76,7 +77,7 @@ describe('OM-3 profile bank', () => {
         const a = b[k][v], z = back[k][v];
         if (!a) { expect(z).toBeNull(); continue; }
         expect(z!.name).toBe(a.name);
-        for (const f of ['hue', 'light', 'sat', 'tone', 'vignette', 'effect', 'art_effect', 'grain', 'lens_correction'] as const) expect(z![f]).toEqual(a[f]);
+        for (const f of ['hue', 'light', 'sat', 'tone', 'vignette', 'effect', 'art_effect', 'grain', 'lens_correction', 'film_grain'] as const) expect(z![f]).toEqual(a[f]);
         expect(z!.advice).toEqual(a.advice);
         expect(z!.wb && (z!.wb.a_b || z!.wb.g_m) ? z!.wb : null).toEqual(a.wb && (a.wb.a_b || a.wb.g_m) ? a.wb : null);
       }
@@ -85,7 +86,7 @@ describe('OM-3 profile bank', () => {
 
   it('LOOKS.BIN for firmware v0.20 leaves VigFix out', () => {
     const b = randomBank(4), old = profilesBin(b, false), cur = profilesBin(b);
-    for (let r = 0; r < 20; r++) expect(old[32 + 64 * r + 50]).toBe(0);
+    for (let r = 0; r < 20; r++) { expect(old[32 + 64 * r + 50]).toBe(0); expect(old[32 + 64 * r + 51]).toBe(0); }
     expect(b.flat().some((l) => l && !l.lens_correction)).toBe(true);
     expect([...cur].some((x, i) => i >= 32 && i < 1312 && (i - 32) % 64 === 50 && x === 1)).toBe(true);
   });
@@ -94,6 +95,16 @@ describe('OM-3 profile bank', () => {
     const b = defaultBank(LIB, fromLibrary);
     const f = parseBank(JSON.parse(JSON.stringify({ schema: 'caduceus-om3-bank/1', name: 'x', bank: b })), parseLook);
     expect(hex(profilesBin(f.bank))).toBe(hex(profilesBin(b)));
+    const r = randomBank(5), g = parseBank(JSON.parse(JSON.stringify({ schema: 'caduceus-om3-bank/1', name: 'x', bank: r })), parseLook);
+    expect(hex(profilesBin(g.bank))).toBe(hex(profilesBin(r)));          // VigFix and Grain survive a looks file
+  });
+
+  it('Grain with Glow / Clarity or an Art Effect is the slow kind', () => {
+    const l = blankLook('colour', 'G'); expect(slowGrain(l)).toBe(false);
+    l.film_grain = 2; expect(slowGrain(l)).toBe(false);
+    l.art_effect = 'frame'; expect(slowGrain(l)).toBe(true);
+    l.art_effect = 'off'; l.effect = { type: 'clarity', strength: 1 }; expect(slowGrain(l)).toBe(true);
+    delete l.film_grain; expect(slowGrain(l)).toBe(false);
   });
 
   it.skipIf(!existsSync(MK))('PROFILES.BIN is byte-identical to card/mkprofiles.py', () => {

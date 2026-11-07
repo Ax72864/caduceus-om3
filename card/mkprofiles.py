@@ -5,7 +5,7 @@
 Record: hue[12] +0, light[12] +12, sat[12] +24 (all -5..5, 12 o'clock clockwise), +36 wb on (0/1), +37 A-B, +38 G-M,
 +39 Blacks, +40 Whites (-5..5), +41 Contrast (-2..2), +42 Sharpness (-2..2), +43 Shading (-5..5), +44 Shadows,
 +45 Midtones, +46 Highlights (-7..7), v0.20 Extras: +47 Glow (-5..-1) / Clarity (1..5), +48 Art Effect (0 Off, 1 Star Light,
-2 Pin Hole, 4 White Edge, 5 Frame), +49 NR (0 Camera, 1 Std, 2 Low, 3 Off), v0.21: +50 VigFix (0 Camera, 1 Off: lens shading correction off); +51..63 zero.
+2 Pin Hole, 4 White Edge, 5 Frame), +49 NR (0 Camera, 1 Std, 2 Low, 3 Off), v0.21: +50 VigFix (0 Camera, 1 Off: lens shading correction off), +51 Grain (0 Off, 1 Low, 2 Med, 3 High); +52..63 zero.
 usage: mkprofiles.py IN.json OUT.BIN   (json: {"sel":[..4], "prof":[[{...} or null x5] x4]})"""
 import json, struct, sys, zlib
 LEN = 1632
@@ -16,10 +16,10 @@ def rec(p):
         a = p.get(k, [0] * 12); assert len(a) == 12; return a
     vals = arr('hue') + arr('light') + arr('sat') + [1 if p.get('wb') else 0, p.get('ab', 0), p.get('gm', 0), p.get('blacks', 0),
            p.get('whites', 0), p.get('contrast', 0), p.get('sharp', 0), p.get('shading', 0), p.get('sh', 0), p.get('mid', 0), p.get('hi', 0),
-           p.get('fx', 0), p.get('art', 0), p.get('nr', 0), p.get('vig', 0)]
-    lim = [5] * 36 + [1, 5, 5, 5, 5, 2, 2, 5, 7, 7, 7, 5, 5, 3, 1]
+           p.get('fx', 0), p.get('art', 0), p.get('nr', 0), p.get('vig', 0), p.get('grain', 0)]
+    lim = [5] * 36 + [1, 5, 5, 5, 5, 2, 2, 5, 7, 7, 7, 5, 5, 3, 1, 3]
     for i, (v, m) in enumerate(zip(vals, lim)):
-        assert (0 if i in (36, 48, 49, 50) else -m) <= v <= m and not (i == 48 and v == 3), (i, v); b[i] = v & 255
+        assert (0 if i in (36, 48, 49, 50, 51) else -m) <= v <= m and not (i == 48 and v == 3), (i, v); b[i] = v & 255
     return b
 def build(d):
     sel = d.get('sel', [0, 0, 0, 0]); assert all(0 <= s <= 5 for s in sel)

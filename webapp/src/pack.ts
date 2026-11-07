@@ -65,6 +65,7 @@ export interface Look {
   tone: Tone;          // LOOKS.BIN tone block when non-zero (H/S/M/B/W); B/W also go into COLOR slots of BUNDLES.BIN
   advice: Advice;      // camera settings the look recommends (preview only; not in any card file)
   lens_correction?: boolean;   // Caduceus v0.25 / OM-3 v0.21: true = keep the camera's lens vignette correction (default: off)
+  film_grain?: number;         // OM-3 v0.21: the camera's grain 1 Low, 2 Med, 3 High (absent = off); not the E-P7 grain field
   origin?: string;     // app-only: the built-in library look this one came from (for Reset look); not exported
   lib?: string;        // app-only: fingerprint of the library values it was copied from (unmodified = still equal)
 }
@@ -152,6 +153,8 @@ export function parseLook(v: unknown, what = 'look'): Look {
     art_effect: oneOf(v.art_effect, ARTS, `${what} art_effect`, 'off'),
     tone,
     advice: adv,
+    ...(v.lens_correction === true ? { lens_correction: true } : {}),
+    ...(Number.isInteger(v.film_grain) && (v.film_grain as number) > 0 ? { film_grain: Math.min(3, v.film_grain as number) } : {}),
     ...(typeof v.origin === 'string' ? { origin: v.origin } : {}),
     ...(typeof v.lib === 'string' ? { lib: v.lib } : {}),
   };

@@ -326,3 +326,31 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   `frames` {component 2, base, layers} that `firmware/patch.py` regenerates (region-only decode, checksum moved by the
   word-sum delta), plus `card_files`. Older patch.json files (format 1) build unchanged.
 
+
+## v0.21 release (repo)
+- Build: `firmware/build.py` makes pkg 9c423edb…, GUIDES.BIN d991fecd… (block relinked against this firmware: always
+  pair them), LABELS.BIN 73a28cb9… (24 labels: + "Vig Cam", "Vig Off", "Grain"); releases/v0.21 patch.json 62 runs /
+  7613 B. All three are the camera-tested files.
+- Extras slices 8 VigFix (slot +52, record +50, 0..1) and 9 Grain (slot +53, record +51, 0..3); `xt_tab` holds each
+  slice's slot byte and range. Shading Comp. (key 0x8c21) reads go through s_nr → block +32 (VigFix: 1 → 0).
+- Grain, camera route (`xb_dev` at the s_cl hook 0x604955f1): on the COLOR still development request (kind 0, +14
+  0x1000, +10 11) with Grain 1..3 and no Glow/Clarity/Art: request +1751 = level, +10 = 12 and context +48 = 12 (both
+  needed), the stock MONO grain pass. The tone hook's gate accepts key 12 when +1731 == 0 (MONO has 0xa0), so
+  Blacks / Whites still apply; WB / NR / VigFix are unaffected.
+- Grain, CPU route (block +56, `xb_gs`, after the Soft Focus blend setup) only when Glow/Clarity or an Art Effect is
+  on: luma-only, `research/grain/model.py` bit-exact, through the bus window per row, ~3 s per photo. Its loops run
+  from the block's cached alias; only code without PC-relative calls into the firmware may (relocations assume the
+  uncached address).
+- Lessons: `fb`-prefixed AM33 forms (e.g. `movbu (d8,An),Am`, `movhu (d8,An),Am`) misbehave on the camera and fault
+  in om-emu: use data registers (the build should show 0 `fb` opcodes in the block). Hooks on the capture / AE / WB
+  paths stay in flash (a block-resident wb_get rebooted at half-press). Dial list answers (facade +28 / +32, `pf_cnt` /
+  `pf_vbi` → block +96 / +104 through cached trampolines) must be frameless leaves: deeper frames restarted the camera
+  on switching to COLOR.
+- Looks: `lk_hold` (ed_event) → block +88 `xb_lkh`: event 0x903e on the Film page with a look selected → `pf_cap`
+  (save), 0xf881 (OK held on "COLOR n") → LIDX 0 + reset; every reset goes through `xb_rpre`, which re-reads children
+  1..12 with AXIS 0 first (the Film / Extras dial lists clamped the stock reset's values: COLOR4 12 o'clock −4 → 0).
+- `*`: `ed_pmod` = stock loop through `ed_isd0` (factory compare on every page; `ed_isdef` itself still says
+  "default" on the Film page so no Reset guide shows there). Film 0 = `pf_dflt`: the stock GetDefault 0x60b86e44
+  (not facade +156, which `ed_default` answers 0 on non-Saturation pages).
+- AWB fine-tune keys 7401/7433 (A-B) and 7417/7449 (G-M) added to `wb_get` (capture branch 0x60457d22 / 0x60457ae4,
+  population 0x618e6610..).

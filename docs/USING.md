@@ -16,12 +16,13 @@ Blue-cyan, Cyan, Green-cyan, Green, Yellow-green.
 
 ## Pages
 
-- **Film** (0..5, 12 o'clock only): picks a look. **0** = nothing (everything neutral), **1–5** = that COLOR's look,
-  with its name under the wheel. See [Looks and their names](#looks-and-their-names).
+- **Film** (0..5, 12 o'clock only): picks a look. **0** = nothing (the COLOR's factory settings), **1–5** = that
+  COLOR's look, with its name under the wheel. Hold **OK** here to save your changes into the selected look. See
+  [Looks and their names](#looks-and-their-names).
 - **Saturation**: the camera's own.
 - **Hue** (−5..+5): + turns a slice toward its clockwise neighbour (Yellow → Orange, Blue → Blue-cyan).
 - **Light** (−5..+5): darker / brighter for that slice. Steps grow as they go out.
-- **Extras**: eight effect sectors (below).
+- **Extras**: nine effect sectors (below).
 
 ## The Extras page
 
@@ -37,32 +38,48 @@ stock wheel says "Vivid") names the sector and what its value does.
 | 5 | 4 | **Art Effect** | 0 Off, 1 Star Light, 2 Pin Hole, 4 White Edge, 5 Frame (a clean white border); 3 does nothing (Caduceus numbers) | Art Off / Star / Pin Hole / W. Edge / Frame |
 | 6 | 5 | **Blacks**: the dark end of the tone curve | + lifts / fades, − crushes (−5..+5) | Blacks |
 | 7 | 6 | **Whites**: the bright end | + brighter, − softer (−5..+5) | Whites |
-| 8 | 7 | (reserved) | – | Vivid |
+| 8 | 7 | **VigFix**: the lens's vignette (shading) correction for each photo with this look | 0 Camera (your Shading Comp. setting), 1 Off (natural corners) | Vig Cam / Vig Off |
+| 9 | 8 | **Grain**: film grain from the camera's own grain engine | 0 Off, 1 Low, 2 Med, 3 High | Grain (with the number) |
 
-- NR, Glow and Art Effects are set per look, at every shot, without changing your menu settings. NR shows in the
-  photo's recorded settings; its effect is mostly visible at high ISO.
-- **Live view** shows Glow and the Art Effects as you frame. Clarity shows only in the saved photo.
-- The WB shift is added to the camera's own white balance and fine-tune.
+- NR, Glow, Art Effects and VigFix are set per look, at every shot, without changing your menu settings. NR shows in
+  the photo's recorded settings; its effect is mostly visible at high ISO.
+- **Live view** shows Glow and the Art Effects as you frame. Clarity and Grain show only in the saved photo.
+- The WB shift is added to the camera's own white balance and fine-tune, in every white balance mode including
+  **Auto WB**.
+- **Grain** is the same texture as the camera's Monochrome grain, on the colour photo, and Low / Med / High match the
+  Monochrome levels. On its own, or with any of the other Extras, it is added by the camera's image processor: no
+  delay. **With Glow / Clarity or an Art Effect** the camera can't add it that way, so it is added afterwards by the
+  camera's processor in software (brightness only, the same look): each photo then takes **about 3 seconds longer to
+  save**, and fast sequential (burst) shooting isn't possible with that look.
+- The rear dial stops at each sector's first and last value.
 - The labels come from `OM3MOD/LABELS.BIN`, and the effects from code at the end of `OM3MOD/GUIDES.BIN`. Copy both
   from the same release as the firmware: with an older `GUIDES.BIN` the Extras values still save but the effects
   don't run, and without `LABELS.BIN` the label just says "Vivid".
 
-## Reset and the `*`
+## Saving, reset and the `*`
 
-Hold **OK** on the wheel, or on the "COLOR n" item of the Picture Mode list, to reset that COLOR: Saturation, Hue,
-Light and every Extras value go back to 0. A `*` next to the COLOR (and the look name) means something has been
-changed, Extras included.
+Hold **OK**: what it does depends on where you are.
+
+| Where | Hold OK |
+|---|---|
+| Film page, with a look (1–5) selected | **saves** the COLOR's current settings into that look. Nothing is reset here. |
+| Saturation, Hue, Light or Extras page | **resets** the wheels: Saturation back to the factory setting, Hue, Light, the WB shift and every Extras value to 0. The selected look stays selected. |
+| the "COLOR n" item of the Picture Mode list | **resets the whole COLOR**: every wheel, Extras value and Picture Mode setting back to the factory settings, and the Film page back to 0. |
+
+A `*` next to the COLOR (and the look name) means something differs from the camera's **factory settings** for that
+COLOR: any wheel, any Extras value, or a Picture Mode setting. After a reset, or with the Film page on 0, it's gone;
+change anything and it's back. A selected look normally shows a `*` too, because the look itself changes settings.
 
 ## Looks and their names
 
 Each of COLOR 1–4 has five look numbers. A look holds everything: the wheels (Saturation, Hue, Light), the Extras
-page (NR, Glow/Clarity, WB shift, Art Effect, Blacks, Whites) plus Contrast, Sharpness, Shading and
+page (NR, Glow/Clarity, WB shift, Art Effect, Blacks, Whites, VigFix, Grain) plus Contrast, Sharpness, Shading and
 Shadows/Midtones/Highlights. On the **Film** page, the 12 o'clock spot picks one, and the label under the wheel shows
 its name:
 
 | Dial | What loads | Label under the wheel |
 |---|---|---|
-| 0 | nothing: everything neutral | **Film** |
+| 0 | nothing: the COLOR's factory settings | **Film** |
 | 1–5 with a look | that look | its name, e.g. **Velvia** |
 | 1–5 with no look | neutral, ready to build a new one | **Empty** |
 
@@ -81,8 +98,10 @@ Without `NAMES.BIN` (or with a damaged one) the label just says "Film".
    moves it to another number.
 3. Give it a name (up to 15 letters, numbers and symbols). Long names are squeezed to fit, and if one COLOR's five
    names don't fit the camera's space, its lettering is made a little smaller.
-4. Set the **Extras** the same way as on the camera: NR, Glow ↔ Clarity, Art Effect and the WB shift (Blacks and
-   Whites are in the Tone panel).
+4. Set the **Extras** the same way as on the camera: NR, lens vignette correction, Grain, Glow ↔ Clarity, Art Effect
+   and the WB shift (Blacks and Whites are in the Tone panel). The preview shows the grain; drag the line on the photo
+   to compare before and after. A look with Grain and Glow / Clarity or an Art Effect gets a note that it saves
+   more slowly on the camera.
 5. **Export › Save to card…** (Chrome or Edge on a computer) writes `LOOKS.BIN` and `NAMES.BIN` into the card's
    `OM3MOD` folder. Elsewhere, **Card folder (.zip)** downloads both: copy them into `OM3MOD` on the card.
 6. Put the card in the camera, switch on and half-press once. Every COLOR starts at 0; turn the Film dial to a
@@ -96,8 +115,9 @@ names follow only if `NAMES.BIN` is copied too.
 1. Open the COLOR's wheel, press **INFO** to the Film page and turn to a number that says **Empty**. Everything
    goes neutral.
 2. Build the look on the wheel pages and in the normal Picture Mode settings (Contrast, Sharpness, Shading,
-   Shadows/Midtones/Highlights). Everything you change belongs to that number.
-3. Half-press: the camera saves it into `LOOKS.BIN` on the card.
+   Shadows/Midtones/Highlights).
+3. Press **INFO** back to the Film page and **hold OK**: that saves it into that number. The next half-press writes
+   `LOOKS.BIN` to the card. Turning to another number without holding OK first drops the changes.
 
 It works straight away, but the label still says **Empty**: the camera has no way to type a name, and it doesn't
 change `NAMES.BIN`. To name it:
@@ -110,8 +130,9 @@ copy replaces the camera's whole bank. If you save it from the Control Panel wit
 
 ### Change or rename a look
 
-- **On the camera:** select it on the Film page and change anything; the next half-press saves it. Its name
-  stays.
+- **On the camera:** select it on the Film page, change anything, then go back to the Film page and **hold OK** to
+  keep the changes in the look (the next half-press writes them to the card). Turn to another look without holding OK
+  and the look stays as it was saved: handy for trying things out. Its name stays.
 - **In the Control Panel:** open the card's `LOOKS.BIN`, change or rename it, and save both files back.
 
 ## Files on the card (`OM3MOD`)

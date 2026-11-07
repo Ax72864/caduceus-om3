@@ -4,7 +4,7 @@
 // page), the camera's Contrast, Sharpness and Shading and, from v0.20, the Extras page: NR (the camera's stills Noise
 // Filter: Camera / Std / Low / Off), Glow (-5..-1) / Clarity (1..5), WB A-B / G-M and an Art Effect (Star Light, Pin
 // Hole, White Edge, Frame), and from v0.21 VigFix (the lens vignette correction off for the look, as Caduceus v0.25:
-// off unless the look keeps it, `lens_correction`). Colour only: no glow colour (tint) and no monochrome looks.
+// off unless the look keeps it, `lens_correction`) and Grain (`film_grain` 1..3, the camera's own grain). Colour only: no glow colour (tint) and no monochrome looks.
 //
 // Card files (C:\OM3MOD\, little-endian):
 //   PROFILES.BIN v1, 1632 B: 'OM3P' | 1632 | crc32(12..) | u16 1 | u16 20 | sel[4] | 12 zero | 20 x 64-B records
@@ -12,14 +12,17 @@
 //     +39 Blacks, +40 Whites, +41 Contrast, +42 Sharpness, +43 Shading, +44 Shadows, +45 Midtones, +46 Highlights,
 //     v0.20: +47 Glow (-5..-1) / Clarity (1..5), +48 Art Effect (0 Off, 1 Star Light, 2 Pin Hole, 4 White Edge, 5 Frame:
 //     the Caduceus ids), +49 NR (0 Camera, 1 Std, 2 Low, 3 Off); zero before v0.20, so older files read as before),
-//     v0.21: +50 VigFix (0 Camera: keep the lens vignette correction, 1 Off; v0.20 and older reject a file with a 1)
+//     v0.21: +50 VigFix (0 Camera: keep the lens vignette correction, 1 Off), +51 Grain (0 Off, 1 Low, 2 Med, 3 High);
+//     v0.20 and older reject a file with either non-zero, so the v0.20 export leaves both at 0
 //     | 20 x 16-B names at 1312. Written with sel = 0 so the camera never saves its own settings over these profiles.
 //   NAMES.BIN v1: the name pictures for the Film page (./om3names.ts).
 import { ARTS, blankLook, cloneLook, toneIsZero, zeroTone, type Grain, type Look, type Pack } from './pack';
 import { crc32, type Problem } from './format';
 
 export const COLORS = 4, PER = 5;
-export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5, hsm: 7, bw: 5, fx: 5 } as const;
+export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5, hsm: 7, bw: 5, fx: 5, grain: 3 } as const;
+/** v0.21 Grain: Glow / Clarity or an Art Effect send it the slow way (about 3 s per photo, no fast sequential shooting). */
+export const slowGrain = (l: Look) => !!l.film_grain && (!!l.effect || (l.art_effect !== 'off' && l.art_effect !== 'blur'));
 /** v0.20 Extras: NR byte <-> the Caduceus look's noise reduction (grain field), Art Effects the OM-3 renders. */
 export const OM3_NR: Grain[] = ['off', 'standard', 'fine', 'film'];          // 0 Camera, 1 Std, 2 Low, 3 Off
 export const OM3_ARTS = ['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const;
@@ -89,6 +92,7 @@ export function validateProfile(l: Look, at?: { k: number; v: number }): Problem
     add('effect', 'Glow / Clarity: strength 1..5.');
   if (!(OM3_ARTS as readonly string[]).includes(l.art_effect)) add('art_effect', 'Art Effect: Off, Star Light, Pin Hole, White Edge or Frame.');
   if (!OM3_NR.includes(l.grain)) add('grain', 'NR: Camera, Std, Low or Off.');
+  if (l.film_grain !== undefined && !(Number.isInteger(l.film_grain) && l.film_grain >= 0 && l.film_grain <= OM3.grain)) add('film_grain', 'Grain: Off, Low, Med or High.');
   return p;
 }
 export function validateBank(bank: Bank): Problem[] {
@@ -99,7 +103,7 @@ export function validateBank(bank: Bank): Problem[] {
 
 // ---- PROFILES.BIN
 export const PF_LEN = 1632;
-/** vigfix false: leave +50 at 0 (the camera's correction) so firmware v0.20 and older accept the file. */
+/** vigfix false (firmware v0.20 and older): leave +50 (the camera's correction) and +51 (no grain) at 0 so they accept the file. */
 export function profilesBin(bank: Bank, vigfix = true): Uint8Array {
   const b = new Uint8Array(PF_LEN), d = new DataView(b.buffer);
   b.set([0x4f, 0x4d, 0x33, 0x50]); d.setUint32(4, PF_LEN, true); d.setUint16(12, 1, true); d.setUint16(14, 20, true);
@@ -115,7 +119,7 @@ export function profilesBin(bank: Bank, vigfix = true): Uint8Array {
     s8(47, !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength);
     b[o + 48] = Math.max(0, (ARTS as readonly string[]).indexOf(l.art_effect === 'blur' ? 'off' : l.art_effect));
     b[o + 49] = Math.max(0, OM3_NR.indexOf(l.grain));
-    if (vigfix) b[o + 50] = l.lens_correction ? 0 : 1;
+    if (vigfix) { b[o + 50] = l.lens_correction ? 0 : 1; b[o + 51] = Math.max(0, Math.min(OM3.grain, l.film_grain ?? 0)); }
     const nm = l.name.replace(/[^\x20-\x7e]/g, '?').slice(0, 15);
     for (let i = 0; i < nm.length; i++) b[1312 + 16 * r + i] = nm.charCodeAt(i);
   }));
@@ -132,7 +136,7 @@ export function readProfiles(b: Uint8Array): Bank {
   for (let r = 0; r < 20; r++) {
     const o = 32 + 64 * r, s = (i: number) => d.getInt8(o + i), a = (at: number) => Array.from({ length: 12 }, (_, i) => s(at + i));
     let name = ''; for (let i = 0; i < 15; i++) { const c = b[1312 + 16 * r + i]; if (!c) break; name += String.fromCharCode(c); }
-    if (!name && !b.subarray(o, o + 51).some(Boolean)) continue;
+    if (!name && !b.subarray(o, o + 52).some(Boolean)) continue;
     const l = blankLook('colour', (name || `Look ${(r % 5) + 1}`).slice(0, OM3_NAME_MAX).trim() || 'Look');
     l.hue = a(0); l.light = a(12); l.sat = a(24);
     l.wb = b[o + 36] & 1 ? { a_b: s(37), g_m: s(38) } : null;
@@ -144,6 +148,7 @@ export function readProfiles(b: Uint8Array): Bank {
     l.art_effect = art === 'blur' ? 'off' : art;
     l.grain = OM3_NR[b[o + 49]] ?? 'off';
     if (b[o + 50] === 0) l.lens_correction = true;
+    if (b[o + 51] >= 1) l.film_grain = Math.min(OM3.grain, b[o + 51]);
     bank[Math.floor(r / 5)][r % 5] = l;
   }
   return bank;

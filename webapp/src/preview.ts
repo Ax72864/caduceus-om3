@@ -200,6 +200,7 @@ export function renderLook(src: ImageData, dst: ImageData, look: Look, opt: Prev
   }
   // 6. grain (Olympus xorshift32 luma grain with brightness mask; v0.4 colour gains / stock mono gains)
   if (om3) om3Settings(img, w, h, look.advice.sharpness ?? 0, look.vignette);
+  if (om3 && look.film_grain) om3Grain(img, w, h, look.film_grain);
   const gi = om3 ? 0 : GRAINS.indexOf(look.grain);
   const gain = gi > 0 ? (mono ? MONO_GRAIN : COLOUR_GRAIN)[gi] : 0;
   const scale = Math.min(1, w / FULL_WIDTH) * 2.2;   // a little stronger than full-res-viewed-small, so it stays visible
@@ -238,6 +239,33 @@ function om3Settings(img: Float32Array, w: number, h: number, sharp: number, sha
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const r = ((x - cx) ** 2 + (y - cy) ** 2) / R2, f = 1 + k * r * Math.sqrt(r), q = (y * w + x) * 3;
       img[q] = clamp01(img[q] * f); img[q + 1] = clamp01(img[q + 1] * f); img[q + 2] = clamp01(img[q + 2] * f);
+    }
+  }
+}
+
+/** OM-3 v0.21 Grain (Low / Med / High), from research/grain/model.py: the camera's MONO grain shape. Per row, one
+ *  xorshift32 per 4 pixels gives a triangular 0..30 value per pixel, smoothed down the columns and paired across, and
+ *  each pixel's luma moves by ((64 h - 945) * G[Y] * S) / 2^18 (G: none in deep shadows, full from the midtones up).
+ *  S is the camera's strength for the level, scaled for the preview size so the texture still reads on screen. */
+const GRAIN_S = [0, 28, 68, 112];
+const GRAIN_G = Array.from({ length: 256 }, (_, y) => {
+  const ss = (t: number) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
+  return Math.round(255 * (0.08 + 0.92 * ss((y - 25) / 75)) * (1 - 0.25 * ss((y - 200) / 55)));
+});
+function om3Grain(img: Float32Array, w: number, h: number, level: number) {
+  const S = GRAIN_S[Math.min(3, level)];   // the camera's strength: the texture as a 100% view of the photo shows it
+  const V = new Int32Array(w).fill(15), H = new Int32Array(w);
+  let r = 0x12345678;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x += 4) {
+      r ^= r << 13; r >>>= 0; r ^= r >>> 17; r ^= r << 5; r >>>= 0;
+      for (let k = 0; k < 4 && x + k < w; k++) { const b = (r >>> (8 * k)) & 255; V[x + k] = (V[x + k] + (b & 15) + (b >> 4)) >> 1; }
+    }
+    for (let x = 0; x < w; x++) H[x] = (V[x] + (x ? V[x - 1] : 15) + 1) >> 1;
+    for (let x = 0; x < w; x++) {
+      const q = (y * w + x) * 3, Y = 0.299 * img[q] + 0.587 * img[q + 1] + 0.114 * img[q + 2];
+      const d = ((64 * H[x] - 945) * GRAIN_G[Math.max(0, Math.min(255, (Y * 255) | 0))] * S) / 262144 / 255;
+      img[q] = clamp01(img[q] + d); img[q + 1] = clamp01(img[q + 1] + d); img[q + 2] = clamp01(img[q + 2] + d);
     }
   }
 }

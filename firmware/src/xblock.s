@@ -27,6 +27,20 @@ xb_base:
  .balign 8
  jmp xb_vl                        /* +48 dial label of the Extras slice (vl_s) */
  .balign 8
+ jmp xb_gs                        /* +56 grain, CPU route: Soft Focus blend setup wrapper (g_sf) */
+ .balign 8
+ jmp xb_dev                       /* +64 grain, camera route: request configuration (s_cl) */
+ .balign 8
+ jmp xb_sv                        /* +72 after each half-press save (pf_save, `calls`): nothing (research hook) */
+ .balign 8
+ jmp xb_lkd                       /* +80 the '*' with a look selected (lk_pm, `calls`; calls the firmware: uncached) */
+ .balign 8
+ jmp xb_lkh                       /* +88 OK held on the Looks page (lk_hold, jmp in ed_event's frame) */
+ .balign 8
+ jmp xb_cvc                       /* +96 count of a cell's dial list (pf_cnt, `calls`) */
+ .balign 8
+ jmp xb_vbc                       /* +104 value by index of a cell (pf_vbi, `calls`) */
+ .balign 8
 xb_nrel:
  .long 0                          /* relocation count (written by the build) */
 
@@ -75,6 +89,8 @@ xb_art:
 /* capture (Art Effect -> flag converter 0x60555e47): a3 = capture, a2 = params+12 (flags), (-4,a2) = key.
  * Exit as stock: fx_back with d0 = the Art Effect id and a1 = its address, or fx_tail. */
 xb_cap:
+ clr d0
+ movbu d0,(xb_gt)                 /* no camera grain unless a plain COLOR look with Grain below */
  mov 38225,a1
  add a3,a1
  movbu (a1),d0
@@ -86,11 +102,28 @@ xb_cap:
  call xb_slot,[d2,d3],12
  cmp 0,a1
  beq 7f
- mov (a2),d1
+ mov (a2),d1                      /* (data registers only: `movbu (d8,An),Am` misread on the camera) */
  movbu (49,a1),d0
  cmp 0,d0
+ bne 2f                           /* Glow / Clarity: the Soft Focus passes (+ CPU grain if Grain) */
+ movbu (50,a1),d0
+ cmp 0,d0
+ bne 3f                           /* an Art Effect */
+ movbu (53,a1),d0                 /* plain: Grain 0..3 -> the camera's own grain (xb_dev) */
+ cmp 0,d0
  beq 1f
- or 128,d1                        /* Glow or Clarity: the Soft Focus passes (the weight decides which) */
+ cmp 3,d0
+ bls 4f
+ mov 3,d0
+4:
+ movbu d0,(xb_gt)
+ bra 1f
+3:
+ movbu (53,a1),d0                 /* Art Effect + Grain: the Soft Focus passes for the CPU grain (w 1024) */
+ cmp 0,d0
+ beq 1f
+2:
+ or 128,d1
 1:
  call xb_art,[],0
  mov d1,(a2)
@@ -130,7 +163,13 @@ xb_wt:
  movbu (49,a1),d1
  extb d1
  cmp 0,d1
+ bne 1f
+ movbu (53,a1),d1                 /* no Glow / Clarity: Grain alone -> w 1024, the sharp image unchanged */
+ cmp 0,d1
  beq 8f
+ mov 1024,d0
+ bra 8f
+1:
  blt 5f
  cmp 6,d1                         /* Clarity 1..5 */
  bcc 8f
@@ -231,6 +270,805 @@ xb_kad:
 9:
  ret [a2],8
 
+/* ---- grain (v0.21 grain test 3; diagnostics gd1-gd4 measured on the camera, see om3/NOTES.md). The Soft Focus blend setup 0x604be2aa returns with its output, the new
+ * buffer 0x1000 (YCbYCr 4:2:2, Y in the even bytes, 2 B/px, rows memHw x 2 B apart), complete in memory (camera
+ * probe g2: a pattern written there after the setup is in the JPEG). On a COLOR1-4 still whose look has Grain 1..3
+ * (slot +53), every Y byte becomes T[Y][h]: h a 31-level noise row (xb_p1: xorshift32, triangular, vertical IIR,
+ * horizontal pair), T = clamp(Y + (((64 h - 945) G[Y] S + 2^17) >> 18)) with G midtone-weighted and S from xb_gstab.
+ * The image is reached through this CPU's bus window, one row at a time under the firmware's lock (xb_open), and
+ * the cache is flushed at the end. Work buffers: T (8192 B) and V + H (one row each), freed again.
+ * grain/model.py is the same computation in Python. Stores: the image's Y bytes, the work buffer, xb_seed. */
+xb_p:                             /* leaf: a1 = P or 0. Uses d0 */
+ movhu (STATE),d0
+ add -1,d0
+ cmp HMAX,d0
+ bcc 9f
+ btst 3,d0
+ bne 9f
+ mov d0,a1
+ add POOL,a1
+ mov (a1),d0
+ cmp MAGIC,d0
+ bne 9f
+ retf [],0
+9:
+ mov 0,a1
+ retf [],0
+
+xb_open:                          /* `call xb_open,[d2,d3,a2,a3],28`, d0 = bus address, d1 = length -> a0 = CPU address or 0,
+                                     d0 = lock token (the lock is held: close it with xb_close), d1 = 1 window / 0.
+                                     Bus 0xa0000000..0xb7ffffff is the DRAM the CPU sees uncached at the same address;
+                                     anything else from 0x08000000 goes through this CPU's bus window (the firmware's
+                                     own mapper, under the firmware's lock: no task switch, interrupts masked) when the
+                                     d1 bytes stay inside the window's 128 MB. */
+ mov d0,a3
+ mov d1,d3
+ clr d0
+ call LOCK,[d2],8
+ mov d0,a2                        /* token */
+ clr d2
+ mov a3,d0
+ cmp 0x08000000,d0
+ bcs 7f
+ cmp 0xa0000000,d0
+ bcs 3f
+ cmp 0xb8000000,d0
+ bcc 3f
+ mov a3,a0                        /* main DRAM: direct */
+ bra 8f
+3:
+ and 0x07ffffff,d0
+ add d3,d0
+ cmp 0x08000001,d0
+ bcc 7f
+ mov (0x8050),d1                  /* this CPU's window register: 0x98100058 + 0x400 cpu (cpu 3: + 0x1000) */
+ mov 0x98100058,a0
+ cmp 0,d1
+ beq 4f
+ add 0x400,a0
+ cmp 1,d1
+ beq 4f
+ add 0x400,a0
+ cmp 2,d1
+ beq 4f
+ add 0x800,a0
+4:
+ mov (a0),d1
+ lsr 24,d1
+ mov a3,d0
+ lsr 27,d0
+ cmp d0,d1
+ bne 5f
+ mov a3,d0                        /* already ours (and nothing else runs here while the lock is held) */
+ and 0x07ffffff,d0
+ or 0xb8000000,d0
+ mov d0,a0
+ mov 1,d2
+ bra 8f
+5:
+ mov a3,a0
+ call WINMAP,[d2,d3,a2,a3],28
+ mov 1,d2
+ bra 8f
+7:
+ mov 0,a0
+8:
+ mov a2,d0
+ mov d2,d1
+ ret [d2,d3,a2,a3],28
+
+xb_close:                         /* `call xb_close,[d2],8`, d0 = token */
+ call UNLOCK,[d2],8
+ ret [d2],8
+
+xb_rec:                           /* `call xb_rec,[d2,d3],12`, a0 = job -> a1 = record of buffer 0x1000, or 0 */
+ mov a0,d3
+ mov 4096,d0
+ call BUFIDX,[d2,d3],8
+ exthu d0
+ cmp 48,d0
+ bcc 9f
+ mov d0,d1
+ asl 3,d1                         /* 8 i */
+ mov d1,d2
+ asl 2,d2                         /* 32 i */
+ add d2,d1                        /* 40 i */
+ asl 1,d2                         /* 64 i */
+ add d2,d1                        /* 104 i */
+ mov d3,a0
+ mov (10276,a0),a1
+ add d1,a1
+ ret [d2,d3],12
+9:
+ mov 0,a1
+ ret [d2,d3],12
+
+
+ .set P_DIRTY, 685
+ .set P_LPTR, 708
+xb_gs:                            /* `calls` (0,sp) = return, a0 = job */
+ movm [d2,d3,a2,a3],(sp)
+ add -16,sp                       /* (0) call slot, (4) job, (8) level, (12) result */
+ mov a0,(4,sp)
+ call xb_slot,[d2,d3],12
+ cmp 0,a1
+ beq 90f
+ movbu (53,a1),d0                 /* Grain 1..3 (older 4, 5 -> 3) */
+ cmp 0,d0
+ beq 90f
+ cmp 3,d0
+ bls 10f
+ mov 3,d0
+ bra 10f
+90:                               /* no grain: the stock setup, as if called directly */
+ mov (4,sp),a0
+ add 16,sp
+ movm (sp),[d2,d3,a2,a3]
+ jmp SF_ENT
+10:
+ mov d0,(8,sp)
+ mov (4,sp),a0
+ mov SF_ENT,a1
+ calls (a1)
+ mov d0,(12,sp)
+ cmp 0,d0
+ bne 20f
+ mov (4,sp),a0
+ call xb_rec,[d2,d3],12
+ cmp 0,a1
+ beq 20f
+ mov a1,a0
+ mov (8,sp),d0
+ call xb_grain,[d2,d3,a2,a3],128
+20:
+ mov (12,sp),d0
+ ret [d2,d3,a2,a3],32
+
+/* xb_dev (grain, camera route): s_cl jumps here in the frame of `call s_cl,[d2,a2],12` at 0x604955f1, a0 = context.
+ * The development request of a plain COLOR still (kind 0, output 0x1000, key 11) with xb_gt = Grain 1..3 gets the
+ * MONO key (request +10 and context +48 = 12) and the camera's grain level (+1751): the image processor then adds its
+ * own film grain on the direct-to-JPEG route, colour kept (combiner 33 is not used). Then the stock selector.
+ * Uses d0, d1, a1. */
+xb_dev:
+ movbu (xb_gt),d0
+ cmp 0,d0
+ beq 9f
+ mov (4,a0),a1
+ cmp 0,a1
+ beq 9f
+ movbu (16,a1),d1
+ cmp 0,d1
+ bne 9f
+ movhu (14,a1),d1
+ cmp 0x1000,d1
+ bne 9f
+ movbu (10,a1),d1
+ cmp 11,d1
+ bne 9f
+ movbu d0,(1751,a1)
+ mov 12,d1
+ movbu d1,(10,a1)
+ mov d1,(48,a0)
+9:
+ jmp SEL
+
+xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
+ rets
+
+ .set P_LIDX, 712
+/* xb_lkh (v0.21): jmp from lk_hold in ed_event's frame (after its movm and add -28: (12,sp) cursor id 2197 + k,
+ * (24,sp) the event, a2 = P, a3 = the parent, d2 = 4). OK held on the wheel (0x903e) with a look selected for COLOR k:
+ * that look <- COLOR k now (pf_cap), P dirty (written at the next half-press), -> ed_event e_lk (children re-read,
+ * cursor poked, returns d3 = 1). No look selected: nothing (e_ret, d3 = 1). Any other event (the whole-profile reset
+ * 0xf881 on "COLOR n", where the axis byte may read 4): the look selection of COLOR k cleared, then e_rst (the reset;
+ * d2 = the page). OK held on any other page: e_rst. */
+xb_lkh:
+ movbu (24,sp),d0
+ cmp 0x81,d0                      /* 0xf881: OK held on "COLOR n" = the whole-profile reset: also no look selected */
+ bne 1f
+ mov (12,sp),d0
+ add -2197,d0
+ mov a2,a0
+ add d0,a0
+ clr d0
+ movbu d0,(P_LIDX,a0)
+ jmp xb_rpre
+1:
+ cmp 4,d2                         /* the wheel on the Looks page */
+ bne 7f
+ cmp 0x3e,d0
+ bne 7f
+ mov (12,sp),d2
+ add -2197,d2                     /* k */
+ mov a2,a0
+ add d2,a0
+ movbu (P_LIDX,a0),d3
+ extb d3
+ cmp 1,d3
+ blt 8f
+ cmp 5,d3
+ bgt 8f
+ mov (P_LPTR,a2),d0
+ cmp 0,d0
+ beq 8f
+ call PF_CAP,[d2,d3,a2,a3],28     /* keeps a2, a3 */
+ mov 1,d0
+ movbu d0,(P_DIRTY,a2)
+ mov 1,d3
+ jmp E_LK
+8:
+ mov 1,d3
+ jmp E_RET
+7:
+ jmp xb_rpre
+
+/* xb_rpre (lk12): every reset goes through here (jmp, ed_event's frame: a2 = P, a3 = the editor, d2 = the page).
+ * Off the Saturation page the wheel's children still hold that page's dial lists (Looks 0..5, Extras ranges), and
+ * the stock reset puts each profile's factory Saturation through them: a value outside the list (COLOR4's -4 at
+ * 12 o'clock on the Looks page) came back clamped, so that setting missed its default ('*' stayed). So: the page
+ * reads Saturation and children 1..12 are re-read with the stock lists first; e_rst puts the page back afterwards. */
+xb_rpre:
+ cmp 0,d2
+ beq 9f
+ clr d0
+ movbu d0,(684,a2)
+ mov 128,d3
+1:
+ mov a3,a0
+ add d3,a0
+ mov (a0),a0
+ cmp 0,a0
+ beq 9f
+ call REFRESH,[d2,d3,a2,a3],68
+ add 4,d3
+ cmp 176,d3
+ bne 1b
+9:
+ jmp E_RST
+
+/* Cached-alias trampolines (v0.21): the UI asks these many times per screen change (switching to COLOR: a long freeze
+ * when they ran from the block's uncached heap). Each continues at the cached alias of its function (heap
+ * 0xa0000000..0xb7ffffff - 0x40000000; the block is never written after relocation). Uses a1 only. Only for code that
+ * stays inside the block: its PC-relative calls / jumps into the firmware are relocated for the uncached address. */
+ .macro CACHED target
+ mov \target,a1
+ cmp 0xa0000000,a1
+ bcs 91f
+ cmp 0xb8000000,a1
+ bcc 91f
+ add -0x40000000,a1
+91:
+ jmp (a1)
+ .endm
+xb_cvc:
+ CACHED xb_cv
+xb_vbc:
+ CACHED xb_vb
+
+/* xb_cv / xb_vb (v0.21): leaves for the dial lists of the wheel editor's cells, entered (`calls`, (0,sp) = return)
+ * through the cached trampolines above. No stack of their own beyond one call slot (the camera asks these while
+ * switching into COLOR, where the deeper frames of lk7 / lk9 made it restart). d2 = the facade id; for xb_vb a2 = the
+ * index and d3 = the out pointer (or 0). They keep d2, d3, a2, a0, a3 and use d0, d1, a1. The Looks page (axis 4)
+ * 12 o'clock id 928 + 12 EDK: 0..5. An Extras cell (axis 3, marker, 928 + 12k + slice, slice 0..8 with an xt_tab
+ * entry): min..max. Anything else: d1 = 0. */
+xb_cv:
+ add -4,sp                        /* below the `calls` return word: xb_cell's call slot */
+ call xb_cell,[],0                /* -> d1 0 none / 1 Looks / 2 Extras, d0 = max - min, a1 = min */
+ add 4,sp
+ cmp 0,d1
+ beq 9f
+ inc d0
+ mov 1,d1
+9:
+ rets
+
+xb_vb:
+ add -4,sp
+ call xb_cell,[],0
+ add 4,sp
+ cmp 0,d1
+ beq 9f
+ mov a2,d1                        /* index */
+ exthu d1
+ cmp d0,d1
+ bls 1f
+ mov -1,d0
+ bra 2f
+1:
+ mov a1,d0
+ add d1,d0                        /* min + index */
+2:
+ cmp 0,d3
+ beq 3f
+ mov d3,a1
+ mov d0,(a1)
+3:
+ mov 1,d1
+9:
+ rets
+
+/* xb_cell: leaf (`call xb_cell,[],0`, returns through MDR), d2 = facade id -> d1 0 not ours; 1 the Looks page's 12
+ * o'clock (d0 = 5, a1 = 0); 2 an Extras cell (d0 = max - min, a1 = min). Uses d0, d1, a1 only. */
+xb_cell:
+ clr d1
+ movhu (STATE),d0
+ add -1,d0
+ cmp HMAX,d0
+ bcc 9f
+ btst 3,d0
+ bne 9f
+ mov d0,a1
+ add POOL,a1
+ mov (a1),d0
+ cmp MAGIC,d0
+ bne 9f                           /* a1 = P */
+ movbu (AXIS,a1),d0
+ cmp 4,d0
+ beq 4f
+ cmp 3,d0
+ bne 9f
+ mov (EMARK,a1),d0                /* Extras */
+ cmp EMAGIC,d0
+ bne 9f
+ mov d2,d0
+ exthu d0
+ add -928,d0
+ cmp 48,d0
+ bcc 9f
+1:
+ cmp 12,d0
+ bcs 2f
+ add -12,d0
+ bra 1b
+2:
+ cmp 9,d0
+ bcc 9f
+ mov XT_TAB,a1
+ add d0,a1
+ add d0,a1
+ add d0,a1
+ movbu (a1),d0
+ cmp 0,d0
+ beq 9f
+ movbu (2,a1),d0
+ extb d0
+ movbu (1,a1),d1
+ extb d1
+ sub d1,d0                        /* max - min */
+ mov d1,a1                        /* min */
+ mov 2,d1
+ retf [],0
+4:
+ movbu (EDK,a1),d0                /* the Looks page */
+ cmp 4,d0
+ bcc 9f
+ mov d0,d1
+ add d1,d1
+ add d0,d1
+ asl2 d1
+ add 928,d1                       /* 928 + 12 EDK */
+ mov d2,d0
+ exthu d0
+ cmp d1,d0
+ bne 8f
+ mov 5,d0
+ mov 0,a1
+ mov 1,d1
+ retf [],0
+8:
+ clr d1
+9:
+ retf [],0
+
+/* xb_lkd (v0.21): `calls` from lk_pm (ed_pmod, the camera's "COLOR profile changed?"), (0,sp) = return, d0 = picture
+ * mode 54 / 55 / 56 / 64 = COLOR1..4 -> d0 1 when COLOR k now differs from its selected look, 0 when it matches, -1
+ * when no look is selected (the stock test then). "Now" = pf_capto (the editor's own capture) into xb_lkbuf, which
+ * starts as a copy of the look's record (bytes pf_capto does not write compare equal). */
+xb_lkd:
+ movm [d2,d3,a2,a3],(sp)
+ add -16,sp                       /* (0) call slot, (4) record */
+ mov d0,d1
+ clr d2
+ cmp 54,d1
+ beq 1f
+ mov 1,d2
+ cmp 55,d1
+ beq 1f
+ mov 2,d2
+ cmp 56,d1
+ beq 1f
+ mov 3,d2
+ cmp 64,d1
+ bne 8f
+1:
+ call xb_p,[],0
+ cmp 0,a1
+ beq 8f
+ mov a1,a2                        /* P */
+ mov (P_LPTR,a2),d0
+ cmp 0,d0
+ beq 8f
+ mov a2,a0
+ add d2,a0
+ movbu (P_LIDX,a0),d3
+ extb d3
+ cmp 1,d3
+ blt 8f
+ cmp 5,d3
+ bgt 8f
+ mov d2,d0                        /* record 5k + v - 1 */
+ asl2 d0
+ add d2,d0
+ add d3,d0
+ add -1,d0
+ asl 6,d0
+ add 32,d0
+ mov (P_LPTR,a2),a1
+ add d0,a1
+ mov a1,(4,sp)
+ mov xb_lkbuf,a0
+ mov 64,d1
+2:
+ movbu (a1),d0
+ movbu d0,(a0)
+ inc a0
+ inc a1
+ add -1,d1
+ bne 2b
+ mov xb_lkbuf,a3
+ call PF_CAPTO,[d2,d3,a2,a3],28   /* a2 = P, d2 = k, a3 = the scratch record (keeps d2/d3/a2/a3) */
+ mov xb_lkbuf,a0
+ mov (4,sp),a1
+ mov 64,d1
+3:
+ movbu (a0),d0
+ movbu (a1),d2
+ cmp d0,d2
+ bne 4f
+ inc a0
+ inc a1
+ add -1,d1
+ bne 3b
+ clr d0
+ bra 9f
+4:
+ mov 1,d0
+ bra 9f
+8:
+ mov -1,d0
+9:
+ ret [d2,d3,a2,a3],32
+
+/* xb_grain: `call xb_grain,[d2,d3,a2,a3],128` (112 B of locals), a0 = buffer record, d0 = level 1..3. The heavy
+ * loops (xb_p1s, xb_p2s) run from the cached alias of this block (heap memory is uncached) on work buffers used
+ * through their cached alias; image rows go through the bus window's cached view and are written back (FLUSH)
+ * before the lock is released. K = 2 rows share one lock and one FLUSH.
+ * Locals: (0) call slot, (4) rec, (8) S, (12) T (malloc), (16) row, (20) bus, (24) pitch, (28) words, (32) groups,
+ * (36) V + 2 H (malloc), (40) token, (44) Hw, (48) Vw, (52) cached rows, (56) start time, (60) level, (92) K,
+ * (96) rows this pass, (100) H0, (104) H1; loop parameters (64) V, (68) H, (72) groups, (76) r, (80) row, (84) words,
+ * (88) T. */
+xb_grain:
+ mov a0,(4,sp)
+ mov d0,(60,sp)
+ mov 2,d1                         /* K = 2 rows per lock / FLUSH (gr4: 0.3 s faster than 1) */
+ mov d1,(92,sp)
+ add -1,d0
+ add d0,d0
+ mov xb_gstab,a1
+ movhu (d0,a1),d0
+ mov d0,(8,sp)                    /* S */
+ movhu (16,a0),d0                 /* format 0x0c02 only */
+ cmp 0x0c02,d0
+ bne 99f
+ mov (4,a0),d0                    /* 32-bit bus address */
+ cmp 0,d0
+ bne 99f
+ movhu (20,a0),d0                 /* Hw: 4 .. 8192, a multiple of 4 */
+ mov d0,(44,sp)
+ cmp 4,d0
+ bcs 99f
+ cmp 8193,d0
+ bcc 99f
+ btst 3,d0
+ bne 99f
+ movhu (18,a0),d1                 /* memHw >= Hw */
+ cmp d0,d1
+ bcs 99f
+ add d1,d1
+ mov d1,(24,sp)
+ movhu (22,a0),d1
+ mov d1,(48,sp)
+ cmp 0,d1
+ beq 99f
+ mov d0,d1
+ lsr 1,d1
+ mov d1,(28,sp)
+ mov d1,(84,sp)
+ lsr 1,d1
+ mov d1,(32,sp)
+ mov d1,(72,sp)
+ mov (a0),d1
+ mov d1,(20,sp)
+ mov d0,d1                        /* V and two H rows */
+ add d0,d0
+ add d1,d0
+ call malloc,[],4
+ cmp 0,a0
+ beq 99f
+ mov a0,(36,sp)
+ mov 8192,d0                      /* T: 256 Y x 32 h */
+ call malloc,[],4
+ cmp 0,a0
+ bne 1f
+ mov (36,sp),a0
+ call free,[],4
+ bra 99f
+1:
+ mov a0,(12,sp)
+ call FLUSH,[d2,d3],16            /* no stale lines for the work buffers' cached aliases */
+ mov (12,sp),d0
+ call xb_cach,[],0
+ mov a0,(88,sp)                   /* T, cached */
+ mov (8,sp),d3
+ mov xb_G,a1
+ call xb_tbl,[d2,d3,a2,a3],16
+ mov (36,sp),d0                   /* V = 15 */
+ call xb_cach,[],0
+ mov a0,(64,sp)
+ mov (44,sp),d1
+ mov a0,a1
+ add d1,a1
+ mov a1,(100,sp)                  /* H0 */
+ add d1,a1
+ mov a1,(104,sp)                  /* H1 */
+ mov 15,d0
+1:
+ movbu d0,(a0)
+ inc a0
+ add -1,d1
+ bne 1b
+ mov xb_seed,a0
+ mov (a0),d0
+ cmp 0,d0
+ bne 2f
+ mov 0x12345678,d0
+2:
+ mov d0,(76,sp)
+ clr d0
+ mov d0,(16,sp)
+3:                                /* pass loop: K rows (fewer at the end) */
+ mov (48,sp),d0
+ mov (16,sp),d1
+ sub d1,d0                        /* rows left */
+ mov (92,sp),d1
+ cmp d1,d0
+ bcc 1f
+ mov d0,d1
+1:
+ mov d1,(96,sp)
+ mov (100,sp),a0                  /* noise rows: H0 (and H1) */
+ mov a0,(68,sp)
+ mov xb_p1s,d0
+ call xb_cach,[],0
+ calls (a0)
+ mov (96,sp),d0
+ cmp 2,d0
+ bcs 2f
+ mov (104,sp),a0
+ mov a0,(68,sp)
+ mov xb_p1s,d0
+ call xb_cach,[],0
+ calls (a0)
+2:
+ mov (16,sp),d0
+ mov (24,sp),d1
+ mul d1,d0
+ mov (20,sp),d1
+ add d1,d0                        /* the first row's bus address */
+ mov (96,sp),d1
+ add -1,d1
+ mov (24,sp),d2
+ mul d2,d1
+ mov (44,sp),d2
+ add d2,d2
+ add d2,d1                        /* the length of the rows */
+ call xb_open,[d2,d3,a2,a3],28
+ mov d0,(40,sp)
+ cmp 0,a0
+ beq 4f                           /* rows across the window's edge (at most one pass): left as they are */
+ clr d1                           /* through the window: its cached view (0xb8.. -> 0x78..; camera gd4: 0.63
+                                     against 1.08 ms a row), the rows' lines written back before the lock goes */
+ mov a0,d0
+ cmp 0xb8000000,d0
+ bcs 9f
+ add -0x40000000,d0
+ mov d0,a0
+ mov 1,d1
+9:
+ mov d1,(52,sp)
+ mov a0,(80,sp)
+ mov (100,sp),a1
+ mov a1,(68,sp)
+ mov xb_p2s,d0
+ call xb_cach,[],0
+ calls (a0)                       /* row 1: row, H, words, T at (80, 68, 84, 88,sp) */
+ mov (96,sp),d0
+ cmp 2,d0
+ bcs 5f
+ mov (80,sp),d0
+ mov (24,sp),d1
+ add d1,d0
+ mov d0,(80,sp)
+ mov (104,sp),a1
+ mov a1,(68,sp)
+ mov xb_p2s,d0
+ call xb_cach,[],0
+ calls (a0)                       /* row 2 */
+5:
+ mov (52,sp),d1
+ cmp 0,d1
+ beq 4f
+ call FLUSH,[d2,d3],16            /* the rows' cached lines back to memory, under the lock */
+4:
+ mov (40,sp),d0
+ call xb_close,[d2],8
+ mov (16,sp),d0
+ mov (96,sp),d1
+ add d1,d0
+ mov d0,(16,sp)
+ mov (48,sp),d1
+ cmp d1,d0
+ bcs 3b
+ mov xb_seed,a0
+ mov (76,sp),d0
+ mov d0,(a0)
+ call FLUSH,[d2,d3],16            /* write back the work buffers, drop the cached lines */
+ mov (12,sp),a0
+ call free,[],4
+ mov (36,sp),a0
+ call free,[],4
+99:
+ ret [d2,d3,a2,a3],128
+
+/* xb_cach: leaf, d0 = an address -> a0 = its cached alias (0xa0000000..0xb7ffffff -> - 0x40000000), else itself */
+xb_cach:
+ mov d0,a0
+ cmp 0xa0000000,d0
+ bcs 1f
+ cmp 0xb8000000,d0
+ bcc 1f
+ add -0x40000000,d0
+ mov d0,a0
+1:
+ retf [],0
+
+/* xb_tbl: `call xb_tbl,[d2,d3,a2,a3],16`, a0 = T (4096 B), a1 = G, d3 = S. T[16 y + h] = clamp(y + delta). */
+xb_tbl:
+ clr d2
+1:
+ movbu (a1),d0
+ inc a1
+ mul d3,d0
+ mov d0,a2                        /* G[y] S */
+ mov -945,d1                      /* 64 h - 945 for h 0..30: centred on h's mean (grain/model.py) */
+2:
+ mov a2,d0
+ mul d1,d0
+ add 131072,d0
+ asr 18,d0
+ add d2,d0
+ cmp 0,d0
+ bge 3f
+ clr d0
+3:
+ cmp 255,d0
+ ble 4f
+ mov 255,d0
+4:
+ movbu d0,(a0)
+ inc a0
+ add 64,d1
+ cmp 1103,d1                     /* 32 entries per Y: 64 x 32 - 945 */
+ bne 2b
+ inc d2
+ cmp 256,d2
+ bne 1b
+ ret [d2,d3,a2,a3],16
+
+/* xb_p1s: `calls (a0)` from xb_grain (sp = its sp): V (64,sp), H (68), groups of 4 px (72), r (76, in and out).
+ * Per px: n = lo + hi nibble of a random byte, v = (V + n) >> 1 -> V, h = (v + v_left + 1) >> 1 -> H (v_left = 15
+ * at x 0). Four pixels at a time in one word (byte k = pixel 4i + k): n = (r & 0x0f..) + ((r >> 4) & 0x0f..),
+ * v = (V & n) + (((V ^ n) & 0xfe..) >> 1), v_left = v << 8 | the previous word's v >> 24, h = ((v + v_left +
+ * 0x01..) >> 1) & 0x7f..; no byte carries (bytes <= 61). Same values as grain/model.py. Uses d0..d3, a0..a3. */
+xb_p1s:
+ mov (64,sp),a0
+ mov (68,sp),a1
+ mov (72,sp),a2
+ mov (76,sp),a3                   /* r stays in a3: the stack is uncached */
+ mov 0x0f000000,d3                /* the previous word's v: 15 in byte 3 */
+1:
+ mov a3,d0                        /* xorshift32 */
+ mov d0,d2
+ asl 13,d2
+ xor d2,d0
+ mov d0,d2
+ lsr 17,d2
+ xor d2,d0
+ mov d0,d2
+ asl 5,d2
+ xor d2,d0
+ mov d0,a3
+ mov d0,d1
+ lsr 4,d1
+ and 0x0f0f0f0f,d0
+ and 0x0f0f0f0f,d1
+ add d1,d0                        /* n */
+ mov (a0),d1                      /* V */
+ mov d1,d2
+ and d0,d2                        /* V & n */
+ xor d0,d1
+ and 0xfefefefe,d1
+ lsr 1,d1
+ add d2,d1                        /* v */
+ mov d1,(a0)
+ add 4,a0
+ lsr 24,d3
+ mov d1,d2
+ asl 8,d2
+ or d3,d2                         /* v_left */
+ mov d1,d3                        /* (the next word's previous) */
+ add d1,d2
+ add 0x01010101,d2
+ lsr 1,d2
+ and 0x7f7f7f7f,d2                /* h = (v + v_left + 1) >> 1, 0..30 */
+ mov d2,(a1)
+ add 4,a1
+ add -1,a2
+ cmp 0,a2
+ bne 1b
+ mov a3,(76,sp)
+ rets
+
+/* xb_p2s: `calls (a0)` from xb_grain: the row (80,sp), H (68), words (84), T (88). Y0, Y1 of each word -> T[Y][h].
+ * Uses d0..d3, a0..a3. */
+xb_p2s:
+ mov (80,sp),a0
+ mov (68,sp),a1
+ mov (84,sp),a2
+ mov (88,sp),a3
+1:
+ mov (a0),d0
+ mov d0,d1
+ and 0xff,d1
+ asl 5,d1
+ movbu (a1),d2
+ or d2,d1
+ movbu (d1,a3),d1                 /* Y0' */
+ mov d0,d2
+ lsr 16,d2
+ and 0xff,d2
+ asl 5,d2
+ movbu (1,a1),d3
+ or d3,d2
+ movbu (d2,a3),d2                 /* Y1' */
+ and 0xff00ff00,d0
+ or d1,d0
+ asl 16,d2
+ or d2,d0
+ mov d0,(a0)
+ add 4,a0
+ add 2,a1
+ add -1,a2
+ cmp 0,a2
+ bne 1b
+ rets
+
+ .balign 4
+xb_lkbuf:                         /* xb_lkd's scratch record */
+ .space 64
+xb_seed:
+ .long 0
+
 /* entry 0 (`calls`): relocate this block in place -> d0 = its address. Keeps d2, d3, a2, a3. */
 xb_reloc:                         /* a2 = P (x_load) */
  add -4,sp
@@ -294,10 +1132,10 @@ xb_reloc:                         /* a2 = P (x_load) */
  movm (sp),[d2,d3,a2,a3]
  rets
 
-/* ---- dial labels: OM3MOD/LABELS.BIN v2 = 'OM3V' | u32 total | u32 CRC-32 of bytes 12.. | u32 n (21) | n bitmaps
+/* ---- dial labels: OM3MOD/LABELS.BIN v2 = 'OM3V' | u32 total | u32 CRC-32 of bytes 12.. | u32 n (24) | n bitmaps
  * 30 rows x 9 bytes (70 px, MSB first, 1 = letter fill). One heap copy (XL_FILE B) and one 2 KB stream buffer; the
  * label is drawn and encoded (OSD type 11, 70 x 30) only when it changes. */
- .set XL_N, 23
+ .set XL_N, 24
  .set XL_BM, 270
  .set XL_FILE, 16+XL_N*XL_BM
  .set XL_OUT, 2048
@@ -582,7 +1420,7 @@ xb_vl:
  movbu (AXIS,a2),d3
  cmp 3,d3
  bne 7f
- cmp 8,d2
+ cmp 9,d2
  bcc 7f
  movbu (EDK,a2),d3
  asl 6,d3
@@ -659,7 +1497,7 @@ xb_lc:
  .long -1                         /* the label in it */
 xb_ll:
  .long 0                          /* its length */
-xb_vt:                            /* slice 1..8: slot byte, mode, first label, max */
+xb_vt:                            /* slice 1..9: slot byte, mode, first label, max */
  .byte 51,0,0,3                   /* 1 NR: Camera, Std, Low, Off */
  .byte 49,1,4,0                   /* 2 Glow (-), Clarity (+), Glow/Clar. (0) */
  .byte 26,1,7,0                   /* 3 Blue (-), Amber (+), A-B (0) */
@@ -668,8 +1506,32 @@ xb_vt:                            /* slice 1..8: slot byte, mode, first label, m
  .byte 47,2,19,0                  /* 6 Blacks */
  .byte 48,2,20,0                  /* 7 Whites */
  .byte 52,0,21,1                  /* 8 VigFix: Camera, Off (v0.21) */
+ .byte 53,2,23,0                  /* 9 Grain (the readout shows the level) */
 xb_lpath:
  .asciz "C:\\OM3MOD\\LABELS.BIN"
+ .balign 2
+xb_gt:                            /* camera-route grain level of the last capture (xb_cap -> xb_dev), 0 none */
+ .byte 0
+ .balign 2
+xb_gstab:                         /* Grain 1..3 -> S: the camera's Low / Medium / High in grain contrast (v0.21) */
+ .hword 28, 68, 112
+xb_G:                             /* grain weight by Y, 0..255 (grain/model.py: the MONO grain shape) */
+ .byte 20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20
+ .byte 20,20,20,20,20,20,20,20,20,20,21,21,21,22,23,25
+ .byte 26,28,30,32,34,36,39,42,45,48,51,54,58,62,65,69
+ .byte 73,77,81,85,90,94,99,103,108,112,117,121,126,131,135,140
+ .byte 145,149,154,159,163,168,172,177,181,186,190,194,198,202,206,210
+ .byte 214,217,221,224,228,231,234,236,239,241,244,246,248,249,251,252
+ .byte 253,254,255,255,255,255,255,255,255,255,255,255,255,255,255,255
+ .byte 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
+ .byte 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
+ .byte 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
+ .byte 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
+ .byte 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
+ .byte 255,255,255,255,255,255,255,255,255,255,255,254,254,254,253,252
+ .byte 251,250,249,248,247,246,245,243,242,240,239,237,236,234,233,231
+ .byte 229,227,226,224,222,221,219,217,215,214,212,210,209,207,206,204
+ .byte 203,202,200,199,198,197,196,195,194,193,193,192,192,191,191,191
  .balign 2
 xb_ft:                            /* Art Effect id -> job flags: -, Star Light, Pin Hole, -, White Edge, Frame */
  .hword 0, 0x40, 0x400, 0, 0x2000, 0x8000

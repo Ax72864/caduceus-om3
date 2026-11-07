@@ -11,6 +11,7 @@ SECTIONS {
   .hook_wt      0x605048c1 : { *(.hook_wt) }
   .hook_nr1     0x603c8038 : { *(.hook_nr1) }
   .hook_nr2     0x603e7891 : { *(.hook_nr2) }
+  .hook_cl      0x604955f1 : { *(.hook_cl) }
   .ext2         0x607187a8 : { *(.ext2) }
   .ext7         0x6164afd0 : { *(.ext7) }
   .ext3         0x6081fe10 : { *(.ext3) }
@@ -98,3 +99,4 @@ lv_x          = 0x6046b8ee;
 lv_skip       = 0x6046b94f;
 wt_back       = 0x605048c7;
 XTAG          = 0x58000000;
+SEL           = 0x6052cf39;

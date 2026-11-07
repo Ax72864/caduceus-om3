@@ -109,7 +109,7 @@
  bne 71f
  mov d2,d3
  and 63,d3
- cmp 8,d3
+ cmp 9,d3
  bcc \none
  and 0xc0,d2
  add a2,d2                        /* P + 64*slot */
@@ -259,9 +259,8 @@ pr_gout:
 /* ed_trig (frame 36, (12,sp) = tid out): P valid + marker + dirty == 1 + the same context gate as pr_gate
  * -> dirty = 0, one ed_save, status byte = its result. */
 ed_trig:
- PVAL t_out
- call pf_wb,[d2,d3,a2,a3],24      /* selected bank profiles <- the camera now (dirty when anything changed; also
-                                     after menu-only edits such as Contrast, with the wheel editor never opened) */
+ PVAL t_out                       /* v0.21: no automatic capture into the selected looks (pf_wb gone): a look
+                                     changes only when OK is held on the Looks page (lk_hold) */
  mov (EMARK,a2),d0
  cmp EMAGIC,d0
  bne 1f
@@ -430,7 +429,7 @@ s_x:                              /* Extras page: d2 = 64*slot + slice, d1 = val
                                    * xt_tab {slot byte, min, max}; A-B / G-M also turn the slot's WB override on */
  mov d2,d3
  and 63,d3
- cmp 8,d3
+ cmp 9,d3
  bcc s_bad
  mov xt_tab,a3
  add d3,a3
@@ -442,7 +441,7 @@ s_x:                              /* Extras page: d2 = 64*slot + slice, d1 = val
  and 0xc0,d2
  add 32,d2
  add d3,d2                        /* 64*slot + 32 + byte */
- movbu (1,a3),d3
+ movbu (1,a3),d3                  /* (v0.21: the dial itself now stops at the cell's range, pf_cnt / pf_vbi) */
  extb d3
  cmp d3,d1
  blt s_bad
@@ -536,11 +535,19 @@ wb_get:
  and 0x81,d0
  cmp 1,d0
  bne 9f
- movbu (26,a1),d0                 /* A-B */
+ movbu (26,a1),d0                 /* A-B: 34041, and the Auto WB ones 7401 / 7433 (v0.21) */
  cmp 34041,d2
  beq 2f
- movbu (27,a1),d0                 /* G-M */
+ cmp 7401,d2
+ beq 2f
+ cmp 7433,d2
+ beq 2f
+ movbu (27,a1),d0                 /* G-M: 38521, and the Auto WB ones 7417 / 7449 (v0.21) */
  cmp 38521,d2
+ beq 2f
+ cmp 7417,d2
+ beq 2f
+ cmp 7449,d2
  bne 9f
 2:
  extb d0
@@ -560,6 +567,66 @@ wb_get:
 9:
  mov d3,d0
  ret [d2,d3],12
+
+/* pf_cnt <- facade vtable +28 word 0x60e57490 (count, stock 0x60b86e09): d0 id, a0 facade -> d0 count. COLOR1-4
+ * cell ids 928..975 ask code block +96 (xb_cv: the Looks page's 12 o'clock 0..5; v0.21 an Extras cell its own range,
+ * so the dial stops at the ends); anything else, or no answer: stock. */
+pf_cnt:
+ movm [d2,d3,a2],(sp)
+ add -4,sp
+ mov d0,d2
+ exthu d0
+ add -928,d0
+ cmp 48,d0
+ bcc 9f
+ call xp,[],0
+ beq 9f
+ add 96,a1
+ mov d2,d0
+ calls (a1)                       /* -> d0 count, d1 1 hit / 0 miss */
+ cmp 0,d1
+ bne 8f
+9:
+ mov d2,d0
+ add 4,sp
+ movm (sp),[d2,d3,a2]
+ jmp stock_cnt
+8:
+ add 4,sp
+ movm (sp),[d2,d3,a2]
+ rets
+
+/* pf_vbi <- facade vtable +32 word 0x60e57494 (value by index, stock 0x60b87031): d0 id, d1 index, a0 facade,
+ * a1 out (or 0) -> d0 value (-1 = no such index), (a1) = the same. Cell ids 928..975: code block +104 (xb_vb,
+ * d3 = out); anything else, or no answer: stock. */
+pf_vbi:
+ movm [d2,d3,a2],(sp)
+ add -4,sp
+ mov d0,d2
+ mov a1,d3
+ mov d1,a2
+ exthu d0
+ add -928,d0
+ cmp 48,d0
+ bcc 9f
+ call xp,[],0                     /* keeps d1 */
+ beq 9f
+ add 104,a1
+ mov d2,d0
+ calls (a1)                       /* d0 id, d1 index, d3 out -> d0 value, d1 1 hit / 0 miss */
+ cmp 0,d1
+ bne 8f
+9:
+ mov d2,d0
+ mov a2,d1
+ mov d3,a1
+ add 4,sp
+ movm (sp),[d2,d3,a2]
+ jmp stock_vbi
+8:
+ add 4,sp
+ movm (sp),[d2,d3,a2]
+ rets
 
 .balign 2
 hl_lut:                           /* +0: hue raw[ui+7] (15 hw); +30: lightness raw[ui+7]; +60: perm[12] */
@@ -1391,6 +1458,9 @@ ed_event:
  PVAL e_no
  mov a2,(20,sp)
  movbu (AXIS,a2),d2               /* the page the user is on */
+ jmp lk_hold                      /* v0.21: code block +88 (the Looks page saves the look; the whole-profile reset
+                                     also clears the look selection), else e_rst */
+e_rst:
  clr d1
  movbu d1,(AXIS,a2)               /* stock reset on Saturation */
  mov a3,a0
@@ -1408,7 +1478,7 @@ ed_event:
  mov a2,a0
  add d0,a0                        /* slot entry: hue[12] +0, light[12] +12 */
  clr d0
- mov 53,d1                        /* slot +0..52 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix) */
+ mov 54,d1                        /* slot +0..53 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix) */
 2:
  movbu d0,(a0)
  inc a0
@@ -1418,6 +1488,7 @@ ed_event:
  movbu d0,(DIRTY,a2)              /* saved to the card on the next half-press */
  cmp 0,d2
  beq 4f                           /* on Saturation the stock reset already redrew */
+e_lk:
  mov 128,d2                       /* Hue/Light page: children 1..12 re-read (now 0) */
 3:
  mov a3,a0
@@ -1440,6 +1511,7 @@ ed_event:
  mov (12,sp),d0
  calls (a2)
 4:
+e_ret:
  mov d3,d0
  ret [d2,d3,a2,a3],44
 e_no:
@@ -1455,7 +1527,7 @@ e_no:
  * settings at 0x6037ec10/eca0/ed30/edc0, 8-byte entries, id at +4). The same loop as stock but through ed_isdef, so
  * the '*' after COLOR n and the look name also follow Hue, Light and WB. Frame: the caller's call [d2,d3,a2],16. */
 ed_pmod:
- clr d3
+ clr d3                           /* v0.21 lk11: '*' = anything differs from the factory defaults (look or not) */
  mov 0x6037ec10,a2
  cmp 54,d0
  beq 1f
@@ -1473,7 +1545,7 @@ ed_pmod:
  inc4 a2
 2:
  mov (a2),d0
- call ed_isdef,[d2,d3,a2],24
+ call ed_isd0,[d2,d3,a2],24
  cmp d3,d0
  bne 4f
  mov 1,d3
@@ -1488,13 +1560,24 @@ ed_pmod:
  ret [d2,d3,a2],16
 
 /* ed_isdef <- the nine calls of stock "is at default" 0x6129bad6 (call [d2,d3,a2],24; d0 id -> d0 1 default, 0 changed).
- * They drive the '*' after COLOR n / the look name and the "Reset [OK hold]" guide. Stock first; a COLOR1-4 sector
+ * They drive the '*' after COLOR n / the look name and the "Reset [OK hold]" guide (v0.21: with a look selected,
+ * ed_pmod asks the code block instead). Stock first; a COLOR1-4 sector
  * id that stock calls default is reported changed when its Hue or Light is non-zero, or when the profile's WB shift is
  * on and non-zero. Reads only. */
+ed_isd0:                          /* lk11: ed_pmod's entry ('*'): the Looks page is compared too */
+ mov 1,d1
+ bra 86f
 ed_isdef:
+ clr d1
+86:
  mov d0,d2
  PVAL 85f
  movbu (AXIS,a2),d3               /* stock compare on Saturation, whatever page is open ... */
+ cmp 4,d3                         /* v0.21: the Looks page reads "at default": no "Reset [OK hold]" guide there */
+ bne 87f                          /* (OK held there saves the look, it never resets) */
+ cmp 0,d1
+ beq 8f
+87:
  clr d0
  movbu d0,(AXIS,a2)
  mov d2,d0
@@ -1518,7 +1601,7 @@ ed_isdef:
  movbu (47,a0),d3                 /* Blacks, Whites, Extras Glow/Clarity, Art Effect, NR, VigFix: any non-zero */
  mov (48,a0),d1                   /* +48..51 (slot entries are 4-aligned: P + 32 + 64k) */
  or d1,d3
- movbu (52,a0),d1
+ mov (52,a0),d1                   /* +52..55: VigFix, Grain, two zero bytes */
  or d1,d3
  cmp 0,d3
  bne 7f
@@ -1552,9 +1635,11 @@ ed_isdef:
  call stock_isdef,[d2,d3,a2],24
  ret [d2,d3,a2],24
 
-gd_mode:
- .asciz "r"
 ext10_end:
+
+.section .ext3,"ax"
+gd_mode:                          /* v0.21: moved from the section-10 tail (room for the Looks-page guide test) */
+ .asciz "r"
 
 /* ------------------------------------------------------------------ section-5 tail: per-profile Blacks / Whites
  * Port of Caduceus E-P7 patches/tone_ends (cakelesscoder/caduceus-ep7, Apache-2.0, docs/TONE_ENDS.md) to OM-3.
@@ -1598,9 +1683,15 @@ tone:
  beq t9                           /* last pass's output (ours): keep */
 t1:
  mov (4,a2),a1                    /* request R */
- mov (8,a1),d0                    /* key 11 (COLOR) <=> word 0x000b0000 */
- cmp 0xb0000,d0
+ movhu (10,a1),d0                 /* key 11 (COLOR), or 12 with +1731 0 (a COLOR still taking the camera's grain; */
+ cmp 11,d0                        /* MONO has 0xa0 there) */
+ beq 1f
+ cmp 12,d0
  bne t9
+ movbu (1731,a1),d0
+ cmp 0,d0
+ bne t9
+1:
  PVAL t9                          /* a2 = P (C no longer needed) */
  mov a2,a0
  add 32,a0
@@ -1810,12 +1901,7 @@ s_look:                           /* after WHERE (a2 = P, d2 = 64k + slice, d3 =
  mov d1,(20,sp)
  cmp d0,d1
  beq 7f
- cmp 0,d0
- beq 3f
- mov d0,d3                        /* leaving profile d0: keep what the profile has now */
- call pf_cap,[d2,d3,a2,a3],28
-3:
- mov (16,sp),d2                   /* load the new one (0: neutral) into the slot and the camera's own settings */
+ mov (16,sp),d2                   /* v0.21: leaving a look keeps it as saved (unsaved edits are dropped) */                   /* load the new one (0: neutral) into the slot and the camera's own settings */
  mov (20,sp),d3
  mov (8,sp),a0
  mov (12,sp),a1
@@ -1835,7 +1921,6 @@ s_look:                           /* after WHERE (a2 = P, d2 = 64k + slice, d3 =
  * (slot hue/light/WB/Blacks/Whites + the camera's own 18 settings via the getter). Locals (0) scratch, (4) offset,
  * (8) k. Stores: the bank record only. */
 pf_cap:
- mov d2,(8,sp)
  mov d2,d0
  asl2 d0
  add d2,d0
@@ -1845,6 +1930,8 @@ pf_cap:
  add 32,d0
  mov (LPTR,a2),a3
  add d0,a3                        /* a3 = record */
+pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd: a scratch record) */
+ mov d2,(8,sp)
  mov d2,d0
  asl 6,d0
  add 32,d0
@@ -1878,6 +1965,8 @@ pf_cap:
  movbu d0,(49,a3)
  movbu (28,a0),d0                 /* v0.21: slot +52 VigFix -> record +50 */
  movbu d0,(50,a3)
+ movbu (29,a0),d0                 /* slot +53 Grain -> record +51 */
+ movbu d0,(51,a3)
  clr d3
 2:
  mov pf_ids,a0
@@ -2105,7 +2194,7 @@ pf_put:
 7:
  movbu d0,(d3,a0)
  add 2,a1
- cmp pf_bt+18,a1
+ cmp pf_bt+20,a1
  bne 8b
  movbu (7,a0),d0
  or 2,d0
@@ -2124,10 +2213,12 @@ pf_put:
  movhu (a0),d0
  add d1,d0                        /* id */
  movbu (3,a0),d2                  /* record offset */
- clr d1
  mov (16,sp),a1
  cmp 0,a1
- beq 6f
+ bne 61f
+ call pf_dflt,[d2,a3],16          /* lk11: neutral = the camera's factory default of this setting */
+ bra 6f
+61:
  movbu (d2,a1),d1
  extb d1
 6:
@@ -2141,48 +2232,37 @@ pf_put:
  bne 5b
  ret [d2,d3,a2,a3],40
 pf_bt:                            /* record offset, slot offset - 24 */
- .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28
+ .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28, 51,29
 
 .section .ext1,"ax"
-/* pf_wb: `call pf_wb,[d2,d3,a2,a3],24` from ed_trig, a2 = P: every COLOR on profile 1..5 -> its record (pf_cap);
- * dirty when the bank's bytes changed. Locals (0) scratch, (4) CRC before. */
-pf_wb:
- mov (LPTR,a2),a3
- cmp 0,a3
- beq 9f
- mov -1,d0
- mov a3,a0
- add 32,a0
- mov 1280,d1
- call sd_crc,[d2,d3],12
- mov d0,(4,sp)
- clr d2
-1:
- mov a2,a0
- add d2,a0
- movbu (LIDX,a0),d3
- extb d3
- cmp 1,d3
- blt 2f
- cmp 5,d3
- bgt 2f
- call pf_cap,[d2,d3,a2,a3],28
-2:
- inc d2
- cmp 4,d2
- bne 1b
- mov -1,d0
- mov (LPTR,a2),a0
- add 32,a0
- mov 1280,d1
- call sd_crc,[d2,d3],12
+/* lk_hold (v0.21) <- ed_event on the Looks page (axis 4), in its frame (a2 = P, a3 = parent, d2 = 4, (12,sp) cursor
+ * id, (24,sp) event): code block +88 (xb_lkh) does it: OK held on the wheel with a look selected saves COLOR k into the
+ * look (pf_cap, dirty, refresh: e_lk), no look: nothing (e_ret), OK held on "COLOR n" (0xf881): the reset (e_rst).
+ * Without the code block: the reset. */
+/* pf_dflt (lk11): `call pf_dflt,[d2,a3],16` from pf_put, d0 = setting id -> d1 = its factory default (the stock
+ * GetDefault, facade +156, as the stock "is at default" check reads it on Saturation), d0 kept. */
+pf_dflt:
+ mov d0,d2
+ clr d1
+ mov d1,(4,sp)
+ call facade,[],4                 /* a0 = the facade; its GetDefault without our page hook (ed_default reads 0 on */
+ mov stock_default,a3             /* the Hue/Light/Looks pages) */
+ mov sp,a1
+ inc4 a1
+ mov d2,d0
+ calls (a3)
  mov (4,sp),d1
- cmp d1,d0
- beq 9f
- mov 1,d0
- movbu d0,(DIRTY,a2)
-9:
- ret [d2,d3,a2,a3],24
+ mov d2,d0
+ ret [d2,a3],16
+
+lk_hold:
+ call xp,[],0
+ beq 7f
+ add 88,a1
+ jmp (a1)
+7:
+ jmp e_rst
+
 
 .section .ext9,"ax"
 /* pf_save: `call pf_save,[d2,d3,a2,a3],24` from ed_trig after ed_save, a2 = P: selection bytes, CRC, then
@@ -2234,6 +2314,12 @@ pf_save:
  mov (4,sp),a0
  call free,[],4
 9:
+ mov (XPTR,a2),a1                 /* v0.21: code block +72 after each half-press save (HLS_EVENT task) */
+ cmp 0,a1
+ beq 7f
+ add 72,a1
+ calls (a1)
+7:
  ret [d2,d3,a2,a3],24
 
 .section .ext6,"ax"
@@ -2313,7 +2399,7 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
 pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
                                      (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
- .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, 0,0,0,0,0,0,0,0,0,0,0,0,0
+ .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, -5, 0,0,0,0,0,0,0,0,0,0,0,0
 pf_pnew:
  .asciz "C:\\OM3MOD\\LOOKS.NEW"
 pf_pbin:
@@ -2324,56 +2410,6 @@ pf_pbin:
  * children are refreshed (editor open, each INFO page change). On the Profiles page the 12 o'clock id gets 6 values,
  * 0..5, so the dial stops at 0 and 5. Everything else: stock, registers as at entry. CALLS entries. */
 .section .ext1,"ax"
-/* pf_is: `add -4,sp; call pf_is,[],0; add 4,sp` with d0 = facade id -> d3 0 when it is the Profiles page's 12 o'clock
- * id. Uses d2, d3, a2; returns through MDR. */
-pf_is:
- PROFID 9f
- clr d3
- retf [],0
-9:
- mov 1,d3
- retf [],0
-.section .ext10,"ax"
-/* pf_cnt <- facade vtable +28 word 0x60e57490 (count, stock 0x60b86e09): d0 id, a0 facade -> d0 count. */
-pf_cnt:
- movm [d2,d3,a2],(sp)
- add -4,sp
- call pf_is,[],0
- add 4,sp
- cmp 0,d3
- bne c_miss
- movm (sp),[d2,d3,a2]
- mov 6,d0
- rets
-c_miss:
- movm (sp),[d2,d3,a2]
- jmp stock_cnt
-.section .ext8,"ax"
-/* pf_vbi <- facade vtable +32 word 0x60e57494 (value by index, stock 0x60b87031): d0 id, d1 index, a0 facade,
- * a1 out (or 0) -> d0 value (-1 = no such index), (a1) = the same. */
-pf_vbi:
- movm [d2,d3,a2],(sp)
- add -4,sp
- call pf_is,[],0
- add 4,sp
- cmp 0,d3
- bne v_miss
- mov d1,d0
- exthu d0
- cmp 6,d0
- bcs 1f
- mov -1,d0
-1:
- cmp 0,a1
- beq 2f
- mov d0,(a1)
-2:
- movm (sp),[d2,d3,a2]
- rets
-v_miss:
- movm (sp),[d2,d3,a2]
- jmp stock_vbi
-
 /* ------------------------------------------------------------------ profile names (test 17)
  * NAMES.BIN v1 (written by the Look Lab with PROFILES.BIN): 'OM3N' | u32 total | u32 crc32(bytes 12..) | u16 1 |
  * u16 20 | u16 175 | u16 50 | 12 zero | 4 groups {u32 offset, u32 length} at 32 (group k = COLOR k's pictures,
@@ -2638,7 +2674,9 @@ nm_own:
 .section .ext9,"ax"
 gd_path:                          /* test 17: moved here from the section-10 tail (room for the name pictures) */
  .asciz "C:\\OM3MOD\\GUIDES.BIN"
-nm_path:
+
+.section .ext4,"ax"
+nm_path:                          /* v0.21: moved from the section-9 tail (room for the pf_save block call) */
  .asciz "C:\\OM3MOD\\NAMES.BIN"
 
 .section .ext3,"ax"
@@ -2704,7 +2742,7 @@ vl_s:
  * for Frame, in the Art Effect -> flag converter 0x60555e47 (test 2 showed both render on COLOR stills).
  * Stores: the slot bytes (editor), the job flag word in the converter's params block (as stock), own stack. */
 .section .ext9,"ax"
-xt_tab:                           /* Extras slices 1..8: slot byte, min, max (0 = no cell) */
+xt_tab:                           /* Extras slices 1..9: slot byte, min, max (0 = no cell) */
  .byte 51,0,3                     /* 1 NR: 0 Camera, 1 Std, 2 Low, 3 Off (stored; applied in a later test) */
  .byte 49,-5,5                    /* 2 Glow (-) / Clarity (+) */
  .byte 26,-5,5                    /* 3 WB A-B */
@@ -2713,6 +2751,7 @@ xt_tab:                           /* Extras slices 1..8: slot byte, min, max (0 
  .byte 47,-5,5                    /* 6 Blacks */
  .byte 48,-5,5                    /* 7 Whites */
  .byte 52,0,1                     /* 8 VigFix: 0 Camera (Shading Comp. as set), 1 Off (v0.21) */
+ .byte 53,0,3                     /* 9 Grain: 0 off, 1 Low, 2 Medium, 3 High (v0.21) */
 
 /* ------------------------------------------------------------------ v0.20 test 5: code block from the card
  * The Extras effects run from a code block at the end of GUIDES.BIN (built with this firmware; tag XTAG), loaded
@@ -2748,27 +2787,29 @@ xt_tab:                           /* Extras slices 1..8: slot byte, min, max (0 
 
 .section .hook_nr1,"ax"
  call s_nr,[d2,d3],12             /* stock 0x603c8038: call getter (0x9719 stills Noise Filter) */
+.section .hook_cl,"ax"
+ call s_cl,[d2,a2],12
+
 .section .hook_nr2,"ax"
  call s_nr,[d2,d3],12             /* stock 0x603e7891 (capture +37674) */
 
 .section .ext2,"ax"
 /* xp: `call xp,[],0` -> a1 = the code block (relocated) or 0. Uses d0; returns through MDR. */
-xp:
+xp:                               /* also Z = (a1 == 0) for the ext2 stubs (v0.21) */
  movhu (STATE),d0
  add -1,d0
+ mov 0,a1
  btst 3,d0
  bne 1f
  mov d0,a1
  add POOL,a1
  mov (XPTR,a1),a1
- retf [],0
 1:
- mov 0,a1
+ cmp 0,a1
  retf [],0
 
 s_lv:                             /* d0 = 11, a2 = request, a3 = record+248; d3 live */
  call xp,[],0
- cmp 0,a1
  beq 9f
  add 16,a1
  jmp (a1)
@@ -2778,13 +2819,21 @@ s_lv:                             /* d0 = 11, a2 = request, a3 = record+248; d3 
 s_nr:                             /* the site's `call ...,[d2,d3],12` frame; d0 key, d1, a0 as for the getter */
  mov d0,d3
  call xp,[],0
- mov d3,d0
- cmp 0,a1
+ mov d3,d0                        /* (mov keeps Z) */
  beq 9f
  add 32,a1
  jmp (a1)
 9:
  jmp getter
+
+s_cl:                             /* v0.21 grain: request configuration 0x604955f1 `call s_cl,[d2,a2],12`, a0 = context.
+                                     Code block +64 marks a plain COLOR still for the camera's grain, then the selector */
+ call xp,[],0
+ beq 9f
+ add 64,a1
+ jmp (a1)
+9:
+ jmp SEL                          /* 0x6052cf39, in the same frame as the stock call */
 
 .section .ext5,"ax"
 s_wt:                             /* leaf: MDR = return, a0 = combiner context; keep a0 for the stock getter */
@@ -2802,6 +2851,18 @@ s_wt:                             /* leaf: MDR = return, a0 = combiner context; 
  mov (48,a0),a1
  mov 600,d0
  jmp wt_back                      /* 0x605048c7: cmp 0x01010065,a1 */
+
+.section .ext3,"ax"
+g_sf:                             /* grain: the Soft Focus blend setup (work-list word 0x604b9288), `calls` */
+ add -4,sp
+ call xp,[],0
+ add 4,sp
+ cmp 0,a1
+ beq 9f
+ add 56,a1
+ jmp (a1)
+9:
+ jmp 0x604be2aa
 
 .section .ext8,"ax"
 s_cap:                            /* a3 = capture, a2 = params+12 (flags), (-4,a2) = key */

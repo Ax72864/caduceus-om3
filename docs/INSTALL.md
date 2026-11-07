@@ -112,7 +112,8 @@ anything (that is how the same updater behaves on the E-P7): make the files agai
 2. Picture Mode › **COLOR 1** (or 2–4) › press **▼** to open the Color Profile wheel.
 3. It opens on the **Film** page with the selected look's name. Press **INFO** for the others: Saturation →
    Saturation (All) → **Hue** → **Light** → **Extras** → back to **Film**. The label under the wheel names the page.
-4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card.
+4. Change something, leave the editor and **half-press**: it's saved to `OM3MOD` on the card. To keep changes in the
+   selected look, go back to the Film page and **hold OK** first (turning to another look without that drops them).
 
 To bring in looks from the [Control Panel](https://androidfanman.github.io/caduceus-om3/) (OM SYSTEM OM-3 selected at
 the top): save `LOOKS.BIN` and `NAMES.BIN` there, put them in the card's `OM3MOD` folder, then on the Film page turn the 12 o'clock spot to 1–5. See
@@ -148,7 +149,8 @@ top level (not inside another folder), the battery is full, and you hold OK *bef
 says 1.1 and that the flash finished (steady, then blinking).
 
 **My changes don't stay**: they save at the next half-press, and only when the card has an `OM3MOD` folder at its top
-level. A locked or full card can't be written.
+level. A locked or full card can't be written. Changes to a look stay in the look only after **holding OK on the Film
+page**; turning to another look without that puts the look back as it was saved.
 
 **The Extras values change but the photo doesn't**: the card's `GUIDES.BIN` isn't the one made with this firmware
 (it carries the Extras code). Copy the release's `GUIDES.BIN` again. **The Extras label says "Vivid"**: copy
@@ -156,7 +158,8 @@ level. A locked or full card can't be written.
 
 **The Film page is missing**: the card's `LOOKS.BIN` failed the camera's check (damaged or edited by hand), so
 the camera ignored it and left it alone. Open it in the Control Panel and save it again, or delete it: with no file, the
-camera starts a fresh, neutral bank.
+camera starts a fresh, neutral bank. Went back to v0.20 or older? Those can't read a `LOOKS.BIN` with Grain or the
+lens correction set: in the Control Panel's Export, choose **v0.20 or older** and save it again.
 
 **Something else is wrong**: remove the `OM3MOD` folder (copy it to your computer first: your settings are in it) and
 switch on again. If that doesn't help, [restore stock firmware](#restore-stock-firmware).
@@ -166,7 +169,8 @@ switch on again. If that doesn't help, [restore stock firmware](#restore-stock-f
 **Will updating to a new version lose my looks?** No. Flash the new firmware the same way and keep the card's
 `OM3MOD/LOOKS.BIN` and `BUNDLES.BIN`, and copy the new `GUIDES.BIN` and `LABELS.BIN`. Coming from v0.16–v0.18,
 where the bank was called `PROFILES.BIN`: rename it to `LOOKS.BIN` (same format). (v0.19 read `PROFILES.BIN` by
-itself; v0.20 needed that room for the Extras.) Looks saved by v0.19 or earlier have every Extras value at 0.
+itself; v0.20 needed that room for the Extras.) Looks saved by v0.19 or earlier have every Extras value at 0, and
+looks from v0.20 have Grain off and the lens correction as before.
 
 **Does it change the Monochrome profiles?** No. Only COLOR 1–4. The MONO profiles keep the camera's own editor.
 
