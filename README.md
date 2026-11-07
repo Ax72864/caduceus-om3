@@ -1,5 +1,21 @@
 # Caduceus for OM-3
 
+> [!CAUTION]
+> **Experimental development build: firmware space probe. Not a release. Do not use.**
+>
+> A diagnostic build on top of v0.21 that asks one question on the real camera: can Caduceus safely use the ~2.3 MiB
+> of empty space between the firmware's sections? It makes the camera's loader copy 4 KiB more of section 6, puts a
+> known pattern there, and on every half-press checks the pattern and the empty gaps, writing the result to
+> `OM3MOD/GAPTEST.BIN`. No `GAPTEST.BIN` on the card means the extra space was not loaded.
+>
+> Expected package: `DCOLYMP/E1479999.BIN` sha256 `0c936df9ff34d4c423f98bb349b44a94ed3d64455b344ebbabc306203dd23187`,
+> `OM3MOD/GUIDES.BIN` `f7fe50e04bfadd8b7b5042a7aa8fd403d47b3422b00148a37dae7f04650e9b9e` (build with
+> `firmware/build.py`). Emulator: 25 passes, no errors. Not yet run on a camera.
+>
+> The result decides where new features (such as the picture-mode sliders on
+> [`feature/v0.23-alpha-profile-sliders`](../../tree/feature/v0.23-alpha-profile-sliders)) can put their code.
+> For the current release, use [`main`](../../tree/main).
+
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
 the camera's Color Profile wheel into a full colour editor (per-colour Hue and Light, and an **Extras** page with

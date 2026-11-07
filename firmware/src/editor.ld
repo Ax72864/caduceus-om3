@@ -20,6 +20,7 @@ SECTIONS {
   .ext10        0x61aa4300 : { *(.ext10) }
   .ext6         0x60f49590 : { *(.ext6) }
   .ext9         0x619a9670 : { *(.ext9) }
+  .gx           0x60f49800 : { *(.gx) }
 }
 color_builder = 0x60518381;
 color_resume  = 0x6051861a;

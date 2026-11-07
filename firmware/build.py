@@ -139,7 +139,7 @@ def build(defaults, testfile, out):
     subprocess.run([P.AS, '-I', out, '-o', out / 'p.o', HERE / 'src' / 'editor.s'], check=True)
     subprocess.run([P.LD, '-T', HERE / 'src' / 'editor.ld', '-o', out / 'p.elf', out / 'p.o'], check=True)
     blobs = {}
-    for s in list(HOOKS) + ['.ext1', '.ext4', '.ext10', '.ext6', '.ext5', '.ext3', '.ext8', '.ext9', '.ext2', '.ext7']:
+    for s in list(HOOKS) + ['.ext1', '.ext4', '.ext10', '.ext6', '.ext5', '.ext3', '.ext8', '.ext9', '.ext2', '.ext7', '.gx']:
         subprocess.run([P.OBJCOPY, '-O', 'binary', '-j', s, out / 'p.elf', out / (s[1:] + '.bin')], check=True)
         blobs[s] = (out / (s[1:] + '.bin')).read_bytes()
     raw = Path(P.STOCK).read_bytes()
@@ -212,6 +212,16 @@ def build(defaults, testfile, out):
     for a, v in ps:
         m[o(a):o(a) + 7] = b'\xdd' + struct.pack('<i', sy['ed_poly'] - a) + b'\x00\x04'
     m[o(EXT1[0]):o(EXT1[0]) + len(blobs['.ext1'])] = blobs['.ext1']
+    # GX1 space test: section 6 loads 4 KB more (the loader's end constant), holding the probe and a pattern
+    GX_LO, GX_HI = 0x60f49800, 0x60f4a800
+    assert set(m[o(GX_LO):o(GX_HI)]) == {0xff}
+    assert m[o(0x60045e9a):o(0x60045e9a) + 6] == b'\xfc\xcc' + struct.pack('<I', GX_LO)
+    struct.pack_into('<I', m, o(0x60045e9c), GX_HI)
+    gx = bytearray(blobs['.gx']); pat = sy['gx_pat']; assert pat == GX_LO + len(gx) and pat % 4 == 0
+    n = (GX_HI - pat) // 4
+    for i in range(n): gx += struct.pack('<I', ((i + (i << 16)) ^ 0x5a3c96e1) & 0xffffffff)
+    assert len(gx) == GX_HI - GX_LO
+    m[o(GX_LO):o(GX_HI)] = gx
     m[o(EXT4[0]):o(EXT4[0]) + len(blobs['.ext4'])] = blobs['.ext4']
     m[o(EXT10[0]):o(EXT10[0]) + len(blobs['.ext10'])] = blobs['.ext10']
     m[o(EXT6[0]):o(EXT6[0]) + len(blobs['.ext6'])] = blobs['.ext6']
