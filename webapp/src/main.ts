@@ -33,10 +33,12 @@ const SAMPLES = [
 ];
 // OM-3 mode: the colour-frames test photo first, then public-domain (CC0) photos picked for skin, strong colour, greens,
 // blues, night light and sunset.
+/** Bump when a sample photo file changes, so browsers fetch the new one instead of their cached copy. */
+const SAMPLE_REV = '2';
 const OM3_SAMPLES = [
   { id: 'frames', label: 'Colour frames' }, { id: 'portrait', label: 'Portrait' }, { id: 'headwrap', label: 'Portrait, headwrap' },
   { id: 'taxi', label: 'Yellow taxi' }, { id: 'meadow', label: 'Mountain meadow' }, { id: 'ocean', label: 'Ocean' },
-  { id: 'bluehour', label: 'Blue hour' }, { id: 'paris', label: 'Night street' }, { id: 'sunset', label: 'Sunset' },
+  { id: 'bluehour', label: 'Blue hour' }, { id: 'paris', label: 'Night street' }, { id: 'paijanne', label: 'Sunset' },
 ];
 const SWATCH = ['#e3c22f', '#e8932e', '#e0602a', '#d03434', '#c43c92', '#8a52c6', '#3d5bd0', '#3d8bd0', '#2fb2c6',
   '#2fb28c', '#45a845', '#9fc63b'];
@@ -739,7 +741,7 @@ function buildPreview() {
   canvas = h('canvas', { class: 'pv', 'aria-label': 'Approximate preview of the selected look' });
   const thumbs = h('div', { class: 'thumbs' },
     ...samples().map((s) => h('button', { class: `thumb${S.image === s.id ? ' on' : ''}`, 'data-id': s.id, onclick: () => pickImage(s.id), title: s.label },
-      h('img', { src: `./samples/${s.id}.jpg`, alt: s.label, loading: 'lazy' }))),
+      h('img', { src: `./samples/${s.id}.jpg?v=${SAMPLE_REV}`, alt: s.label, loading: 'lazy' }))),
     h('button', { class: `thumb own${S.image === 'user' ? ' on' : ''}`, 'data-id': 'user', onclick: () => (userPhoto ? pickImage('user') : $<HTMLInputElement>('#photo').click()), title: 'Your photo (stays on this device)' },
       h('span', {}, '+ Your photo')));
   // before / after: the untouched photo on its own canvas, clipped at a line you drag on the photo (or arrow keys)
@@ -779,7 +781,7 @@ async function pickImage(id: string) {
   if (id === 'user') { srcData = userPhoto; schedulePreview(); return; }
   try {
     const img = new Image();
-    img.src = `./samples/${id}.jpg`;
+    img.src = `./samples/${id}.jpg?v=${SAMPLE_REV}`;
     await img.decode();
     srcData = toImageData(img, img.naturalWidth, img.naturalHeight);
     if (S.image === id) schedulePreview();

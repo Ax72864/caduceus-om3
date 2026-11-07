@@ -1,6 +1,6 @@
 # Sample images
 
-All sample photos are public domain (CC0 1.0 unless noted), except sunset.jpg, which is CC BY 2.0 (credited below). They were downscaled and re-encoded as JPEG (no other
+All sample photos are public domain (CC0 1.0 unless noted), except paijanne.jpg (the sunset), which is CC BY 2.0 (credited below). They were downscaled and re-encoded as JPEG (no other
 edits). No attribution is required by CC0; it is given here anyway.
 
 ## OM-3 mode
@@ -24,7 +24,7 @@ downscaled to 2048 px on the long side.
 | ocean.jpg | [Bourtzi castle harbour Karystos Euboea Greece.jpg](https://commons.wikimedia.org/wiki/File:Bourtzi_castle_harbour_Karystos_Euboea_Greece.jpg) | Jebulon | CC0 1.0 |
 | paris.jpg | [Restaurants, Place du Tertre, Paris 30 September 2019.jpg](https://commons.wikimedia.org/wiki/File:Restaurants,_Place_du_Tertre,_Paris_30_September_2019.jpg) | Pierre Blaché | Public domain (per the set) |
 
-### sunset.jpg (CC BY 2.0, credit required)
+### paijanne.jpg (sunset; CC BY 2.0, credit required)
 
 "[Päijänne and päijätsalo](https://commons.wikimedia.org/wiki/File:P%C3%A4ij%C3%A4nne_and_p%C3%A4ij%C3%A4tsalo.jpg)"
 (sun setting over Lake Päijänne at Sysmä, Finland) by **Joonas Lyytinen**, licensed under
