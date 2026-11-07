@@ -9,9 +9,9 @@
 >
 > **Known issue (blocking):** the new code is placed in a part of the firmware image that the camera may not load into
 > memory (the emulator does). It must move to verified space before any camera test; see the
-> [`experiment/firmware-space-probe`](../../tree/experiment/firmware-space-probe) branch.
+> [`experiment/firmware-space-probe`](https://github.com/androidfanman/caduceus-om3/tree/experiment/firmware-space-probe) branch.
 >
-> For the current release, use [`main`](../../tree/main) (v0.22).
+> For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
