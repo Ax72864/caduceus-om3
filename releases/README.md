@@ -5,6 +5,7 @@ card files it needs, the expected checksums, and short notes. No OM firmware is 
 
 | Version | What's new | Status |
 |---|---|---|
+| [v0.22](v0.22/NOTES.md) | Sharp per look (Extras sector 10, −5 Off..+2); the stock Sharpness row leaves the COLOR screen | Camera-tested |
 | [v0.21](v0.21/NOTES.md) | Grain on COLOR, VigFix, hold OK on the Film page saves a look, `*` = differs from factory, WB shift with Auto WB | Camera-tested |
 | [v0.20](v0.20/NOTES.md) | Film page, Extras page (NR, Glow/Clarity, WB, Art Effects, Blacks/Whites) with labels, live-view effects, white Frame | Camera-tested |
 | [v0.19](v0.19/NOTES.md) | Profiles are now Looks: the Looks page, `LOOKS.BIN` (reads your `PROFILES.BIN`) | Camera-tested |
@@ -23,7 +24,7 @@ Always copy the version's own `GUIDES.BIN` (from v0.20 it carries code made for 
 
 **Going back to stock:** flash `SD card files/restore/E1479999.BIN`, the official firmware the patcher saved.
 
-Each version is also published on the repo's **Releases** page (tag `v0.16` … `v0.21`) with the whole project as
+Each version is also published on the repo's **Releases** page (tag `v0.16` … `v0.22`) with the whole project as
 it was at that version: a GitHub Action (`.github/workflows/releases.yml`) publishes every folder here once, so a
 new version only needs its folder.
 See [CHANGELOG.md](../CHANGELOG.md) for the full history.

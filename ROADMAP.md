@@ -5,7 +5,7 @@ Ideas and requests are welcome in [Issues](https://github.com/androidfanman/cadu
 
 | Feature | What it means | Status |
 |---|---|---|
-| **More crop modes** | Extra aspect ratios such as XPan 65:24 and 21:9, as in Caduceus for the E-P7. | Planned (v0.22) |
+| **More crop modes** | Extra aspect ratios such as XPan 65:24 and 21:9, as in Caduceus for the E-P7. | Planned |
 | **Rename the colour profiles** | "COLOR 1–4" shows the name of the look selected on the Film page instead. | Planned |
 | **Panasonic aperture rings** | The aperture ring on Panasonic lenses that have one sets the aperture on the OM-3. | Planned |
 | **Faster grain with Glow / Art Effects** | Grain together with Glow, Clarity or an Art Effect uses a slower route today (about 3 s more per photo, no fast burst); make it as fast as grain on its own. | Planned |
@@ -21,6 +21,7 @@ Ideas and requests are welcome in [Issues](https://github.com/androidfanman/cadu
 
 | Feature | Released |
 |---|---|
+| **Sharpness per look**: Sharp on the Extras page (−5 Off..+2), replacing the camera's Sharpness row on COLOR 1–4 | v0.22 |
 | **Colour grain**: Off / Low / Med / High on the COLOR profiles, from the camera's own grain engine | v0.21 |
 
 See the [changelog](CHANGELOG.md) for what each release already contains.

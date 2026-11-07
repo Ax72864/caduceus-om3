@@ -8,7 +8,7 @@ laid out as in Caduceus) and adds a **bank
 of five complete looks for each of COLOR 1–4** that you build on the camera, or in the browser with the **Caduceus
 Control Panel**, and switch between with one dial on the **Film** page.
 
-**Latest: v0.21** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
+**Latest: v0.22** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
 **[Using it](#using-it)** · **[Roadmap](ROADMAP.md)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]
@@ -31,7 +31,7 @@ Control Panel**, and switch between with one dial on the **Film** page.
 | Feature | What you get | Status |
 |---|---|---|
 | **Hue and Light pages** | The Color Profile wheel gains pages, and **INFO** cycles them from any slice. Hue turns a colour toward its neighbour; Light brightens or darkens it, for each of the 12 colours. | Camera-tested |
-| **Extras page** | One wheel for the look's extras, as in Caduceus: **1 NR** (the camera's noise reduction per look: Camera / Std / Low / Off), **2 Glow ← → Clarity** (−5..+5), **3 WB amber/blue**, **4 WB green/magenta**, **5 Art Effect** (Star Light, Pin Hole, White Edge, Frame), **6 Blacks**, **7 Whites**, **8 VigFix** (lens vignette correction off per look), **9 Grain** (Off / Low / Med / High), **10 Sharp** (the camera's sharpening per look, −5 Off..+2; replaces the Sharpness row, v0.22). The label next to the value names the sector and what it does ("Glow", "Clarity", "A", "B", "NR Low", "Frame", "Grain" …). WB A/B and G/M work in every WB mode, Auto WB included. | Camera-tested (v0.21) |
+| **Extras page** | One wheel for the look's extras, as in Caduceus: **1 NR** (the camera's noise reduction per look: Camera / Std / Low / Off), **2 Glow ← → Clarity** (−5..+5), **3 WB amber/blue**, **4 WB green/magenta**, **5 Art Effect** (Star Light, Pin Hole, White Edge, Frame), **6 Blacks**, **7 Whites**, **8 VigFix** (lens vignette correction off per look), **9 Grain** (Off / Low / Med / High), **10 Sharp** (the camera's sharpening per look, −5 Off..+2; replaces the Sharpness row, v0.22). The label next to the value names the sector and what it does ("Glow", "Clarity", "A", "B", "NR Low", "Frame", "Grain" …). WB A/B and G/M work in every WB mode, Auto WB included. | Camera-tested (Sharp: v0.22) |
 | **Film grain on COLOR** | The camera's own Monochrome grain, at its Low / Med / High strengths, on colour photos. With every other setting it costs no time; with Glow / Clarity or an Art Effect it is added a slower way (about 3 s more per photo, no fast burst). | Camera-tested (v0.21) |
 | **Glow, clarity and Art Effects on COLOR** | The camera's own Soft Focus passes, five glow strengths and five clarity strengths (Caduceus's levels), and its Art Effects, on COLOR photos without an Art Filter. Glow and Art Effects also show in **live view**. | Camera-tested (v0.20) |
 | **White frame** | The Frame Art Effect draws a clean **white** border of the stock size instead of the rough black film edge (everywhere, Art Filters included). | Camera-tested (v0.20) |

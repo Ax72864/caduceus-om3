@@ -3,11 +3,13 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
-## v0.22 (in testing)
+## v0.22
+Sharpness as part of the look. Camera-tested.
+
 **Sharp (Extras sector 10)**
 - **Sharp −5..+2** per look, in the camera's own sharpness numbers: **0 is its normal**, +1 / +2 crisper, −1 and −2
   as the stock menu's, **−3 and −4 softer than the menu goes**, and **−5 = Off** (no sharpening; the label reads
-  "Sharp Off"). It works with Grain and every other Extra. Camera-tested (test 1): Off is clearly softer than 0.
+  "Sharp Off"). It works with Grain and every other Extra. On the camera, Off is clearly softer than 0.
 - The camera's own **Sharpness row is gone from the COLOR 1–4 screen** (Contrast is now the last row), so the two
   never overlap. Its stored value is ignored for COLOR photos and no longer counts toward the `*`.
 - LOOKS.BIN records keep Sharp in `+52` (BUNDLES slot `+54`). Older firmware rejects a non-zero `+52`.
