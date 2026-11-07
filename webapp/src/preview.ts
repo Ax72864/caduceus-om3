@@ -255,9 +255,9 @@ const GRAIN_G = Array.from({ length: 256 }, (_, y) => {
 function om3Grain(img: Float32Array, w: number, h: number, level: number) {
   // The camera's grain is per pixel of a 5184-px photo; shrinking it averages it out. Measured, a Grain High photo
   // shrunk to 1024 px keeps about 0.58 of the full strength (3 / the shrink factor), but the preview is then shown
-  // enlarged on most screens, which makes each grain coarser and the texture read stronger than on the photo. Half
-  // of that (1.5 / the shrink factor) looks like the photo does on screen.
-  const S = GRAIN_S[Math.min(3, level)] * Math.min(1, (1.5 * w) / FULL_WIDTH);
+  // enlarged on most screens, which makes each grain coarser and the texture read stronger than on the photo. A
+  // little over a third of it (1.1 / the shrink factor) looks right on screen.
+  const S = GRAIN_S[Math.min(3, level)] * Math.min(1, (1.1 * w) / FULL_WIDTH);
   const V = new Int32Array(w).fill(15), H = new Int32Array(w);
   let r = 0x12345678;
   for (let y = 0; y < h; y++) {
