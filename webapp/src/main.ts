@@ -786,7 +786,15 @@ async function pickImage(id: string) {
   } catch { toast('Could not load the sample image', 'err'); }
 }
 
-function toImageData(img: CanvasImageSource, w: number, h0: number, max = 1024): ImageData {
+/** The preview's working size (long side, px): enough for the preview at this screen's pixel density (sharp on
+ *  Retina), between 1024 and 2048 so the colour engine stays quick. */
+function previewPx(): number {
+  const pane = document.getElementById('preview');
+  const css = Math.max(pane ? pane.clientWidth - 28 : 0, window.innerHeight * 0.7);
+  return Math.max(1024, Math.min(2048, Math.ceil(css * (window.devicePixelRatio || 1))));
+}
+
+function toImageData(img: CanvasImageSource, w: number, h0: number, max = previewPx()): ImageData {
   const k = Math.min(1, max / Math.max(w, h0));
   const W = Math.round(w * k), H = Math.round(h0 * k);
   const c = document.createElement('canvas');

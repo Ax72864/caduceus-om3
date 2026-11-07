@@ -4,7 +4,7 @@
 
 These eight photos are © Kyle O'Brien and are used here with his permission. They are **not** CC0 and are not
 covered by this project's licence: please don't reuse them outside the Caduceus Control Panel without asking him.
-They were downscaled to 1024 px on the long side and re-encoded as JPEG (no other edits).
+They were downscaled to 2048 px on the long side and re-encoded as JPEG (no other edits).
 
 | File | Subject |
 |---|---|
@@ -39,4 +39,4 @@ Shown first in OM-3 mode (from the Caduceus for OM-3 Look Lab):
 
 | File | Source | Licence |
 |---|---|---|
-| frames.jpg | Unsplash photo-1465161191540-aac346fcbaff, published 2014–2016 under Creative Commons Zero (Unsplash's licence until June 2017), via the archive https://github.com/cslr/cc0pictures; downscaled to 1024 px wide | CC0 1.0 |
+| frames.jpg | Unsplash photo-1465161191540-aac346fcbaff, published 2014–2016 under Creative Commons Zero (Unsplash's licence until June 2017), via the archive https://github.com/cslr/cc0pictures; downscaled to 2048 px wide | CC0 1.0 |
