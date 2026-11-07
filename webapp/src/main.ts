@@ -28,13 +28,14 @@ const STORE = 'caduceus.pack.v2', STORE_V1 = 'caduceus.pack.v1', STORE_LIB = 'ca
 // '+m2': forces one more migration pass for packs saved before tone fingerprints were handled
 const LIB_VERSION: string = ((libraryJson as { version?: string }).version ?? 'dev') + '+m2';
 const SAMPLES = [
-  { id: 'neon', label: 'Neon' }, { id: 'harbour', label: 'Harbour' }, { id: 'portrait', label: 'Portrait' },
+  { id: 'neon', label: 'Neon' }, { id: 'harbour', label: 'Harbour' }, { id: 'headwrap', label: 'Portrait' },
   { id: 'forest', label: 'Forest' }, { id: 'brasserie', label: 'Night' },
 ];
 // OM-3 mode: the colour-frames test photo first, then public-domain (CC0) photos picked for skin, strong colour, greens,
 // blues, night light and sunset.
 const OM3_SAMPLES = [
-  { id: 'frames', label: 'Colour frames' }, { id: 'portrait', label: 'Portrait' }, { id: 'smile', label: 'Portrait outdoors' },
+  { id: 'frames', label: 'Colour frames' }, { id: 'portrait', label: 'Portrait' }, { id: 'headwrap', label: 'Portrait, headwrap' },
+  { id: 'smile', label: 'Portrait outdoors' },
   { id: 'taxi', label: 'Yellow taxi' }, { id: 'oranges', label: 'Oranges' }, { id: 'meadow', label: 'Mountain meadow' },
   { id: 'sea', label: 'Turquoise sea' }, { id: 'bluehour', label: 'Blue hour' }, { id: 'market', label: 'Night market' },
   { id: 'sunset', label: 'Sunset' },
