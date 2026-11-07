@@ -16,7 +16,7 @@ import { recipeCard } from './targets/recipe';
 import { previewToneLut } from './tone';
 import {
   BANK_SCHEMA, COLORS, OM3, OM3_ARTS, OM3_NAME_MAX, OM3_NR, PER, om3NameProblem, blankProfile, defaultBank, emptyBank, fromOldLookLab, parseBank, profilesBin, readProfiles,
-  slowGrain, toOm3, validateBank, type Bank,
+  SHARP, sharpLabel, slowGrain, toOm3, validateBank, type Bank, type Fw,
 } from './om3';
 import { namesBin } from './om3names';
 import { FILMS, FILM_GROUPS, filmLook, filmOf, type Film, type FilmGroup } from './om3films';
@@ -768,7 +768,7 @@ function buildPreview() {
     h('div', { class: 'pv-wrap' }, frame, h('span', { class: 'badge' }, 'Before'), h('span', { class: 'badge r' }, 'After · approximate')),
     thumbs,
     h('div', { class: 'pv-opts' },
-      isOm3() ? h('span', { class: 'help' }, 'Includes Contrast, Sharpness and Shading.') : h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: S.advice, onchange: (e: Event) => { S.advice = (e.target as HTMLInputElement).checked; schedulePreview(); } }),
+      isOm3() ? h('span', { class: 'help' }, 'Includes Contrast, Sharp and Shading.') : h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: S.advice, onchange: (e: Event) => { S.advice = (e.target as HTMLInputElement).checked; schedulePreview(); } }),
         h('span', {}, 'Include advice (contrast)')),
       h('button', { class: 'link', onclick: () => $<HTMLInputElement>('#photo').click() }, 'Use your own photo…')),
     h('p', { class: 'help' }, 'Drag the line on the photo to compare before and after. A rough desktop-sim port running on JPEGs, not the camera\'s pipeline: use it for direction and strength, then check on the camera. Your own photo never leaves this browser.'));
@@ -1436,11 +1436,10 @@ function renderOm3Editor(l: Look) {
     h('div', { class: 'group' },
       h('span', { class: 'lbl' }, 'Camera settings'),
       setting('Contrast', OM3.contrast, () => l.advice.contrast ?? 0, (x) => { l.advice.contrast = x; }, 'The camera\'s Contrast for this look'),
-      setting('Sharpness', OM3.sharpness, () => l.advice.sharpness ?? 0, (x) => { l.advice.sharpness = x; }, 'The camera\'s Sharpness for this look'),
       setting('Shading', OM3.shading, () => l.vignette, (x) => { l.vignette = x; }, 'The camera\'s Shading (− darker corners, + lighter)'),
-      h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast, Sharpness and Shading (Picture Mode menu items) to these.')),
+      h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast and Shading (Picture Mode menu items) to these.')),
     h('div', { class: 'group' },
-      h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20; lens correction and Grain v0.21)'),
+      h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20; lens correction and Grain v0.21; Sharp v0.22)'),
       seg('NR', OM3_NR.map((g) => [g, ({ off: 'Camera', standard: 'Std', fine: 'Low', film: 'Off' } as Record<string, string>)[g]] as [string, string]), l.grain,
         (x) => { l.grain = x as Look['grain']; renderEditor(); changed(); }),
       h('p', { class: 'help' }, 'The camera\'s noise reduction (Noise Filter) for each photo with this look; Camera leaves your menu setting. Extras sector 1.')),
@@ -1457,6 +1456,11 @@ function renderOm3Editor(l: Look) {
       }),
       h('p', { class: 'help' }, 'Film grain from the camera\'s own grain engine, the same texture as its Monochrome grain, on the colour photo. Extras sector 9 (firmware v0.21). Shown in the preview.'),
       grainWarn),
+    h('div', { class: 'group' }, (() => {
+      const { inp, out } = slider(SHARP.lo, SHARP.hi, l.advice.sharpness ?? 0, (x) => { l.advice.sharpness = x; changed(); }, sharpLabel, 'Sharp');
+      return h('div', { class: 'srow plain', title: 'The camera\'s sharpening for photos with this look' }, h('span', { class: 'sname' }, 'Sharp'), inp, out);
+    })(),
+      h('p', { class: 'help' }, 'The camera\'s sharpening for photos with this look, in its own numbers: 0 is its normal, +1 and +2 crisper, −1 to −4 softer (−3 and −4 go past the camera\'s menu) and Off (−5) no sharpening at all. Extras sector 10 (firmware v0.22, which takes the Sharpness item off the COLOR screen). Shown roughly in the preview.')),
     effectPanel(l, fxChanged),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
       h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; fxChanged(); } },
@@ -1481,7 +1485,7 @@ function renderOm3Editor(l: Look) {
   refreshLookCode();
 }
 
-// ---- OM-3 links: a whole bank (ob1_) or one look (op1_), deflated JSON. Unlike look codes they keep Contrast and Sharpness.
+// ---- OM-3 links: a whole bank (ob1_) or one look (op1_), deflated JSON. Unlike look codes they keep Contrast and Sharp.
 async function zpipe(data: Uint8Array, s: CompressionStream | DecompressionStream): Promise<Uint8Array> {
   const out = new Response(new Blob([data as BlobPart]).stream().pipeThrough(s));
   return new Uint8Array(await out.arrayBuffer());
@@ -1579,7 +1583,7 @@ async function om3Share() {
   const code = await encodeOm3(OB_PREFIX, { schema: BANK_SCHEMA, name: O.name, bank: O.bank.map((r) => r.map((l) => (l ? plainLook(l) : null))) });
   const link = `${shareBase()}?camera=om3#${code}`;
   modal('Share these looks', h('div', { class: 'share' },
-    h('p', {}, `A link to all ${O.bank.flat().filter(Boolean).length} OM-3 looks (names, notes, Contrast / Sharpness / Shading). Opening it loads them here. Everything is inside the link itself: nothing is stored on a server.`),
+    h('p', {}, `A link to all ${O.bank.flat().filter(Boolean).length} OM-3 looks (names, notes, Contrast / Sharp / Shading). Opening it loads them here. Everything is inside the link itself: nothing is stored on a server.`),
     h('div', { class: 'code-box link' }, h('input', { type: 'text', readonly: true, value: link, onfocus: (e: Event) => (e.target as HTMLInputElement).select() }),
       h('button', { onclick: () => copy(link, 'Link copied') }, 'Copy link')),
     h('p', { class: 'help' }, `${link.length} characters. For one look, use the Share button next to its name.`)));
@@ -1591,10 +1595,10 @@ async function om3ShareProfile(l: Look) {
   let lc = '';
   try { lc = encodeLookCode(l); } catch { /* shown below */ }
   modal(`Share "${l.name}"`, h('div', { class: 'share' },
-    h('p', {}, 'A link to this OM-3 look, with everything in it (including Contrast, Sharpness and Shading):'),
+    h('p', {}, 'A link to this OM-3 look, with everything in it (including Contrast, Sharp and Shading):'),
     h('div', { class: 'code-box link' }, h('input', { type: 'text', readonly: true, value: link, onfocus: (e: Event) => (e.target as HTMLInputElement).select() }),
       h('button', { onclick: () => copy(link, 'Link copied') }, 'Copy link')),
-    lc ? h('p', {}, 'Or the short Caduceus look code, which also works for E-P7 users (it carries no Contrast or Sharpness):') : null,
+    lc ? h('p', {}, 'Or the short Caduceus look code, which also works for E-P7 users (it carries no Contrast or Sharp):') : null,
     lc ? h('div', { class: 'code-box' }, h('code', {}, encodeLookCode(l, true)), h('button', { onclick: () => copy(lc, 'Code copied') }, 'Copy code')) : null,
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'RapidRAW preset'), h('p', { class: 'help' }, 'This look as a .rrpreset for RapidRAW (Presets › Import), for ORF files. An approximation of the camera look.')),
@@ -1658,12 +1662,12 @@ function om3ExportDialog() {
   const fname = (O.name || 'om3-looks').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'om3-looks';
   const n = O.bank.flat().filter(Boolean).length;
   const bankJson = () => JSON.stringify({ schema: BANK_SCHEMA, name: O.name, bank: O.bank.map((r) => r.map((l) => (l ? plainLook(l) : null))) }, null, 1) + '\n';
-  let fw21 = true; try { fw21 = localStorage.getItem('caduceus.om3.fw') !== '20'; } catch { /* storage blocked */ }
-  const looksBin = () => profilesBin(O.bank, fw21);
+  let fw: Fw = 22; try { const s = localStorage.getItem('caduceus.om3.fw'); if (s === '20' || s === '21') fw = Number(s) as Fw; } catch { /* storage blocked */ }
+  const looksBin = () => profilesBin(O.bank, fw);
   const fwSel = h('select', { onchange: (e: Event) => {
-    fw21 = (e.target as HTMLSelectElement).value === '21';
-    try { localStorage.setItem('caduceus.om3.fw', fw21 ? '21' : '20'); } catch { /* storage blocked */ }
-  } }, h('option', { value: '21', selected: fw21 }, 'v0.21 or later'), h('option', { value: '20', selected: !fw21 }, 'v0.20 or older'));
+    fw = Number((e.target as HTMLSelectElement).value) as Fw;
+    try { localStorage.setItem('caduceus.om3.fw', String(fw)); } catch { /* storage blocked */ }
+  } }, h('option', { value: '22', selected: fw === 22 }, 'v0.22 or later'), h('option', { value: '21', selected: fw === 21 }, 'v0.21'), h('option', { value: '20', selected: fw === 20 }, 'v0.20 or older'));
   const cardFiles = async () => [{ name: 'LOOKS.BIN', data: looksBin() }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
   const busy = async (b: HTMLButtonElement, f: () => Promise<void>) => { b.disabled = true; try { await f(); } catch (e) { toast((e as Error).message, 'err'); } finally { b.disabled = probs.length > 0; } };
   const looks = O.bank.flat().filter(Boolean) as Look[];
@@ -1681,9 +1685,9 @@ function om3ExportDialog() {
   modal('Export for the OM-3', h('div', { class: 'export' },
     probs.length
       ? h('div', { class: 'problems-box' }, h('b', {}, `${probs.length} problem(s) to fix first:`), h('ul', { class: 'problems' }, ...probs.slice(0, 12).map((p) => h('li', {}, fmt(p)))))
-      : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; NR, Glow / Clarity and Art Effects need v0.20, Grain and lens correction v0.21, older firmware ignores them; on v0.17–v0.18 use the PROFILES.BIN file below).`),
+      : h('p', { class: 'ok' }, `✓ ${n} looks pass the camera's checks (Caduceus for OM-3 v0.19 or later; NR, Glow / Clarity and Art Effects need v0.20, Grain and lens correction v0.21, Sharp v0.22, older firmware ignores them; on v0.17–v0.18 use the PROFILES.BIN file below).`),
     h('div', { class: 'ex-row' },
-      h('div', {}, h('b', {}, 'Firmware on the camera'), h('p', { class: 'help' }, 'v0.21 adds Grain and the lens vignette correction choice to LOOKS.BIN. Firmware v0.20 and older would reject such a file, so for them both are left out (no grain; every look keeps the camera\'s correction).')),
+      h('div', {}, h('b', {}, 'Firmware on the camera'), h('p', { class: 'help' }, 'v0.22 adds Sharp, v0.21 Grain and the lens vignette correction choice to LOOKS.BIN. Older firmware would reject a file with the newer settings, so they are left out for it: for v0.21 the look\'s sharpness goes to the camera\'s Sharpness setting instead (−2 to +2, softer values as −2); for v0.20 and older there is no grain either and every look keeps the camera\'s correction.')),
       fwSel),
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'Save to the SD card'), h('p', { class: 'help' }, 'Pick the card (or its OM3MOD folder): writes OM3MOD/LOOKS.BIN and NAMES.BIN. This replaces the looks on the card, including ones made on the camera: Open… the card\'s LOOKS.BIN first to keep those. Chrome / Edge.')),
@@ -1695,7 +1699,7 @@ function om3ExportDialog() {
       h('div', {}, h('b', {}, 'Single files'), h('p', { class: 'help' }, 'LOOKS.BIN: the 20 looks. NAMES.BIN: their names as the camera shows them under the wheel ("Empty" for unused numbers). Both go in OM3MOD/. Still on firmware v0.17–v0.18? It reads the same looks as PROFILES.BIN.')),
       h('div', { class: 'ex-btns' },
         h('button', { disabled: probs.length > 0, onclick: () => download('LOOKS.BIN', looksBin()) }, 'LOOKS.BIN'),
-        h('button', { disabled: probs.length > 0, title: 'For firmware v0.17–v0.18', onclick: () => download('PROFILES.BIN', profilesBin(O.bank, false)) }, 'PROFILES.BIN'),
+        h('button', { disabled: probs.length > 0, title: 'For firmware v0.17–v0.18', onclick: () => download('PROFILES.BIN', profilesBin(O.bank, 20)) }, 'PROFILES.BIN'),
         names)),
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'Looks file (.json)'), h('p', { class: 'help' }, 'Everything, including notes. Open it here later or send it to someone.')),

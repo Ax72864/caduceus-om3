@@ -225,7 +225,8 @@ export function renderLook(src: ImageData, dst: ImageData, look: Look, opt: Prev
 function om3Settings(img: Float32Array, w: number, h: number, sharp: number, shading: number) {
   const n = w * h;
   if (sharp) {
-    const Y = new Float32Array(n), amt = 0.45 * sharp;
+    // the camera's own numbers: -2..+2 as the Look Lab had them; v0.22's -3, -4 and Off (-5) soften a little more
+    const Y = new Float32Array(n), amt = sharp >= -2 ? 0.45 * sharp : -0.9 - 0.05 * (-2 - sharp);
     for (let i = 0; i < n; i++) Y[i] = 0.299 * img[i * 3] + 0.587 * img[i * 3 + 1] + 0.114 * img[i * 3 + 2];
     for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
       const i = y * w + x;

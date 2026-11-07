@@ -22,7 +22,7 @@ const pyJson = (bank: Bank) => ({
   sel: [0, 0, 0, 0],
   prof: bank.map((row) => row.map((l) => l && {
     name: l.name, hue: l.hue, light: l.light, sat: l.sat, wb: !!(l.wb && (l.wb.a_b || l.wb.g_m)), ab: l.wb?.a_b ?? 0, gm: l.wb?.g_m ?? 0,
-    blacks: l.tone.blacks, whites: l.tone.whites, contrast: l.advice.contrast ?? 0, sharp: l.advice.sharpness ?? 0, shading: l.vignette,
+    blacks: l.tone.blacks, whites: l.tone.whites, contrast: l.advice.contrast ?? 0, sharp: 0, sharp22: l.advice.sharpness ?? 0, shading: l.vignette,
     sh: l.tone.shadows, mid: l.tone.midtones, hi: l.tone.highlights,
     fx: !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength,
     art: ['off', 'star_light', 'pin_hole', 'blur', 'white_edge', 'frame'].indexOf(l.art_effect), nr: ['off', 'standard', 'fine', 'film'].indexOf(l.grain),
@@ -38,7 +38,7 @@ function randomBank(seed: number): Bank {
     l.hue = l.hue.map(() => r(5)); l.light = l.light.map(() => r(5)); l.sat = l.sat.map(() => r(5));
     l.wb = r(1) ? { a_b: r(5), g_m: r(5) } : null;
     l.tone = { highlights: r(7), shadows: r(7), midtones: r(7), blacks: r(5), whites: r(5) };
-    l.advice = { contrast: r(2), sharpness: r(2) }; l.vignette = r(5);
+    l.advice = { contrast: r(2), sharpness: Math.max(-5, Math.min(2, r(5))) }; l.vignette = r(5);
     const fx = r(5); l.effect = fx < 0 ? { type: 'bloom', strength: -fx } : fx > 0 ? { type: 'clarity', strength: fx } : null;
     l.art_effect = (['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const)[Math.abs(r(4))];
     l.grain = (['off', 'standard', 'fine', 'film'] as const)[Math.abs(r(3))];
@@ -95,8 +95,29 @@ describe('OM-3 profile bank', () => {
     }
   });
 
+  it('LOOKS.BIN for firmware v0.21 puts Sharp in the stock Sharpness byte', () => {
+    const b = randomBank(6), f21 = profilesBin(b, 21), f22 = profilesBin(b);
+    let soft = 0;
+    b.forEach((row, k) => row.forEach((l, v) => {
+      const o = 32 + 64 * (5 * k + v), s = l?.advice.sharpness ?? 0, i8 = (x: number) => (x << 24) >> 24;
+      expect(f21[o + 52]).toBe(0); expect(i8(f21[o + 42])).toBe(Math.max(-2, Math.min(2, s)));
+      expect(f22[o + 42]).toBe(0); expect(i8(f22[o + 52])).toBe(s);
+      if (s < -2) soft++;
+    }));
+    expect(soft).toBeGreaterThan(0);
+    const back = readProfiles(f21);
+    expect(back.flat().map((l) => l?.advice.sharpness)).toEqual(b.flat().map((l) => (l ? Math.max(-2, l.advice.sharpness ?? 0) : undefined)));
+  });
+
+  it('Sharp: -5..+2, a v0.21 card file reads as before', () => {
+    const l = blankLook('colour', 'S'); l.advice = { sharpness: -5 }; expect(validateProfile(l)).toEqual([]);
+    l.advice.sharpness = 3; expect(validateProfile(l).map((p) => p.field)).toEqual(['sharpness']);
+    l.advice.sharpness = -6; expect(validateProfile(l).map((p) => p.field)).toEqual(['sharpness']);
+    const t = blankLook('colour', 'T'); t.advice = { sharpness: -9 }; expect(toOm3(t).look!.advice.sharpness).toBe(-5);
+  });
+
   it('LOOKS.BIN for firmware v0.20 leaves VigFix out', () => {
-    const b = randomBank(4), old = profilesBin(b, false), cur = profilesBin(b);
+    const b = randomBank(4), old = profilesBin(b, 20), cur = profilesBin(b);
     for (let r = 0; r < 20; r++) { expect(old[32 + 64 * r + 50]).toBe(0); expect(old[32 + 64 * r + 51]).toBe(0); }
     expect(b.flat().some((l) => l && !l.lens_correction)).toBe(true);
     expect([...cur].some((x, i) => i >= 32 && i < 1312 && (i - 32) % 64 === 50 && x === 1)).toBe(true);

@@ -38,7 +38,7 @@ export interface Effect { type: Exclude<EffectType, 'none'>; strength: number; t
 export interface Advice {
   tone?: { highlights: number; shadows: number; midtones: number };
   contrast?: number;
-  sharpness?: number;  // OM-3 (Caduceus for OM-3): the profile's Sharpness, -2..2 (a real setting there, advice here)
+  sharpness?: number;  // OM-3 (Caduceus for OM-3): the look's Sharp, -5 (Off)..+2 from v0.22 (-2..2 before); advice here
   mono_filter?: { colour: MonoFilter; strength: number };
 }
 /** Per-look tone (LOOKS.BIN v0.19 tone block, colour looks only). H/S/M -7..7: the Film pick writes them to the profile's stock tone settings.
