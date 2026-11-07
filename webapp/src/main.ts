@@ -91,6 +91,21 @@ const LISTS: Lists = (() => {
   } catch { /* storage blocked or damaged: start from the looks you have */ }
   return { current: 'Default', lists: { Default: O.bank } };
 })();
+// v0.22 (once): film sims added before they had a Sharp value get their film's, unless you set one yourself.
+(() => {
+  const KEY = 'caduceus.om3.filmsharp';
+  try { if (localStorage.getItem(KEY)) return; } catch { return; }
+  let n = 0;
+  for (const bank of Object.values(LISTS.lists)) for (const row of bank) for (const l of row) {
+    const f = l && filmOf(l);
+    if (l && f && f.sharp && !(l.advice.sharpness ?? 0)) { l.advice = { ...l.advice, sharpness: f.sharp }; n++; }
+  }
+  try {
+    localStorage.setItem(KEY, '1');
+    if (n) localStorage.setItem(STORE_LISTS, JSON.stringify({ current: LISTS.current, lists: LISTS.lists }));
+  } catch { /* private mode */ }
+  if (n) libNotice = (libNotice ? libNotice + ' ' : '') + `Film sims now set Sharp (firmware v0.22): ${n} of your film looks got their film's value.`;
+})();
 O.bank = LISTS.lists[LISTS.current]; O.name = LISTS.current;
 function storeLists() {
   LISTS.lists[LISTS.current] = O.bank;

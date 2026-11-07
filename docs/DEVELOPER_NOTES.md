@@ -378,6 +378,9 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   our own designs, from public descriptions of each film (maker data sheets, reviews, sample photos) and tuned by eye
   on the sample photos in the preview model; no LUTs, presets or other people's looks are used. Edit the recipes,
   not the JSON.
+- Sharp (v0.22): `SHARP` in films.py (name → −4..+2, unlisted 0), written as `sharp` in the JSON and set by `filmLook`.
+  main.ts gives film looks already in a list their film's Sharp once (localStorage `caduceus.om3.filmsharp`), only
+  where the look's own value is still 0.
 - No grain, Glow / Clarity or Art Effect in any film sim or in the start-up looks (`defaultBank` clears them from the
   library looks it uses); those stay the user's choice.
 - Older film sim names (from earlier lists) map to the film that replaced them (`aliases` in the data), so looks added

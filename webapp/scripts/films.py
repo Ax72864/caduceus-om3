@@ -13,6 +13,8 @@ Recipe keys (all integers; out-of-range sums are clamped to the camera's limits)
   ab / gm       white balance shift: + amber / − blue, + green / − magenta
   con           the camera's Contrast (−2..2)
   hl sh mid     Highlights / Shadows / Midtones (+ brighter)      blk wht   Blacks (+ = lifted, faded) / Whites (− = dimmer)
+Sharp (firmware v0.22, the camera's own numbers: 0 its normal, + crisper, − softer, −5 Off) comes from SHARP below:
+fine-grained slide and negative films a step crisper, portrait, cinema and fast films softer, instant film softest.
 No grain, Glow / Clarity or Art Effects: those stay the user's choice."""
 import json, os
 
@@ -177,12 +179,25 @@ ALIASES = {
  'Kodak Dispo': 'Ultramax 400',
 }
 
+# Sharp per film (anything not listed: 0, the camera's normal). Never Off: that's a choice for the user.
+SHARP = {
+ 'Fuji Astia': -1, 'Pro Neg Std': -1, 'Eterna': -1, 'Nostalgic Neg': -1,
+ 'Velvia 50': 1, 'Velvia 100': 1, 'Provia 100F': 1, 'Ektachrome E100': 1, 'Kodachrome 25': 1, 'Kodachrome 200': -1,
+ 'Polachrome': -2,
+ 'Portra 160': -1, 'Portra 400': -1, 'Portra 800': -1, 'Ektar 100': 1, 'ColorPlus 200': -1, 'Superia 800': -1,
+ 'Superia 1600': -2, 'Fuji 400H': -1, 'Fuji 800Z': -1, 'Lomo Color 400': -1, 'LomoChrome 92': -2, 'Phoenix 200': -1,
+ 'CineStill 800T': -1, 'Vision3 250D': -1, 'Candido 800': -2,
+ 'FP-100C': -2, 'Polaroid 600': -3, 'Polaroid SX-70': -3, 'Instax Mini': -1,
+ 'Fuji 3513': -1,
+}
+
 out = []
 for name, grp, film, desc, recipe in FILMS:
     assert len(name) <= 15 and name.isascii() and name == name.strip(), name
-    out.append({'name': name, 'group': grp, 'film': film, 'desc': desc, **settings(recipe)})
+    out.append({'name': name, 'group': grp, 'film': film, 'desc': desc, **settings(recipe), 'sharp': SHARP.get(name, 0)})
 names = [f['name'] for f in out]
 assert len(set(names)) == len(names), 'duplicate names'
+assert all(k in names and -4 <= v <= 2 for k, v in SHARP.items()), 'SHARP: unknown film or out of range'
 assert all(v in names and k not in names for k, v in ALIASES.items())
 json.dump({'note': 'Our own film looks (webapp/scripts/films.py); edit the recipes there, not this file.', 'films': out, 'aliases': ALIASES},
           open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'data', 'om3films.json'), 'w'), separators=(',', ':'))

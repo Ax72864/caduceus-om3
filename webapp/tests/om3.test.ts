@@ -159,11 +159,14 @@ describe('OM-3 profile bank', () => {
       expect(names.has(f.name.toLowerCase())).toBe(false); names.add(f.name.toLowerCase());
       const back = readProfiles(profilesBin([[l]]))[0][0]!;
       expect(back.hue).toEqual(l.hue); expect(back.tone).toEqual(l.tone); expect(back.advice.contrast).toBe(f.contrast);
+      expect(back.advice.sharpness).toBe(f.sharp); expect(f.sharp).toBeGreaterThan(-5);   // v0.22 Sharp, never Off
       expect(l.effect).toBeNull(); expect(l.art_effect).toBe('off'); expect(l.film_grain).toBeUndefined();
     }
     expect(new Set(FILMS.map((f) => f.film)).size).toBe(FILMS.length);   // one look per film
     expect(filmByName('Portra 400 PV')?.name).toBe('Portra 400');        // older names map to their film
     expect(filmByName('Polaroid 690')?.name).toBe('Polaroid 600');
+    expect(filmLook(filmByName('Polaroid 600')!).advice.sharpness).toBe(-3);
+    expect(filmLook(filmByName('Velvia 50')!).advice.sharpness).toBe(1);
   });
 });
 

@@ -17,6 +17,11 @@ same number is used here (test 17 = v0.17).
   their sharpness (same numbers).
 - Export › Firmware on the camera: **v0.22 or later** (new default), v0.21 (Sharp goes to the camera's Sharpness
   setting, −2..+2), v0.20 or older.
+- **Film sims set Sharp:** fine-grained slide and negative films (Velvia, Provia 100F, Ektachrome E100, Kodachrome 25,
+  Ektar) a step crisper (+1); portrait, cinema and fast films softer (Portra, 400H, Eterna, Vision3 250D, CineStill
+  800T, Superia 800: −1; Superia 1600, LomoChrome 92, Candido 800, Polachrome, FP-100C: −2); Polaroid 600 and SX-70
+  softest (−3). None uses Off. Film looks already in your lists get their film's value once, unless you had set
+  Sharp yourself; Reset look puts it back too.
 
 ## Control Panel updates after v0.21
 No firmware change: these work with v0.21 as released.
