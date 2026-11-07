@@ -3,7 +3,7 @@
 **Goal:** make the OM-3 with Caduceus the best film-replicating camera available: looks that render like real film
 stock straight out of the camera, and that load and shoot like a roll of film.
 
-Last updated 2026-11-07. Update the status column as work moves, and add findings to the research log at the end
+Last updated 2026-11-07 (split toning research). Update the status column as work moves, and add findings to the research log at the end
 (details go in [`research/NOTES.md`](../research/NOTES.md)). The general roadmap is [`ROADMAP.md`](../ROADMAP.md).
 
 **Effort:** Low = a few sessions on known hooks · Medium = new firmware work on parts we already understand ·
@@ -18,8 +18,8 @@ Efforts are estimates from what we know of the firmware today.
 
 1. **Run the firmware-space probe on the camera.** Flash that build, use the camera normally (photos, menus,
    playback, video, Wi-Fi), then check `OM3MOD/GAPTEST.BIN`.
-2. **Research split toning and coloured glow (halation)** in the emulator: where the Art Filters (Cross Process,
-   Vintage) tint shadows and highlights, and whether the Soft Focus glow can take a colour, as on the E-P7.
+2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
+   E-P7. (Split toning research done 2026-11-07: see the table; building it waits for code space.)
 3. **White balance mode and exposure compensation per look:** quick wins that make a look behave like a roll.
 4. **Finish the picture-mode sliders** (branch
    [`feature/v0.23-alpha-profile-sliders`](../../../tree/feature/v0.23-alpha-profile-sliders)) once there is safe space for their code.
@@ -28,7 +28,7 @@ Efforts are estimates from what we know of the firmware today.
 
 | Feature | Why it matters for film | Effort | Status | Research notes |
 |---|---|---|---|---|
-| Split toning: colour by brightness | Teal shadows and warm highlights (cinema), cool shadows (Portra), green shadows (Superia). The colour wheel works by hue only. | Large | Not started | Art Filters Cross Process and Vintage tint shadows and highlights differently: find that stage and reuse it on COLOR photos, as with grain, glow and Art Effects. Biggest single payoff. |
+| Split toning: colour by brightness | Teal shadows and warm highlights (cinema), cool shadows (Portra), green shadows (Superia). The colour wheel works by hue only. | Medium | Researching (mechanism found, emulator) | Cross Process and (likely) Vintage do it with three different R/G/B tone curves in the camera's RGB gamma stage. The job keeps its own copy of the curves, so a look can bend them: 6 bytes per look, about 100-150 B of code. Emulator-checked on the stock code; not camera-tested. Blocked by code space (needs a hook in sections 1-5, or the space probe). |
 | Coloured glow (halation) | The red glow around lights of CineStill and other cinema film. | Medium | Not started | Our glow runs on the camera's Soft Focus blend. Caduceus for the E-P7 has a glow colour; the OM-3 port left it out. Check the OM-3 blend for a colour input. |
 | Highlight roll-off and toe | Film compresses highlights gently and has a soft toe in the blacks. | Medium | Not started | We already hook the tone curve builder (Highlights / Shadows / Midtones, Blacks / Whites). Add a shoulder setting, and colour that fades toward white. |
 | Grain by brightness, size and roughness | Film grain is strongest in the midtones and depends on the stock. | Medium | Not started | Today: the camera's Monochrome grain (Low / Med / High), the same everywhere. Look for its size and strength parameters. |
@@ -76,6 +76,7 @@ Newest first. Full details in [`research/NOTES.md`](../research/NOTES.md).
 
 | Date | Topic | Finding |
 |---|---|---|
+| 2026-11-07 | Split toning | Cross Process (and likely Vintage) tint by brightness with separate R/G/B tone curves in the RGB gamma stage. COLOR photos use one curve for all three; the job copies it, so our code could bend each channel after the copy. Emulator-checked on stock code; a design and preview model exist; building needs code space. |
 | 2026-11-07 | Firmware space | The camera does not load the empty stretches between firmware sections; the sliders test put code in one and must not be flashed. |
 | 2026-11-07 | Picture-mode sliders | Camera slider rows can be pointed at our own values with their own range, readout and end stops. Sharp works this way in the emulator. |
 | 2026-11-07 | Sharp and video | Sharp changes the photo capture path only; video most likely keeps the hidden stock Sharpness. Not tested. |

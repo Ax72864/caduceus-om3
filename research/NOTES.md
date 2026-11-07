@@ -743,3 +743,51 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   session to the Mac or have it attached.
 - Next (see the roadmap): 1. the owner runs the firmware-space probe on the camera; 2. emulator research on split
   toning and coloured glow; 3. WB mode / exposure compensation per look; 4. move the slider code to proven space.
+
+## Split toning research (2026-11-07; static + emulator only, no camera build; scripts in research/splittone/)
+- Question (roadmap): where do Cross Process / Vintage tint shadows and highlights, and can COLOR looks reuse it?
+  Answer: the **RGB gamma stage** (per-channel tone curves). Idea from Caduceus E-P7 docs/FUJI_GAPS.md gap 6
+  (cakelesscoder, static only there: E-P7 setter 0x603ae7d3 takes three curve pointers); the OM-3 code differs.
+- OM-3 map (static): development function ... 0x605196f6 matrix 0x605147a2 -> **0x605196fd gamma stage 0x60516ad9**
+  -> 0x60515e64 -> stage list 0x605197c2 (COLOR 0x60518573, luminance LUT 0x60518db2, our tone hook 0x605197d7, ...).
+  Gamma stage: a0 = context C (C+4 R, C+12 O, C+48 key); selector **0x605163f8**(a0 R, a1/d0/d1 = where to put the
+  R/G/B curve-object pointers); art-cache object (R+1524 -> +5220, compared and skipped when unchanged; 0 for our
+  synthetic COLOR request); copier **0x605169a4** (a0 O, a1/d0/d1 R/G/B objects) called at **0x60516c8d**
+  (`call 0x605169a4,[d2,d3,a2,a3],32`, 7 B = possible hook site).
+- Copier: per channel 256 x u16 from obj+144 and 64 x u16 (fine table for the first knot) from obj+16 into
+  **O+1252 (R) / O+1892 (G) / O+2532 (B)** (640 B each: +0 256 entries 12-bit 0..4095, +512 the 64 fine entries),
+  pointers to them at O+3172/3176/3180, O+0 bit 20 cleared, header words -> O+188/192 and O+452 bits 24-26.
+  Curve object = 8 x u16 header | 64 x u16 | 256 x u16 (656 B). The job owns the copies: our code can bend them
+  in place, no ROM data or pointer swap needed (unlike the E-P7 plan).
+- Selector: R+1756 == 257 -> lookup row 0x606d403c; art override R+1568 (object +28 vs R+56 bit) -> one curve;
+  else id = R+8 (byte) << 24 | R+9 << 16 | u16 R+10; id < 2000 or > 0x02000096 -> default path 0x605167f6
+  (R+1923 == 2 gradation -> 0x6068c878; R+1587 1/2; R+1936; 0x6052d394) -> row 0x606d3d3c; else hash 0x606d493c
+  (32 x {id - 1999, handler}). Rows: table 0x606d3d3c, 32 B = 8 object pointers; column by R+14 via 0x605163a1
+  (stills +14 0x1000 -> column 0, +4 when variant flag 0x6052d2d7). Picture modes: one curve 0x6066c04c for R=G=B.
+- Emulator (selector run natively, mk_ncall_sel.py; ncall token): ids 11 / 2000 / 2001 / 0x01010064 / 0x01020064 /
+  0x01010066 / 0x01010067 / 0x0101..0x01030070 / 0x02000093 / 96 -> the same curve for R, G and B. **Different
+  R, G, B curves:** 0x0101006b and 0x0102006b (Cross Process I / II), 0x01010079 / 0x01020079 / 0x01030079,
+  0x0102007b. Names of the 0x..79 / 0x..7b ids are not in a table we found: from their curves (lifted navy blacks,
+  faded warm whites) 0x..79 = Vintage I-III is a strong guess; 0x0102007b (lifted blacks, whites capped at 237,
+  cyan low mids) unknown. 0x..70 (I-III) uses the plain curve (name unknown).
+- Grey tints of the stock curves (curves.py, analysis; 8-bit Cb/Cr before the luminance LUT / COLOR stages):
+  Cross Process I green shadows and mids (input 32: Cb -16.5, Cr -23.4), slightly blue highlights (+5 Cb);
+  Cross Process II magenta-red mids (Cr up to +50); 0x01010079 blue shadows (black lifted to B 80), yellow highlights.
+  So both roadmap examples tint by brightness through three different gamma curves, nothing else.
+- Emulator, whole stage (stage_test.py: synthetic C/R/O, R+1660.. image size needed or 0x6052d41a divides by 0):
+  COLOR (id 11, and id 12 = camera-grain route) reaches the copier call 0x60516c8d with 0x6066c04c x3 and leaves
+  three identical tables at O+1252/1892/2532; Cross Process I and 0x01010079 leave three different ones.
+  copier_test.py: the copier writes exactly O+188..195, O+455, O+1252..3183, data == the firmware objects.
+- Design (ours, model.py, analysis only): after the copy, per channel c: t = curve[i], s = 4095 - t,
+  ws = ((t*s>>12)*s)>>12, wh = ((t*t>>12)*s)>>12 (peaks 606 at 1/3 and 2/3, 0 at black and white),
+  curve_c[i] = clamp(t + ((Ks_c*ws + Kh_c*wh) >> 8)). 6 signed bytes per look (Ks/Kh R,G,B) made by the Control
+  Panel from shadow hue / strength and highlight hue / strength (12 hues, strength 0..5 = 0..10 Cb/Cr units at the
+  peak; Cross Process I reaches ~23, so the range may need raising after a camera test). Curves stay rising, black
+  and white unchanged; works on top of Cross Process too. Estimated code ~100-150 B (768-entry loop).
+- Where the code can run (space is the blocker, as for everything): (a) hook 0x60516c8d -> stub -> block; the stub
+  must sit in sections 1-5 (section-2 stage, bootloop lesson of v0.20 test 1), which have 2-5 B free each;
+  (b) piggyback on the camera-proven tone hook (ext5, same C/O, runs after the copy in the same pass; 4 B free there);
+  (c) wait for the firmware-space probe. The curves would also apply to Art Filters unless gated on key 11 / 12
+  (+1731 == 0, as tone). Not known: whether live view runs this stage (would preview the toning), the fine table's
+  role when the header words are 0 (art curves zero it), Cross Process strength (R+1568 / 0x6052dc3c not traced).
+- Free camera check, no firmware: a grey card / white wall in Cross Process I should show green shadows and mids.
