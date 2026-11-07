@@ -1,0 +1,96 @@
+"""fit-luts.ts output -> src/data/om3films.json: the fitted settings with camera names (15 characters) and groups.
+Fits worse than ΔE 8 are left out. usage: python3 scripts/mkfilms.py FIT.json src/data/om3films.json"""
+import json, sys
+NAMES = {
+ 'fujixtransiii/fuji_xtrans_iii_classic_chrome': ('Classic Chrome', 'fuji', 'Fujifilm Classic Chrome'),
+ 'fujixtransiii/fuji_xtrans_iii_provia': ('Fuji Provia', 'fuji', 'Fujifilm Provia / Standard'),
+ 'fujixtransiii/fuji_xtrans_iii_velvia': ('Fuji Velvia', 'fuji', 'Fujifilm Velvia / Vivid'),
+ 'fujixtransiii/fuji_xtrans_iii_astia': ('Fuji Astia', 'fuji', 'Fujifilm Astia / Soft'),
+ 'fujixtransiii/fuji_xtrans_iii_pro_neg_hi': ('Pro Neg Hi', 'fuji', 'Fujifilm Pro Neg. Hi'),
+ 'fujixtransiii/fuji_xtrans_iii_pro_neg_std': ('Pro Neg Std', 'fuji', 'Fujifilm Pro Neg. Std'),
+ 'colorslide/agfa_precisa_100': ('Agfa Precisa', 'slide', 'Agfa CT Precisa 100'),
+ 'colorslide/fuji_astia_100_generic': ('Astia 100', 'slide', 'Fujichrome Astia 100'),
+ 'colorslide/fuji_astia_100f': ('Astia 100F', 'slide', 'Fujichrome Astia 100F'),
+ 'colorslide/fuji_provia_100_generic': ('Provia 100', 'slide', 'Fujichrome Provia 100'),
+ 'colorslide/fuji_provia_100f': ('Provia 100F', 'slide', 'Fujichrome Provia 100F'),
+ 'colorslide/fuji_provia_400f': ('Provia 400F', 'slide', 'Fujichrome Provia 400F'),
+ 'colorslide/fuji_provia_400x': ('Provia 400X', 'slide', 'Fujichrome Provia 400X'),
+ 'colorslide/fuji_sensia_100': ('Sensia 100', 'slide', 'Fujichrome Sensia 100'),
+ 'colorslide/fuji_superia_200_xpro': ('Superia XPro', 'slide', 'Fuji Superia 200, cross-processed'),
+ 'colorslide/fuji_velvia_100_generic': ('Velvia 100', 'slide', 'Fujichrome Velvia 100'),
+ 'colorslide/fuji_velvia_50': ('Velvia 50', 'slide', 'Fujichrome Velvia 50'),
+ 'colorslide/kodak_e-100_gx_ektachrome_100': ('Ektachrome E100', 'slide', 'Kodak Ektachrome E100GX'),
+ 'colorslide/kodak_ektachrome_100_vs': ('Ektachrome VS', 'slide', 'Kodak Ektachrome 100VS'),
+ 'colorslide/kodak_elite_chrome_200': ('EliteChrome 200', 'slide', 'Kodak Elite Chrome 200'),
+ 'colorslide/kodak_elite_chrome_400': ('EliteChrome 400', 'slide', 'Kodak Elite Chrome 400'),
+ 'colorslide/kodak_elite_extracolor_100': ('Elite ExtraCol', 'slide', 'Kodak Elite ExtraColor 100'),
+ 'colorslide/kodak_kodachrome_200': ('Kodachrome 200', 'slide', 'Kodak Kodachrome 200'),
+ 'colorslide/kodak_kodachrome_25': ('Kodachrome 25', 'slide', 'Kodak Kodachrome 25'),
+ 'colorslide/kodak_kodachrome_64': ('Kodachrome 64', 'slide', 'Kodak Kodachrome 64'),
+ 'colorslide/lomography_x-pro_slide_200': ('Lomo X-Pro 200', 'slide', 'Lomography X-Pro Slide 200'),
+ 'colorslide/polaroid_polachrome': ('Polachrome', 'slide', 'Polaroid Polachrome'),
+ 'negative_color/agfa_ultra_color_100': ('Agfa Ultra 100', 'neg', 'Agfa Ultra Color 100'),
+ 'negative_color/agfa_vista_200': ('Agfa Vista 200', 'neg', 'Agfa Vista 200'),
+ 'negative_color/fuji_superia_200': ('Superia 200', 'neg', 'Fujicolor Superia 200'),
+ 'negative_color/fuji_superia_hg_1600': ('Superia HG 1600', 'neg', 'Fujicolor Superia HG 1600'),
+ 'negative_color/fuji_superia_reala_100': ('Superia Reala', 'neg', 'Fujicolor Superia Reala 100'),
+ 'negative_color/fuji_superia_x-tra_800': ('Superia X-Tra', 'neg', 'Fujicolor Superia X-Tra 800'),
+ 'negative_color/kodak_ektar_100': ('Ektar 100', 'neg', 'Kodak Ektar 100'),
+ 'negative_color/kodak_elite_100_xpro': ('Elite 100 XPro', 'neg', 'Kodak Elite 100, cross-processed'),
+ 'negative_color/kodak_elite_color_200': ('Elite Color 200', 'neg', 'Kodak Elite Color 200'),
+ 'negative_color/kodak_elite_color_400': ('Elite Color 400', 'neg', 'Kodak Elite Color 400'),
+ 'negative_color/lomography_redscale_100': ('Redscale 100', 'neg', 'Lomography Redscale 100'),
+ 'negative_new/fuji_160c': ('Fuji 160C', 'neg', 'Fujicolor Pro 160C'),
+ 'negative_new/fuji_400h': ('Fuji 400H', 'neg', 'Fujicolor Pro 400H'),
+ 'negative_new/fuji_800z': ('Fuji 800Z', 'neg', 'Fujicolor Pro 800Z'),
+ 'negative_new/kodak_portra_160': ('Portra 160', 'neg', 'Kodak Portra 160'),
+ 'negative_new/kodak_portra_400': ('Portra 400', 'neg', 'Kodak Portra 400'),
+ 'negative_new/kodak_portra_800': ('Portra 800', 'neg', 'Kodak Portra 800'),
+ 'negative_new/kodak_portra_800_hc': ('Portra 800 HC', 'neg', 'Kodak Portra 800, high contrast'),
+ 'negative_old/fuji_superia_100': ('Superia 100', 'neg', 'Fujicolor Superia 100'),
+ 'negative_old/fuji_superia_400': ('Superia 400', 'neg', 'Fujicolor Superia 400'),
+ 'negative_old/fuji_superia_800': ('Superia 800', 'neg', 'Fujicolor Superia 800'),
+ 'negative_old/fuji_superia_1600': ('Superia 1600', 'neg', 'Fujicolor Superia 1600'),
+ 'negative_old/kodak_portra_160_nc': ('Portra 160 NC', 'neg', 'Kodak Portra 160NC'),
+ 'negative_old/kodak_portra_160_vc': ('Portra 160 VC', 'neg', 'Kodak Portra 160VC'),
+ 'negative_old/kodak_portra_400_nc': ('Portra 400 NC', 'neg', 'Kodak Portra 400NC'),
+ 'negative_old/kodak_portra_400_uc': ('Portra 400 UC', 'neg', 'Kodak Portra 400UC'),
+ 'negative_old/kodak_portra_400_vc': ('Portra 400 VC', 'neg', 'Kodak Portra 400VC'),
+ 'instant_pro/fuji_fp-100c': ('FP-100C', 'instant', 'Fujifilm FP-100C'),
+ 'instant_pro/fuji_fp-100c_cool': ('FP-100C Cool', 'instant', 'Fujifilm FP-100C, cool'),
+ 'instant_pro/fuji_fp-100c_negative': ('FP-100C Neg', 'instant', 'Fujifilm FP-100C negative'),
+ 'instant_pro/polaroid_669': ('Polaroid 669', 'instant', 'Polaroid 669'),
+ 'instant_pro/polaroid_669_cold': ('Pola 669 Cold', 'instant', 'Polaroid 669, cold'),
+ 'instant_pro/polaroid_690': ('Polaroid 690', 'instant', 'Polaroid 690'),
+ 'instant_pro/polaroid_690_cold': ('Pola 690 Cold', 'instant', 'Polaroid 690, cold'),
+ 'instant_pro/polaroid_690_warm': ('Pola 690 Warm', 'instant', 'Polaroid 690, warm'),
+ 'instant_consumer/polaroid_px-100uv+_cold': ('PX-100 Cold', 'instant', 'Impossible PX-100 UV+, cold'),
+ 'instant_consumer/polaroid_px-100uv+_warm': ('PX-100 Warm', 'instant', 'Impossible PX-100 UV+, warm'),
+ 'instant_consumer/polaroid_px-680': ('PX-680', 'instant', 'Impossible PX-680'),
+ 'instant_consumer/polaroid_px-680_cold': ('PX-680 Cold', 'instant', 'Impossible PX-680, cold'),
+ 'instant_consumer/polaroid_px-680_warm': ('PX-680 Warm', 'instant', 'Impossible PX-680, warm'),
+ 'instant_consumer/polaroid_px-70': ('PX-70', 'instant', 'Impossible PX-70'),
+ 'instant_consumer/polaroid_px-70_cold': ('PX-70 Cold', 'instant', 'Impossible PX-70, cold'),
+ 'instant_consumer/polaroid_px-70_warm': ('PX-70 Warm', 'instant', 'Impossible PX-70, warm'),
+ 'instant_consumer/polaroid_time_zero_expired': ('Time Zero', 'instant', 'Polaroid Time Zero, expired'),
+ 'instant_consumer/polaroid_time_zero_expired_cold': ('Time Zero Cold', 'instant', 'Polaroid Time Zero, expired, cold'),
+ 'print/fuji_3510_constlmap': ('Fuji 3510', 'print', 'Fujicolor Positive 3510 cinema print'),
+ 'print/fuji_3513_constlmap': ('Fuji 3513', 'print', 'Fujicolor Positive 3513DI cinema print'),
+ 'print/kodak_2383_constlmap': ('Kodak 2383', 'print', 'Kodak Vision 2383 cinema print'),
+ 'print/kodak_2393_constlmap': ('Kodak 2393', 'print', 'Kodak Vision Premier 2393 cinema print'),
+}
+SKIP = {'colorslide/kodak_ektachrome_100_vs_generic', 'colorslide/kodak_kodachrome_64_generic'}
+fit = {d['id']: d for d in json.load(open(sys.argv[1]))}
+out = []
+for idn, (name, grp, full) in NAMES.items():
+    assert len(name) <= 15 and name.isascii(), name
+    d = fit[idn]
+    if d['after'] > 8:                 # the OM-3 controls can't make it (heavy fading, colour casts by brightness)
+        print('left out', name, d['after']); continue
+    out.append({'name': name, 'group': grp, 'film': full, 'de': d['after'], 'hue': d['hue'], 'light': d['light'], 'sat': d['sat'],
+                'tone': d['tone'], 'contrast': d['contrast'], 'wb': d['wb']})
+missing = set(fit) - set(NAMES) - SKIP
+assert not missing, missing
+json.dump({'source': "Fitted to the G'MIC film emulation LUTs (sRGB) with webapp/scripts/fit-luts.ts; settings only.",
+           'films': out}, open(sys.argv[2], 'w'), separators=(',', ':'))
+print(len(out), 'films; mean ΔE', round(sum(f['de'] for f in out) / len(out), 2), 'worst', max((f['de'], f['name']) for f in out))

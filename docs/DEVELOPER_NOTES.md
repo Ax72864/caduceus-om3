@@ -354,3 +354,18 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   (not facade +156, which `ed_default` answers 0 on non-Saturation pages).
 - AWB fine-tune keys 7401/7433 (A-B) and 7417/7449 (G-M) added to `wb_get` (capture branch 0x60457d22 / 0x60457ae4,
   population 0x618e6610..).
+
+## Film sims (Control Panel, after v0.21)
+- 60 looks in `webapp/src/data/om3films.json`, fitted to the G'MIC film emulation LUTs (sRGB → sRGB `.cube`). The repo
+  holds only the fitted settings, never LUT data.
+- Pipeline: `python3 webapp/scripts/lut-prep.py LUT_DIR WORK` (70 k sample pixels: the six sample photos, 4000 random
+  colours, a grey ramp; each LUT's output by trilinear lookup) → `cd webapp && npx vite-node scripts/fit-luts.ts WORK
+  fit.json` (coordinate descent on integer settings: Hue / Light / Sat ±5 per sector, H/S/M ±7, B/W ±5, Contrast ±2,
+  WB A-B / G-M ±5; objective = mean ΔE76 of `renderLook` (OM-3 mode) against the LUT on a quarter of the photo pixels
+  plus all synthetic ones, + 0.015 v² per sector / WB step, 0.01 v² per tone step, 0.05 v² per Contrast step so
+  settings move only when they clearly help) → `python3 webapp/scripts/mkfilms.py fit.json
+  webapp/src/data/om3films.json` (camera names ≤ 15 characters, groups; fits worse than ΔE 8 left out).
+- Results: mean ΔE 4.8 (identity ≈ 8–9; the earlier hand-made library looks were 7–10 against the same LUTs). Left
+  out: 14 instant films (fading and colour casts that depend on brightness), Superia 200 and Elite 100 cross-processed.
+- The fit is only as good as the preview model (`src/preview.ts`) is of the camera; check a film on the camera before
+  trusting it for anything critical.

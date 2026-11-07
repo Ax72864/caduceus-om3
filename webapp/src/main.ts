@@ -19,6 +19,7 @@ import {
   slowGrain, toOm3, validateBank, type Bank,
 } from './om3';
 import { namesBin } from './om3names';
+import { FILMS, FILM_GROUPS, filmLook, fitLabel, type Film, type FilmGroup } from './om3films';
 import { parseLook } from './pack';
 
 // ---------------------------------------------------------------- state
@@ -232,6 +233,7 @@ function shell() {
           ['Empty pack', () => newPack('empty')],
         ]),
         h('button', { onclick: openFile, title: om3 ? 'The card\'s OM3MOD/LOOKS.BIN (or PROFILES.BIN from v0.17–v0.18), a looks file, or a Caduceus pack / E-P7 LOOKS.BIN' : undefined }, 'Open…'),
+        om3 ? h('button', { onclick: () => om3FilmPicker(), title: 'Add film simulations (Fujifilm, slide, negative, instant, cinema print) to your looks' }, 'Film sims') : null,
         h('button', { onclick: pasteDialog }, 'Paste code'),
         h('button', { onclick: sharePack }, om3 ? 'Share looks' : 'Share pack'),
         h('button', { onclick: om3 ? om3InstallDialog : installDialog }, 'Install firmware'),
@@ -1169,6 +1171,7 @@ function emptySlotPanel(): HTMLElement {
     h('p', { class: 'help' }, 'On the camera this number shows "Empty" and loads neutral settings. Give it a look:'),
     h('div', { class: 'pick-row' },
       h('button', { class: 'primary', onclick: () => put(blankProfile(`Look ${v + 1}`), `New blank look in ${at(k, v)}`) }, 'Blank look'),
+      h('button', { onclick: () => om3FilmPicker({ k, v }) }, 'From the film sims…'),
       h('button', { onclick: om3LibraryPicker }, 'From the built-in library…'),
       h('button', { onclick: pasteDialog }, 'Paste a code…')),
     h('p', { class: 'help' }, 'Library looks come from Caduceus (E-P7) and are converted for the OM-3: Hue, Light and WB shifts are limited to ±5, a halation glow becomes a plain glow (the OM-3 glow has no colour), and Blur is left out. NR, Glow / Clarity and Art Effects carry over (firmware v0.20).'));
@@ -1193,6 +1196,71 @@ function om3LibraryPicker() {
     },
   }, h('b', {}, l.name), inBank.has(l.name.toLowerCase()) ? h('span', { class: 'tag' }, 'in looks') : null, h('small', {}, l.notes))));
   const dlg = modal(`Library look for ${at(k, v)}`, list);
+}
+
+/** Film sims: browse the fitted films, preview one on the current photo and add it to the looks. With `into`, the
+ *  film goes into that (empty) number; otherwise into the selected number when it is empty, else the first empty
+ *  number of the selected COLOR, else the first empty number anywhere (or, when all 20 are used, it asks to replace
+ *  the selected look). Removing works as for any look (× in the list). */
+function om3FilmPicker(into?: { k: number; v: number }) {
+  let group: FilmGroup | 'all' = 'all', query = '', sel: Film | null = null;
+  const pv = h('canvas', { class: 'film-pv', 'aria-label': 'Preview of the selected film sim' });
+  const pvNote = h('p', { class: 'help' });
+  const drawPv = () => {
+    if (!srcData) { pvNote.textContent = 'Pick a photo in the preview first.'; return; }
+    const sc = Math.min(1, 520 / srcData.width), W = Math.round(srcData.width * sc), H = Math.round(srcData.height * sc);
+    const c = document.createElement('canvas'); c.width = srcData.width; c.height = srcData.height;
+    const cx = c.getContext('2d')!;
+    if (sel) { const out = cx.createImageData(srcData.width, srcData.height); renderLook(srcData, out, filmLook(sel), { advice: true, camera: CAM }); cx.putImageData(out, 0, 0); }
+    else cx.putImageData(srcData, 0, 0);
+    pv.width = W; pv.height = H; pv.getContext('2d')!.drawImage(c, 0, 0, W, H);
+    pvNote.textContent = sel ? `${sel.film} · ${fitLabel(sel.de)} match to its film emulation (average colour difference ${sel.de.toFixed(1)} ΔE). Shown on your current photo.` : 'Your current photo, no film. Click a film to preview it.';
+  };
+  const target = (): { k: number; v: number } | null => {
+    if (into && !O.bank[into.k][into.v]) return into;
+    if (!O.bank[O.k][O.v]) return { k: O.k, v: O.v };
+    const inCol = O.bank[O.k].findIndex((l) => !l);
+    if (inCol >= 0) return { k: O.k, v: inCol };
+    for (let k = 0; k < COLORS; k++) { const v = O.bank[k].findIndex((l) => !l); if (v >= 0) return { k, v }; }
+    return null;
+  };
+  const add = (f: Film) => {
+    let t = target();
+    if (!t) {
+      if (!confirm(`All 20 numbers are in use. Replace ${at(O.k, O.v)} ("${O.bank[O.k][O.v]?.name}") with ${f.name}?`)) return;
+      t = { k: O.k, v: O.v };
+    }
+    O.bank[t.k][t.v] = filmLook(f); O.k = t.k; O.v = t.v; into = undefined;
+    save(); renderAll(); drawRows();
+    toast(`${f.name} added as ${at(t.k, t.v)}`);
+  };
+  const inBank = () => new Set(O.bank.flat().filter(Boolean).map((l) => l!.name.toLowerCase()));
+  const list = h('div', { class: 'film-list', role: 'list' });
+  const drawRows = () => {
+    const have = inBank(), q = query.trim().toLowerCase();
+    const rows = FILMS.filter((f) => (group === 'all' || f.group === group) && (!q || `${f.name} ${f.film}`.toLowerCase().includes(q)));
+    const sections = FILM_GROUPS.filter(([g]) => rows.some((f) => f.group === g)).map(([g, label]) =>
+      h('div', { class: 'film-group' }, h('h3', {}, label), ...rows.filter((f) => f.group === g).map((f) =>
+        h('div', { class: `film-row${sel === f ? ' on' : ''}`, role: 'listitem' },
+          h('button', { class: 'film-pick', onclick: () => { sel = f; drawPv(); drawRows(); }, 'aria-pressed': String(sel === f) },
+            h('b', {}, f.name), h('small', {}, `${f.film} · ${fitLabel(f.de)}`)),
+          have.has(f.name.toLowerCase()) ? h('span', { class: 'tag' }, 'in looks') : null,
+          h('button', { class: 'film-add', onclick: () => add(f), title: `Add ${f.name} to your looks` }, '+ Add')))));
+    list.replaceChildren(...(sections.length ? sections : [h('p', { class: 'empty' }, 'No film matches.')]));
+  };
+  const chips = h('div', { class: 'seg film-groups', role: 'radiogroup', 'aria-label': 'Film type' },
+    ...([['all', 'All']] as [FilmGroup | 'all', string][]).concat(FILM_GROUPS.map(([g, l]) => [g, l.replace(' simulations', '')] as [FilmGroup, string])).map(([g, t]) =>
+      h('button', { role: 'radio', 'aria-checked': String(g === group), class: g === group ? 'on' : '', onclick: (e: Event) => {
+        group = g; (e.currentTarget as HTMLElement).parentElement!.querySelectorAll('button').forEach((b) => { const on = b === e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+        drawRows();
+      } }, t)));
+  const search = h('input', { type: 'search', placeholder: 'Search films…', 'aria-label': 'Search films', oninput: (e: Event) => { query = (e.target as HTMLInputElement).value; drawRows(); } });
+  const body = h('div', { class: 'film-dlg' },
+    h('div', { class: 'film-side' }, pv, pvNote,
+      h('p', { class: 'help' }, `${FILMS.length} film looks, each fitted to a film emulation LUT and made of ordinary OM-3 settings (Hue, Light, Saturation, the tone and the WB shift), so you can change them like any look. Add puts the film in an empty number; remove it with × in the list. Grain and the Extras stay yours to choose.`)),
+    h('div', { class: 'film-main' }, h('div', { class: 'film-filters' }, search, chips), list));
+  drawRows(); drawPv();
+  modal(into ? `Film sim for ${at(into.k, into.v)}` : 'Film sims', body);
 }
 
 function renderOm3Editor(l: Look) {

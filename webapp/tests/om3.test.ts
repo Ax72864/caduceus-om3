@@ -10,6 +10,8 @@ import { blankLook, parsePack, type Look } from '../src/pack';
 import { fromLibrary } from '../src/reset';
 import { COLORS, PER, defaultBank, emptyBank, parseBank, profilesBin, readProfiles, slowGrain, toOm3, validateBank, type Bank } from '../src/om3';
 import { parseLook } from '../src/pack';
+import { FILMS, FILM_GROUPS, filmLook } from '../src/om3films';
+import { validateProfile } from '../src/om3';
 
 const LIB = parsePack(libraryJson);
 const MK = join(__dirname, '../../card/mkprofiles.py');
@@ -113,6 +115,19 @@ describe('OM-3 profile bank', () => {
       writeFileSync(join(dir, `in${i}.json`), JSON.stringify(pyJson(b)));
       execFileSync('python3', ['-I', MK, join(dir, `in${i}.json`), join(dir, `out${i}.bin`)]);
       expect(hex(profilesBin(b))).toBe(hex(new Uint8Array(readFileSync(join(dir, `out${i}.bin`)))));
+    }
+  });
+
+  it('film sims: every one is a valid OM-3 look with a unique camera name', () => {
+    expect(FILMS.length).toBeGreaterThan(40);
+    const names = new Set<string>();
+    for (const f of FILMS) {
+      expect(FILM_GROUPS.map(([g]) => g)).toContain(f.group);
+      const l = filmLook(f);
+      expect(validateProfile(l)).toEqual([]);
+      expect(names.has(f.name.toLowerCase())).toBe(false); names.add(f.name.toLowerCase());
+      const back = readProfiles(profilesBin([[l]]))[0][0]!;
+      expect(back.hue).toEqual(l.hue); expect(back.tone).toEqual(l.tone); expect(back.advice.contrast).toBe(f.contrast);
     }
   });
 });

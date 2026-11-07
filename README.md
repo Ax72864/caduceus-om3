@@ -115,6 +115,11 @@ in your browser. It is the same tool as Caduceus for the E-P7: the switch at the
 
 - The left side shows COLOR 1–4 with looks 1–5, numbered as on the camera's Film page ("Empty" for an unused
   number). Drag a look to another number, or use ↑ ↓; × empties a number.
+- **Film sims** opens 60 film looks: the Fujifilm simulations (Provia, Velvia, Astia, Classic Chrome, Pro Neg Hi /
+  Std), slide films (Velvia 50, Provia, Kodachrome, Ektachrome…), colour negatives (Portra, Ektar, Superia, Fuji
+  400H…), FP-100C and Polaroid 690, and cinema print stocks. Each was fitted to a film emulation LUT and is made of
+  ordinary OM-3 settings, with how close the match is. Click one to preview it on your photo, **+ Add** puts it in an
+  empty number, and × in the list removes it again.
 - Edit Hue, Lightness and Saturation for each of the 12 colours, the tone (Highlights, Shadows, Midtones, Blacks,
   Whites), the camera's Contrast, Sharpness and Shading, the **Extras** (NR, lens vignette correction, Grain,
   Glow ↔ Clarity, Art Effect) and the WB shift, with a live preview on test photos or your own (drag the line on the

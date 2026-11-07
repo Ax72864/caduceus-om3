@@ -283,3 +283,22 @@ a.btn.primary { background: var(--accent); color: var(--accent-ink); border-colo
 .look.empty-slot .nm { color: var(--muted); font-style: italic; font-family: inherit; }
 .empty-slot-panel h3 { margin: 4px 0 8px; font-size: 16px; }
 .pick-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+
+/* film sims dialog (OM-3) */
+dialog.modal:has(.film-dlg) { width: min(1040px, calc(100vw - 32px)); }
+.film-dlg { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+.film-side { position: sticky; top: 0; display: grid; gap: 8px; }
+canvas.film-pv { width: 100%; height: auto; border-radius: 8px; background: #000; display: block; }
+.film-filters { display: grid; gap: 8px; margin-bottom: 10px; }
+.film-filters input[type=search] { width: 100%; }
+.seg.film-groups { display: flex; flex-wrap: wrap; gap: 6px; border: 0; border-radius: 0; overflow: visible; }
+.seg.film-groups button, .seg.film-groups button + button { border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
+.seg.film-groups button.on { border-color: var(--accent); }
+.film-list { max-height: min(60vh, 560px); overflow: auto; padding-right: 4px; }
+.film-group h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 6px; }
+.film-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 2px 0; border-bottom: 1px solid var(--line); }
+.film-row.on .film-pick b { color: var(--accent); }
+.film-pick { text-align: left; border: 0; background: none; padding: 6px 4px; display: grid; gap: 2px; }
+.film-pick small { color: var(--muted); }
+.film-add { white-space: nowrap; }
+@media (max-width: 760px) { .film-dlg { grid-template-columns: 1fr; } .film-side { position: static; } .film-list { max-height: none; } }

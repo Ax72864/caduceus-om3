@@ -3,6 +3,17 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## Control Panel updates after v0.21
+No firmware change: these work with v0.21 as released.
+
+- **Film sims:** a new button (and "From the film sims…" on an empty number) with 60 film looks in five groups:
+  Fujifilm simulations (Provia, Velvia, Astia, Classic Chrome, Pro Neg Hi, Pro Neg Std), slide film, colour negative,
+  instant film and cinema print. Each look was fitted to a film emulation LUT: the closest OM-3 settings (Hue, Light
+  and Saturation per colour, Highlights / Shadows / Midtones, Blacks / Whites, Contrast, WB shift), with a label for
+  how close the match is. Preview on your photo, add to any empty number, remove like any look. Films the OM-3
+  controls can't reproduce (most Polaroid / Impossible instant films, cross-processing) are left out.
+- The grain preview is gentler, closer to how the photo looks on screen.
+
 ## v0.21
 Film grain on colour photos, looks you save on purpose, and a `*` that means "not factory". Camera-tested.
 
