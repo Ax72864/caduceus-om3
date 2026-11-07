@@ -16,6 +16,13 @@ No firmware change: these work with v0.21 as released.
 - **Lists:** save all four COLORs' looks as a named list and switch between lists (Save as…, Rename, Delete above
   the looks). The list you're on is the one you edit; the looks you already had are the list "Default". When all 20
   numbers are used, adding a film sim asks first and then lets you pick the look to replace.
+- **New standard set** (first visit, and New › Reset looks to standard): one theme per COLOR, measured film sims
+  wherever the LUTs cover the film. COLOR 1 Fujifilm (Classic Chrome, Classic Neg, Reala Ace, Eterna, Pro Neg Std),
+  COLOR 2 slide (Velvia 50, Kodachrome 64, Ektachrome E100, Provia 100F, Astia 100F), COLOR 3 negative (Portra 400,
+  Portra 160, Ektar 100, Gold 200, Fuji 400H), COLOR 4 cinema and instant (CineStill 800T, Kodak 2383, Vision3 250D,
+  FP-100C, Bleach Bypass). Existing lists are not changed.
+- Film sims already in the list you're on are marked in Film sims with where they are ("✓ COLOR 2 · 1"), even after
+  renaming or editing them, and **Reset look** on a film sim puts that film's values back.
 
 ## v0.21
 Film grain on colour photos, looks you save on purpose, and a `*` that means "not factory". Camera-tested.

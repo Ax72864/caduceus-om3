@@ -18,6 +18,7 @@
 //   NAMES.BIN v1: the name pictures for the Film page (./om3names.ts).
 import { ARTS, blankLook, cloneLook, toneIsZero, zeroTone, type Grain, type Look, type Pack } from './pack';
 import { crc32, type Problem } from './format';
+import { filmByName, filmLook } from './om3films';
 
 export const COLORS = 4, PER = 5;
 export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5, hsm: 7, bw: 5, fx: 5, grain: 3 } as const;
@@ -154,17 +155,19 @@ export function readProfiles(b: Uint8Array): Bank {
   return bank;
 }
 
-// ---- first visit: 20 library looks, 5 per COLOR, grouped by kind of film
+// ---- first visit: 20 looks, one theme per COLOR. `film:` = a film sim (fitted to a film emulation LUT), otherwise a
+// library look (films the LUTs don't cover).
 const DEFAULT_NAMES = [
-  ['Velvia', 'Astia', 'Kodachrome64', 'Ektachrome', 'Provia 400'],
-  ['Cl. Chrome', 'Classic Neg', 'Reala Ace', 'Eterna', 'Cibachrome'],
-  ['Portra 400', 'Portra 160', 'Gold 200', 'Ektar 100', 'UltraMax 400'],
-  ['CineStill800', 'CineStill50D', 'Vision3 250D', 'Bleach Byp.', 'Cross Proc.'],
+  ['film:Classic Chrome', 'Classic Neg', 'Reala Ace', 'Eterna', 'film:Pro Neg Std'],                          // Fujifilm
+  ['film:Velvia 50', 'film:Kodachrome 64', 'film:Ektachrome E100', 'film:Provia 100F', 'film:Astia 100F'],     // slide
+  ['film:Portra 400', 'film:Portra 160', 'film:Ektar 100', 'Gold 200', 'film:Fuji 400H'],                      // negative
+  ['CineStill800', 'film:Kodak 2383', 'Vision3 250D', 'film:FP-100C', 'Bleach Byp.'],                          // cinema & instant
 ];
 export function defaultBank(library: Pack, fromLib: (l: Look) => Look): Bank {
   const colour = library.looks.filter((l) => l.kind === 'colour');
   const used = new Set<string>(), bank = emptyBank();
   DEFAULT_NAMES.forEach((row, k) => row.forEach((n, v) => {
+    if (n.startsWith('film:')) { const f = filmByName(n.slice(5)); if (f) bank[k][v] = filmLook(f); return; }
     const src = colour.find((l) => l.name === n && !used.has(l.name));
     if (src) { used.add(src.name); bank[k][v] = toOm3(fromLib(src)).look; }
   }));

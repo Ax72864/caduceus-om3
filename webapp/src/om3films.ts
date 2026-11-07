@@ -19,9 +19,19 @@ export const FILMS = (filmsJson as { films: Film[] }).films;
 /** How close the fit is, in words. */
 export const fitLabel = (de: number) => (de < 3 ? 'very close' : de < 4.5 ? 'close' : de < 6 ? 'approximate' : 'loose');
 
+/** A look's film sim, from its origin (`film:<name>`, set when it was added) or, for looks added before origins, its
+ *  unchanged name. Renamed or edited looks keep their origin. */
+export const FILM_ORIGIN = 'film:';
+export function filmOf(l: Look): Film | undefined {
+  if (l.origin?.startsWith(FILM_ORIGIN)) return FILMS.find((f) => f.name === l.origin!.slice(FILM_ORIGIN.length));
+  return l.origin === undefined ? FILMS.find((f) => f.name === l.name) : undefined;
+}
+export const filmByName = (name: string) => FILMS.find((f) => f.name === name);
+
 /** The film as an OM-3 look (no grain or Extras: those stay the user's choice). */
 export function filmLook(f: Film): Look {
   const l = blankLook('colour', f.name);
+  l.origin = FILM_ORIGIN + f.name;
   l.hue = [...f.hue]; l.light = [...f.light]; l.sat = [...f.sat];
   l.tone = { ...f.tone };
   l.advice = { contrast: f.contrast, sharpness: 0 };

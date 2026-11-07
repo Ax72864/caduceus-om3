@@ -19,7 +19,7 @@ import {
   slowGrain, toOm3, validateBank, type Bank,
 } from './om3';
 import { namesBin } from './om3names';
-import { FILMS, FILM_GROUPS, filmLook, fitLabel, type Film, type FilmGroup } from './om3films';
+import { FILMS, FILM_GROUPS, filmLook, filmOf, fitLabel, type Film, type FilmGroup } from './om3films';
 import { parseLook } from './pack';
 
 // ---------------------------------------------------------------- state
@@ -1327,17 +1327,22 @@ function om3FilmPicker(into?: { k: number; v: number }) {
     const t = target();
     if (t) place(f, t); else askReplace(f);
   };
-  const inBank = () => new Set(O.bank.flat().filter(Boolean).map((l) => l!.name.toLowerCase()));
+  // where each film sim already is in the current list (COLOR k, number v), by the look's film origin
+  const where = () => {
+    const m = new Map<string, string[]>();
+    O.bank.forEach((row, k) => row.forEach((l, v) => { const f = l && filmOf(l); if (f) m.set(f.name, [...(m.get(f.name) ?? []), `COLOR ${k + 1} · ${v + 1}`]); }));
+    return m;
+  };
   const list = h('div', { class: 'film-list', role: 'list' });
   const drawRows = () => {
-    const have = inBank(), q = query.trim().toLowerCase();
+    const have = where(), q = query.trim().toLowerCase();
     const rows = FILMS.filter((f) => (group === 'all' || f.group === group) && (!q || `${f.name} ${f.film}`.toLowerCase().includes(q)));
     const sections = FILM_GROUPS.filter(([g]) => rows.some((f) => f.group === g)).map(([g, label]) =>
       h('div', { class: 'film-group' }, h('h3', {}, label), ...rows.filter((f) => f.group === g).map((f) =>
-        h('div', { class: `film-row${sel === f ? ' on' : ''}`, role: 'listitem' },
+        h('div', { class: `film-row${sel === f ? ' on' : ''}${have.has(f.name) ? ' in-list' : ''}`, role: 'listitem' },
           h('button', { class: 'film-pick', onclick: () => { sel = f; drawPv(); drawRows(); }, 'aria-pressed': String(sel === f) },
             h('b', {}, f.name), h('small', {}, `${f.film} · ${fitLabel(f.de)}`)),
-          have.has(f.name.toLowerCase()) ? h('span', { class: 'tag' }, 'in looks') : null,
+          have.has(f.name) ? h('span', { class: 'in-list-tag', title: `Already in "${LISTS.current}": ${have.get(f.name)!.join(', ')}` }, '✓ ', have.get(f.name)!.join(', ')) : null,
           h('button', { class: 'film-add', onclick: () => add(f), title: `Add ${f.name} to your looks` }, '+ Add')))));
     list.replaceChildren(...(sections.length ? sections : [h('p', { class: 'empty' }, 'No film matches.')]));
   };
@@ -1386,18 +1391,18 @@ function renderOm3Editor(l: Look) {
     return h('div', { class: 'srow plain', title: tip }, h('span', { class: 'sname' }, label), inp, out);
   };
   const notesBytes = () => new TextEncoder().encode(l.notes).length;
-  const orig = libraryOrigin(l, LIBRARY);
+  const film = filmOf(l), orig = film ? undefined : libraryOrigin(l, LIBRARY);
   el.replaceChildren(
     h('div', { class: 'ed-head' },
       h('label', { class: 'field grow' }, h('span', { class: 'lbl' }, `Name · ${at(k, v)}`), nameInput,
         h('span', { id: 'name-help', class: np ? 'help err' : 'help' }, np ?? `${l.name.length} / ${OM3_NAME_MAX} · shown under the wheel on the Film page`)),
       h('div', { class: 'ed-btns' },
         h('button', {
-          class: 'share-btn', title: orig ? `Restore the built-in "${orig.name}" values (OM-3 version)` : 'Set every value to neutral',
+          class: 'share-btn', title: film ? `Restore the ${film.name} film sim's values` : orig ? `Restore the built-in "${orig.name}" values (OM-3 version)` : 'Set every value to neutral',
           onclick: () => {
-            const r = toOm3(resetLook(l, LIBRARY, [])).look ?? blankProfile(l.name);
+            const r = film ? Object.assign(filmLook(film), { name: l.name }) : toOm3(resetLook(l, LIBRARY, [])).look ?? blankProfile(l.name);
             O.bank[k][v] = r; save(); renderAll();
-            toast(orig ? `"${r.name}" restored to the built-in values` : `"${l.name}" reset to neutral`);
+            toast(film ? `"${r.name}" restored to the ${film.name} film sim` : orig ? `"${r.name}" restored to the built-in values` : `"${l.name}" reset to neutral`);
           },
         }, 'Reset look'),
         h('button', { class: 'share-btn', onclick: () => om3ShareProfile(l), title: 'Share this look as a link or code' }, 'Share'))),

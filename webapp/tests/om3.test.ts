@@ -54,7 +54,13 @@ describe('OM-3 profile bank', () => {
     const b = defaultBank(LIB, fromLibrary);
     expect(b.flat().filter(Boolean)).toHaveLength(20);
     expect(validateBank(b)).toEqual([]);
-    expect(b[0][0]!.name).toBe('Velvia');
+    expect(b.map((r) => r.map((l) => l!.name))).toEqual([
+      ['Classic Chrome', 'Classic Neg', 'Reala Ace', 'Eterna', 'Pro Neg Std'],
+      ['Velvia 50', 'Kodachrome 64', 'Ektachrome E100', 'Provia 100F', 'Astia 100F'],
+      ['Portra 400', 'Portra 160', 'Ektar 100', 'Gold 200', 'Fuji 400H'],
+      ['CineStill800', 'Kodak 2383', 'Vision3 250D', 'FP-100C', 'Bleach Byp.'],
+    ]);
+    expect(b[0][0]!.origin).toBe('film:Classic Chrome');
   });
 
   it('toOm3: mono refused, ranges limited, v0.20 Extras kept (glow without colour, no Blur)', () => {

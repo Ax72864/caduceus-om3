@@ -319,3 +319,5 @@ dialog.modal:has(.replace-grid) { width: min(780px, calc(100vw - 32px)); }
 .lists-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .lists-btns button { font-size: 13px; padding: 4px 10px; }
 .name-dlg input { width: 100%; }
+.film-row.in-list { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.in-list-tag { font-size: 12px; font-weight: 600; color: var(--accent-ink); background: var(--accent); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }

@@ -123,7 +123,9 @@ in your browser. It is the same tool as Caduceus for the E-P7: the switch at the
   Std), slide films (Velvia 50, Provia, Kodachrome, Ektachrome…), colour negatives (Portra, Ektar, Superia, Fuji
   400H…), FP-100C and Polaroid 690, and cinema print stocks. Each was fitted to a film emulation LUT and is made of
   ordinary OM-3 settings, with how close the match is. Click one to preview it on your photo, **+ Add** puts it in an
-  empty number, and × in the list removes it again.
+  empty number, and × in the list removes it again. Films already in your list are marked with where they are. The
+  standard set you start with uses them: Fujifilm on COLOR 1, slide on COLOR 2, negative on COLOR 3, cinema and
+  instant on COLOR 4.
 - Edit Hue, Lightness and Saturation for each of the 12 colours, the tone (Highlights, Shadows, Midtones, Blacks,
   Whites), the camera's Contrast, Sharpness and Shading, the **Extras** (NR, lens vignette correction, Grain,
   Glow ↔ Clarity, Art Effect) and the WB shift, with a live preview on test photos or your own (drag the line on the
