@@ -280,6 +280,10 @@ Full page-by-page guide: [docs/USING.md](docs/USING.md). Card file formats: [doc
   (`VITE_DEFAULT_CAMERA=om3 npm run build`, then copy `dist/` to `looklab/`).
 - `tools/emulator/`: test harness for [om-emu](https://github.com/flatpanda/om-emu) (E147 model).
 - [docs/DEVELOPER_NOTES.md](docs/DEVELOPER_NOTES.md): addresses, hooks and the test history.
+- [research/](research/README.md): the full lab notebook (`research/NOTES.md`: every address, test and dead end),
+  firmware and emulator tools, and archived experiments.
+- [docs/FILM_SIMULATION_ROADMAP.md](docs/FILM_SIMULATION_ROADMAP.md): planned film-look features, effort and status.
+- [CLAUDE.md](CLAUDE.md): working rules for AI-assisted sessions on this repo (useful for any contributor).
 
 ## Credits
 

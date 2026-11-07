@@ -31,8 +31,8 @@ const snap = (k) => {
   const st = u16(STATE), e = { step: k, state: st, gui: lab.state_names.get(lab.state()) ?? lab.state() };
   if (st >= 1 && st - 1 < HMAX && ((st - 1) & 3) === 0) {
     const P = POOL + st - 1;
-    e.marker = Buffer.from(rd(P + 680, 4)).toString('latin1'); e.gptr = u32(P + 700).toString(16); e.gdesc = [u32(0xa49ecdf8 + 12), u32(0xa49ecdf8 + 16).toString(16)]; e.vdesc = [u32(0xa4cf688c + 12), u32(0xa4cf688c + 16).toString(16)]; e.glbl = u32(P + 704); e.axis = rd(P + 684, 1)[0]; e.glowP = rd(P + 688, 1)[0]; e.dirty = rd(P + 685, 1)[0]; e.status = rd(P + 686, 1)[0]; e.lptr = u32(P + 708).toString(16); e.lidx = [...rd(P + 712, 4)].map(s8).join(',');
-    e.slots = [0, 1, 2, 3].map((k2) => { const b = rd(P + 32 + 64 * k2, 64); return { hue: [...b.slice(0, 12)].map(s8).join(','), light: [...b.slice(12, 24)].map(s8).join(','), flags: b[31], wb: [b[25], s8(b[26]), s8(b[27])].join('/'), bw: [s8(b[47]), s8(b[48])].join('/'), glow: [b[28], b[29]].join('/') }; });
+    e.marker = Buffer.from(rd(P + 680, 4)).toString('latin1'); e.gptr = u32(P + 700).toString(16); e.gdesc = [u32(0xa49ecdf8 + 12), u32(0xa49ecdf8 + 16).toString(16)]; e.vdesc = [u32(0xa4cf688c + 12), u32(0xa4cf688c + 16).toString(16)]; e.glbl = u32(P + 704); e.axis = rd(P + 684, 1)[0]; e.glowP = rd(P + 688, 1)[0]; e.dirty = rd(P + 685, 1)[0]; e.status = rd(P + 686, 1)[0]; e.lptr = u32(P + 708).toString(16); e.lidx = [...rd(P + 712, 4)].map(s8).join(','); e.edk = rd(P + 687, 1)[0];
+    e.slots = [0, 1, 2, 3].map((k2) => { const b = rd(P + 32 + 64 * k2, 64); return { hue: [...b.slice(0, 12)].map(s8).join(','), light: [...b.slice(12, 24)].map(s8).join(','), flags: b[31], wb: [b[25], s8(b[26]), s8(b[27])].join('/'), bw: [s8(b[47]), s8(b[48])].join('/'), glow: [b[28], b[29]].join('/'), fx: [s8(b[49]), s8(b[50]), s8(b[51]), b[52], b[53], s8(b[54])].join("/") }; });
   }
   log.push(e);
   console.log(JSON.stringify(e));
@@ -45,11 +45,12 @@ const WRANGE = process.env.WRANGE; let wdbg = null; const wlog = [];
 if (WRANGE) { wdbg = Debugger.attach(lab.sim, { lab }); }
 if (WATCH.size) {
   const dbg = Debugger.attach(lab.sim, { lab });
-  dbg.traceExec((r) => { const g = dbg.regs(); if (process.env.WIDS && !((g.d0 >>> 0) >= 928 && (g.d0 >>> 0) <= 975) && !(((g.d0 >>> 0) >> 4) >= 928 && ((g.d0 >>> 0) >> 4) <= 975 && (g.d0 >>> 0) < 0x10000)) return; if (process.env.WFROM && !globalThis.__armed) return; if (hits.length < 200000) { const h = { step: curStep, pc: r.pc.toString(16), mdr: (g.mdr >>> 0).toString(16), sp: (g.sp >>> 0), d0: g.d0 | 0, d1: g.d1 | 0, d2: g.d2 | 0, d3: g.d3 | 0, a0: (g.a0 >>> 0).toString(16) }; if (r.pc === 0x6051861a) { const out = u32((g.a2 >>> 0) + 12); h.rec = []; for (let i = 0; i < 12; i++) { const b = rd(out + 836 + 24 * i + 18, 6); const sh = (o) => ((b[o] | b[o + 1] << 8) << 16) >> 16; h.rec.push([sh(0), sh(2), sh(4)]); } } if (process.env.WSTACK) { h.stk = []; for (let k = 0; k < 160; k++) { const v = u32(((g.sp >>> 0) + 4 * k) >>> 0); if (v >= 0x60021020 && v < 0x62020fe0) h.stk.push(k * 4 + ':' + v.toString(16)); } } hits.push(h); } }, { pcs: [...WATCH] });
+  dbg.traceExec((r) => { const g = dbg.regs(); if (process.env.WIDS && !((g.d0 >>> 0) >= 928 && (g.d0 >>> 0) <= 975) && !(((g.d0 >>> 0) >> 4) >= 928 && ((g.d0 >>> 0) >> 4) <= 975 && (g.d0 >>> 0) < 0x10000)) return; if (process.env.WFROM && !globalThis.__armed) return; if (hits.length < 200000) { const h = { step: curStep, pc: r.pc.toString(16), mdr: (g.mdr >>> 0).toString(16), sp: (g.sp >>> 0), d0: g.d0 | 0, d1: g.d1 | 0, d2: g.d2 | 0, d3: g.d3 | 0, a0: (g.a0 >>> 0).toString(16) }; if (r.pc === 0x6051861a) { const out = u32((g.a2 >>> 0) + 12); h.rec = []; for (let i = 0; i < 12; i++) { const b = rd(out + 836 + 24 * i + 18, 6); const sh = (o) => ((b[o] | b[o + 1] << 8) << 16) >> 16; h.rec.push([sh(0), sh(2), sh(4)]); } } if (process.env.WTID) { const cpu = u32(0x8050), t1 = u32((0x97f00004 + 4 * cpu) >>> 0), t2 = u32((t1 + 96) >>> 0), t3 = u32(t2); h.tid = u16((t3 + 16) >>> 0); h.hls = u16(0x62b4dd14); } if (process.env.WSTACK) { h.stk = []; for (let k = 0; k < 160; k++) { const v = u32(((g.sp >>> 0) + 4 * k) >>> 0); if (v >= 0x60021020 && v < 0x62020fe0) h.stk.push(k * 4 + ':' + v.toString(16)); } } hits.push(h); } }, { pcs: [...WATCH] });
 }
 lab.sim.write(0xa32de590, new Uint8Array([0xff, 0x03, 0, 0])); lab.sim.write(0x60369308, new Uint8Array([0x00, 0xf0, 0, 0]));
 for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
   if (process.env.WFROM && t === process.env.WFROM) globalThis.__armed = true;
+  curStep = t + "#" + log.length;
   const m = /^(main|sub)([+-]\d+)$/.exec(t);
   if (m) { s.dial_input(m[1], parseInt(m[2], 10)); s.camapp.pump(); }
   else if (t.startsWith('dump:')) {
@@ -111,7 +112,7 @@ for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
     const ev = (x) => (typeof x === 'number' ? x : Function('P', 'SP', 'B', 'return (' + x + ')')(P, SP, B)) >>> 0;
     const RN = ['d0', 'd1', 'd2', 'd3', 'a0', 'a1', 'a2', 'a3', 'sp', 'pc', 'psw', 'mdr'];
     for (const cs of spec) {
-      for (const [a, hex] of cs.mem || []) dd.write(ev(a), Uint8Array.from(Buffer.from(hex, 'hex')));
+      for (const [a, hex] of cs.mem || []) { if (hex.startsWith('=')) { const v = ev(hex.slice(1)); dd.write(ev(a), Uint8Array.from([v & 255, v >> 8 & 255, v >> 16 & 255, v >>> 24])); } else dd.write(ev(a), Uint8Array.from(Buffer.from(hex, 'hex'))); }
       const r = saved.slice(); r[14] = 0;
       for (const [k, v] of Object.entries(cs.regs || {})) r[RN.indexOf(k)] = ev(v);
       if (!cs.regs || cs.regs.sp === undefined) r[8] = SP;
@@ -120,11 +121,11 @@ for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
       while (!stops.includes(dd.m.getRegs()[9] >>> 0) && n < (cs.max || 200000)) { dd.m.step(); n++; }
       const g = dd.m.getRegs(), o = { name: cs.name, steps: n, regs: {}, mem: [] };
       RN.forEach((k, i) => { o.regs[k] = (g[i] >>> 0).toString(16); });
-      for (const [a, len] of cs.read || []) o.mem.push(Buffer.from(rd(ev(a), len)).toString('hex'));
+      for (const [a, len] of cs.read || []) { try { o.mem.push(Buffer.from(rd(ev(a), len)).toString('hex')); } catch (e) { o.mem.push('ERR ' + e.message.slice(0, 40)); } }
       for (const [a, hex] of cs.restore || []) dd.write(ev(a), Uint8Array.from(Buffer.from(hex, 'hex')));
       out.push(o);
     }
-    dd.m.setRegs(saved); fs.writeFileSync(process.env.NOUT, JSON.stringify({ P: P.toString(16), SP: SP.toString(16), B: B.toString(16), out }));
+    dd.m.setRegs(saved); const rec = JSON.stringify({ step: log.length, P: P.toString(16), SP: SP.toString(16), B: B.toString(16), out }); if (process.env.NAPPEND) fs.appendFileSync(process.env.NOUT, rec + '\n'); else fs.writeFileSync(process.env.NOUT, rec);
   }
   else if (t === 'tonecall') {
     const TONE = parseInt(process.env.TONE, 16) >>> 0, NEXT = 0x60518fa4, res = [];
@@ -166,7 +167,7 @@ for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
   }
   else if (t === 'vals') {                // the camera's own settings of COLOR1..4 through the getter 0x603f0111
     const SG = 0x603f0111, dd = Debugger.attach(lab.sim, { lab }), saved = dd.m.getRegs().slice(), out = [];
-    const ids = (k) => [...Array(12).keys()].map((i) => 928 + 12 * k + i).concat([908 + k, 904 + k, 912 + k, 978 + 3 * k, 977 + 3 * k, 976 + 3 * k]);
+    const ids = (k) => [...Array(12).keys()].map((i) => 928 + 12 * k + i).concat([908 + k, 904 + k, 912 + k, 978 + 3 * k, 977 + 3 * k, 976 + 3 * k, 2197 + k, 2201 + k]);
     for (let k = 0; k < 4; k++) {
       const row = [];
       for (const id of ids(k)) {
@@ -179,6 +180,28 @@ for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
       out.push('S ' + row.slice(0, 12).join(',') + ' | C' + row[12] + ' Sh' + row[13] + ' Sd' + row[14] + ' | ' + row.slice(15).join('/'));
     }
     dd.m.setRegs(saved); console.log('VALS ' + JSON.stringify(out));
+  }
+  else if (t === 'pmod') {                // '*' per COLOR: stock "profile changed?" 0x6129ba07 (our ed_pmod), d0 = picture mode
+    const SG = 0x6129ba07, dd = Debugger.attach(lab.sim, { lab }), saved = dd.m.getRegs().slice(), out = [];
+    for (const pm of [54, 55, 56, 64]) {
+      const sp = (saved[8] - 0x800) & ~3, stub = sp - 0x100, call_at = stub + 6, rel = (SG - call_at) | 0;
+      dd.write(stub, new Uint8Array([0xfc, 0xcc, pm, 0, 0, 0, 0xdd, rel & 255, rel >> 8 & 255, rel >> 16 & 255, rel >>> 24, 0xe0, 0x10, 0xcb, 0xcb]));
+      const r = saved.slice(); r[9] = stub >>> 0; r[8] = sp >>> 0; r[14] = 0; dd.m.setRegs(r);
+      let n = 0; while ((dd.m.getRegs()[9] >>> 0) !== ((call_at + 7) >>> 0) && n < 5000000) { dd.m.step(); n++; }
+      out.push(n >= 5000000 ? 'X' : (dd.m.getRegs()[0] | 0) + ':' + n);
+    }
+    dd.m.setRegs(saved); console.log('PMOD ' + JSON.stringify(out));
+  }
+  else if (t.startsWith('dflt:')) {        // dflt:ADDR -> pf_dflt(id) for COLOR2 ids (d1)
+    const SG = parseInt(t.slice(5), 16), dd = Debugger.attach(lab.sim, { lab }), saved = dd.m.getRegs().slice(), out = [];
+    for (const id of (process.env.DIDS || '940,941,942,946,913,979,980,981,905,909').split(',').map(Number)) {
+      const sp = (saved[8] - 0x800) & ~3, stub = sp - 0x100, call_at = stub + 6, rel = (SG - call_at) | 0;
+      dd.write(stub, new Uint8Array([0xfc, 0xcc, id & 255, id >> 8, 0, 0, 0xdd, rel & 255, rel >> 8 & 255, rel >> 16 & 255, rel >>> 24, 0x90, 0x10, 0xcb, 0xcb]));
+      const r = saved.slice(); r[9] = stub >>> 0; r[8] = sp >>> 0; r[14] = 0; dd.m.setRegs(r);
+      let n = 0; while ((dd.m.getRegs()[9] >>> 0) !== ((call_at + 7) >>> 0) && n < 5000000) { dd.m.step(); n++; }
+      out.push(id + '=' + (n >= 5000000 ? 'X' : dd.m.getRegs()[1] | 0));
+    }
+    dd.m.setRegs(saved); console.log('DFLT ' + JSON.stringify(out));
   }
   else if (t.startsWith('hold:')) { const k = t.slice(5); s.key(k, 'down'); s.camapp.pump(); s.idle_slice(lab.lab_time() + 2000e6); s.key(k, 'up'); s.camapp.pump(); }
   else if (t !== 'wait') { s.key(t, 'down'); s.camapp.pump(); s.idle_slice(lab.lab_time() + 150e6); s.key(t, 'up'); s.camapp.pump(); }
