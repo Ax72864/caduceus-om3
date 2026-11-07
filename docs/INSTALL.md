@@ -25,7 +25,8 @@ To undo: flash `SD card files/restore/E1479999.BIN` the same way.
 - A **fully charged** battery.
 - An SD card (any card the camera takes). Your photos on it are not touched, but back them up anyway.
 - A computer with **Python 3.8 or newer**: Windows, macOS or Linux.
-- The official firmware 1.1 file, `OLY_E_147_1100_0000_0000_3.BIN`. The patcher fetches it from OM's update server
+- The official firmware 1.1 file, `OLY_E_147_1100_0000_0000.BIN` (a copy downloaded earlier may be named
+  `OLY_E_147_1100_0000_0000_3.BIN`: the same file, either name works). The patcher fetches it from OM's update server
   for you; you only need it yourself if that fails (see [Troubleshooting](#troubleshooting)).
 
 ## Get the files and Python

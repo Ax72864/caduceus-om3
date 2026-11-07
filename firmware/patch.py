@@ -16,7 +16,7 @@ Output (in --out, default "SD card files" next to this script):
 With no --stock, it looks for the official file next to this script, in the project folder and in Downloads, and
 otherwise asks OM's update server for it (the download is checked byte for byte like a local file).
 
-usage: patch.py [--stock OLY_E_147_1100_0000_0000_3.BIN | --download] [--release v0.17] [--out DIR]
+usage: patch.py [--stock OLY_E_147_1100_0000_0000.BIN | --download] [--release v0.17] [--out DIR]
 """
 import argparse, hashlib, json, shutil, struct, sys, time
 from pathlib import Path
@@ -24,7 +24,8 @@ from array import array
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-STOCK_NAME = 'OLY_E_147_1100_0000_0000_3.BIN'
+STOCK_NAME = 'OLY_E_147_1100_0000_0000.BIN'           # the name OM's update server gives the 1.1 file
+STOCK_NAMES = (STOCK_NAME, 'OLY_E_147_1100_0000_0000_3.BIN')   # the same file under the name earlier downloads used
 PERM = [1, 3, 0, 2, 6, 4, 7, 5, 11, 10, 9, 8, 13, 14, 12, 15]          # decoded[i] = encoded[PERM[i]] ^ 0xff per 16 B
 INV = [PERM.index(i) for i in range(16)]
 FLIP = bytes(255 - i for i in range(256))
@@ -95,7 +96,7 @@ def fetch_stock(size):
                                                            req.encode(), hdrs), timeout=60) as r:
             info = ET.fromstring(r.read()).find('.//firmware_info')
         name = info.findtext('file_name') if info is not None else None
-        if name != STOCK_NAME:
+        if name not in STOCK_NAMES:
             raise Refuse(f'OM server offered {name!r}, not {STOCK_NAME} (OM may have released newer firmware, which this '
                          'patch does not support). Download the 1.1 file another way and use --stock FILE.')
         url = info.findtext('url')
@@ -115,9 +116,10 @@ def fetch_stock(size):
 
 def find_stock():
     for d in (HERE, ROOT, Path.cwd(), Path.home() / 'Downloads'):
-        p = d / STOCK_NAME
-        if p.is_file():
-            return p
+        for n in STOCK_NAMES:
+            p = d / n
+            if p.is_file():
+                return p
     return None
 
 

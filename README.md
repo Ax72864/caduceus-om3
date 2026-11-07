@@ -51,7 +51,7 @@ On this page click **Code › Download ZIP** and unzip it (or `git clone` the re
 ### 2. Make the update file on your computer
 
 OM's licence doesn't allow anyone to share their firmware, so the update file is made on your own computer from OM's
-official OM-3 1.1 firmware (`OLY_E_147_1100_0000_0000_3.BIN`). The patcher checks it byte for byte, applies the
+official OM-3 1.1 firmware (`OLY_E_147_1100_0000_0000.BIN`, or `…_3.BIN` from an earlier download). The patcher checks it byte for byte, applies the
 Caduceus for OM-3 changes and checks the result.
 
 - **Easiest:** in the unzipped folder, double-click the launcher for your system:
