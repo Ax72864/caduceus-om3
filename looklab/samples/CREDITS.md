@@ -1,5 +1,26 @@
 # Sample images
 
+## Photos by Kyle O'Brien
+
+These eight photos are © Kyle O'Brien and are used here with his permission. They are **not** CC0 and are not
+covered by this project's licence: please don't reuse them outside the Caduceus Control Panel without asking him.
+They were downscaled to 1024 px on the long side and re-encoded as JPEG (no other edits).
+
+| File | Subject |
+|---|---|
+| tractor.jpg | Tractor in a tulip field |
+| tulip.jpg | Red tulip among white tulips |
+| clock.jpg | Poulsbo street clock at blue hour |
+| marina.jpg | Marina fuel dock at dusk |
+| creek.jpg | Mountain forest creek |
+| crater.jpg | Haleakalā crater and clouds |
+| sunset.jpg | Palm trees at sunset |
+| ocean.jpg | Ocean and sky from a cliff |
+
+Shown in OM-3 mode, after the colour-frames photo.
+
+## CC0 photos
+
 Stock example images for the approximate preview. All five are **CC0 1.0 (public domain dedication)** on
 Wikimedia Commons; they were downscaled to 1024 px wide and re-encoded as JPEG (no other edits).
 No attribution is required by CC0; it is given here anyway.

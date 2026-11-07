@@ -13,6 +13,8 @@ No firmware change: these work with v0.21 as released.
   how close the match is. Preview on your photo, add to any empty number, remove like any look. Films the OM-3
   controls can't reproduce (most Polaroid / Impossible instant films, cross-processing) are left out.
 - The grain preview is gentler, closer to how the photo looks on screen.
+- **New sample photos** in OM-3 mode by Kyle O'Brien (used with permission): tulip fields, blue hour, a marina at
+  dusk, forest, a crater under cloud, a palm sunset and ocean, next to the colour-frames photo and the portrait.
 - **Lists:** save all four COLORs' looks as a named list and switch between lists (Save as…, Rename, Delete above
   the looks). The list you're on is the one you edit; the looks you already had are the list "Default". When all 20
   numbers are used, adding a film sim asks first and then lets you pick the look to replace.

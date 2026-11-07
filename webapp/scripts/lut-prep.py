@@ -31,7 +31,7 @@ def apply(lut, rgb):
     return np.clip(out,0,1)
 # source pixels
 px=[]
-for f in sorted(os.listdir(SAMPLES)):
+for f in ['brasserie.jpg','forest.jpg','frames.jpg','harbour.jpg','neon.jpg','portrait.jpg']:   # the fit's fixed photo set
     if not f.endswith('.jpg'): continue
     im=Image.open(os.path.join(SAMPLES,f)).convert('RGB'); im.thumbnail((128,128)); px.append(np.asarray(im).reshape(-1,3))
 nat=np.concatenate(px)

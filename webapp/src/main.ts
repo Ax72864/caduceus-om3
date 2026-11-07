@@ -31,7 +31,13 @@ const SAMPLES = [
   { id: 'neon', label: 'Neon' }, { id: 'harbour', label: 'Harbour' }, { id: 'portrait', label: 'Portrait' },
   { id: 'forest', label: 'Forest' }, { id: 'brasserie', label: 'Night' },
 ];
-const OM3_SAMPLES = [{ id: 'frames', label: 'Colour frames' }, ...SAMPLES];   // the OM-3 Look Lab's test photo first
+// OM-3 mode: the colour-frames test photo, then photos by Kyle O'Brien (used with permission), then Portrait for skin.
+const OM3_SAMPLES = [
+  { id: 'frames', label: 'Colour frames' }, { id: 'tractor', label: 'Tulip field' }, { id: 'tulip', label: 'Red tulip' },
+  { id: 'clock', label: 'Blue hour' }, { id: 'marina', label: 'Marina at dusk' }, { id: 'creek', label: 'Forest creek' },
+  { id: 'crater', label: 'Crater and clouds' }, { id: 'sunset', label: 'Palm sunset' }, { id: 'ocean', label: 'Ocean' },
+  { id: 'portrait', label: 'Portrait' },
+];
 const SWATCH = ['#e3c22f', '#e8932e', '#e0602a', '#d03434', '#c43c92', '#8a52c6', '#3d5bd0', '#3d8bd0', '#2fb2c6',
   '#2fb28c', '#45a845', '#9fc63b'];
 type Tab = 'hue' | 'light' | 'sat';
@@ -273,7 +279,7 @@ function shell() {
     h('footer', { class: 'foot' },
       h('span', {}, om3 ? 'Caduceus for OM-3 is an unofficial, community firmware mod (COLOR looks only, not Monochrome). Files are made in your browser; nothing is uploaded.'
         : 'Caduceus is an unofficial, community firmware mod. Files are made in your browser; nothing is uploaded.'),
-      h('a', { href: './samples/CREDITS.md', target: '_blank', rel: 'noopener' }, 'Image credits (CC0)')),
+      h('a', { href: './samples/CREDITS.md', target: '_blank', rel: 'noopener' }, 'Image credits')),
     h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' }),
     h('input', { type: 'file', id: 'file', accept: '.json,application/json,.bin,.BIN', hidden: true, onchange: (e: Event) => (isOm3() ? om3OnFile(e) : onFile(e)) }),
     h('input', { type: 'file', id: 'photo', accept: 'image/*', hidden: true, onchange: onPhoto }));
