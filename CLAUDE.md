@@ -29,6 +29,12 @@ Branches: `main` = released and safe. `feature/...` = work meant to ship (README
 2. Check `docs/FILM_SIMULATION_ROADMAP.md` and `ROADMAP.md` for status, and the branch list for work in progress.
 3. State what is known and how: "camera-tested" (seen on a real OM-3), "emulator only", or "analysis / guess".
    Never present emulator results or guesses as camera results.
+4. **Firmware work needs the workspace:** run `research/setup.sh` (about 2 minutes the first time, seconds after).
+   It builds the toolchain, decodes the firmware, sets up the emulator and a card image, checks that this checkout
+   rebuilds the latest release, and writes `~/om3-work/env.sh` (`. ~/om3-work/env.sh` for the paths). It needs the
+   official firmware file `OLY_E_147_1100_0000_0000.BIN`, which is never in the repo: if the script stops at step 3,
+   ask the owner to attach it to the chat (or link the session to their computer), then run it again.
+   Control Panel-only work needs just `cd webapp && npm install`.
 
 ## Rules (from the owner; keep them)
 

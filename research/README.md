@@ -26,20 +26,30 @@ that answer a question (see their README banners).
 
 ## Setting up
 
-1. **Firmware.** Download the official OM-3 firmware 1.1 (`OLY_E_147_1100_0000_0000.BIN`, sha256 `8c133084…696d`;
-   `firmware/patch.py --download` fetches it). Decode it with `python3 tools/oe_decode.py`; the main block is
-   component 0 (sha256 `5e8d376e…7d59`).
-2. **Toolchain.** GNU binutils 2.42 for MN10300 (AM33). Built from the Ubuntu source package with:
-   `../binutils-2.42/configure --target=mn10300-elf --disable-nls --disable-werror --disable-gdb --disable-sim
-   --disable-gprof --disable-gold --disable-libctf --disable-gprofng --with-system-zlib --disable-shared && make`.
-   `firmware/build.py --toolchain <build dir>` uses its `gas`, `ld`, `objcopy` and `nm`.
-3. **Build.** `python3 firmware/build.py --stock OLY_E_147_1100_0000_0000.BIN --toolchain <build dir> --out <dir>`
-   makes the firmware package, `main.bin` (the patched main block, for the emulator) and the card files.
-4. **Emulator.** Clone [om-emu](https://github.com/flatpanda/om-emu), then for example
-   `OM_EMU_MODEL=E147 node tools/emulator/session_ed1.mjs <om-emu>/emu <out>/main.bin CARD.omsd OUT.json SAVE.omsd 's1 ok ok down shot:a.png'`.
-   Tokens: `s1` half-press, key names (`ok`, `down`, `info`, `menu` …), `main+N` / `sub+N` dials, `hold:ok`,
-   `shot:FILE.png`, `dump:FILE`; env `WATCH=pc,pc` (+ `WSTACK=1`) traces those addresses. Each step prints the
-   editor state as JSON.
+**One step:** `research/setup.sh` (or `research/setup.sh PATH/TO/OLY_E_147_1100_0000_0000.BIN`). About 2 minutes
+the first time; later runs skip what is done. In `~/om3-work` (or `$OM3_WORK`) it:
+
+1. checks the prerequisites (Python 3 with Pillow / NumPy / SciPy, Node, git, a C compiler, mtools);
+2. builds GNU binutils 2.42 for MN10300 (AM33) from the GNU release (via Ubuntu's archive, checksum-verified);
+3. finds the official OM-3 firmware 1.1 (`OLY_E_147_1100_0000_0000.BIN`, sha256 `8c133084…696d`): the argument,
+   `$OM3_STOCK`, files attached to a Claude chat, `~/Downloads`, or OM's update server. It is never committed;
+4. decodes its main block (sha256 `5e8d376e…7d59`) for `tools/dis.sh` and analysis;
+5. clones [om-emu](https://github.com/flatpanda/om-emu) and unpacks the OM-3 (E147) blocks for it;
+6. builds this checkout, says whether it rebuilds the newest release byte for byte, and makes an emulator SD card
+   image with this build's `OM3MOD` files; then writes `env.sh` with every path.
+
+Then:
+
+```sh
+. ~/om3-work/env.sh
+python3 $OM3_REPO/firmware/build.py --stock $OM3_STOCK --toolchain $OM3_TOOLCHAIN --out $OM3_WORK/out-NAME
+node $OM3_REPO/tools/emulator/session_ed1.mjs $OM3_EMU $OM3_WORK/out-NAME/main.bin $OM3_CARD out.json saved.omsd 's1 ok ok down shot:a.png'
+$OM3_REPO/research/tools/dis.sh 0x611d1041 0x611d104c
+```
+
+Emulator tokens: `s1` half-press, key names (`ok`, `down`, `info`, `menu` …), `main+N` / `sub+N` dials, `hold:ok`,
+`shot:FILE.png`, `dump:FILE`; env `WATCH=pc,pc` (+ `WSTACK=1`) traces those addresses. Each step prints the editor
+state as JSON. A build other than the card's needs its own `GUIDES.BIN` on the card (`tools/emulator/card_add_file.py`).
 
 ## Rules learned the hard way
 
