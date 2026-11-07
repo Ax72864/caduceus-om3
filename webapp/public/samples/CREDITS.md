@@ -1,6 +1,6 @@
 # Sample images
 
-All sample photos are public domain (CC0 1.0 unless noted). They were downscaled and re-encoded as JPEG (no other
+All sample photos are public domain (CC0 1.0 unless noted), except sunset.jpg, which is CC BY 2.0 (credited below). They were downscaled and re-encoded as JPEG (no other
 edits). No attribution is required by CC0; it is given here anyway.
 
 ## OM-3 mode
@@ -15,7 +15,6 @@ https://github.com/cslr/cc0pictures (`unplash.com/jpg/<id>.jpg`); downscaled to 
 | taxi.jpg | Yellow taxi on a colourful street | photo-1459603677915-a62079ffd002 | CC0 1.0 |
 | meadow.jpg | Mountain meadow under a blue sky | photo-1463003416389-296a1ad37ca0 | CC0 1.0 |
 | bluehour.jpg | Canal and warehouses at blue hour | photo-1473615695634-d284ec918736 | CC0 1.0 |
-| sunset.jpg | Sunset over a rail yard: sun on the horizon, lit clouds, blue-to-orange sky | photo-1434871619871-1f315a50efba | CC0 1.0 |
 
 Wikimedia Commons featured pictures, via the public-domain set https://github.com/waitblock/wikimedia-commons-fp-set;
 downscaled to 2048 px on the long side.
@@ -24,6 +23,13 @@ downscaled to 2048 px on the long side.
 |---|---|---|---|
 | ocean.jpg | [Bourtzi castle harbour Karystos Euboea Greece.jpg](https://commons.wikimedia.org/wiki/File:Bourtzi_castle_harbour_Karystos_Euboea_Greece.jpg) | Jebulon | CC0 1.0 |
 | paris.jpg | [Restaurants, Place du Tertre, Paris 30 September 2019.jpg](https://commons.wikimedia.org/wiki/File:Restaurants,_Place_du_Tertre,_Paris_30_September_2019.jpg) | Pierre Blaché | Public domain (per the set) |
+
+### sunset.jpg (CC BY 2.0, credit required)
+
+"[Päijänne and päijätsalo](https://commons.wikimedia.org/wiki/File:P%C3%A4ij%C3%A4nne_and_p%C3%A4ij%C3%A4tsalo.jpg)"
+(sun setting over Lake Päijänne at Sysmä, Finland) by **Joonas Lyytinen**, licensed under
+[Creative Commons Attribution 2.0 Generic](https://creativecommons.org/licenses/by/2.0/). Changes: resized and
+re-encoded as JPEG; no other edits.
 
 ## E-P7 mode
 
