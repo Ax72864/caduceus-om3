@@ -356,26 +356,16 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   population 0x618e6610..).
 
 ## Film sims (Control Panel, after v0.21)
-- 90 looks in `webapp/src/data/om3films.json` from three sources (`src` in the data): 60 fitted to the G'MIC film
-  emulation LUTs (sRGB → sRGB `.cube`), 17 to the Film is Fun film emulation LUTs (their rec709 versions, the plain
-  look of each film; Ultramax has no plain one, so its warm version), and 13 to the PARVEC 35 mm Film Recipes 1
-  Lightroom presets. The repo holds only the fitted settings, never LUT or preset data. A film that's already in the
-  list from another source gets " FiF" or " PV" on its camera name; the picker keeps a film's versions together.
-- Pipeline: `python3 webapp/scripts/lut-prep.py LUT_DIR WORK` (70 k sample pixels: the six sample photos, 4000 random
-  colours, a grey ramp; each LUT's output by trilinear lookup) → `cd webapp && npx vite-node scripts/fit-luts.ts WORK
-  fit.json` (coordinate descent on integer settings: Hue / Light / Sat ±5 per sector, H/S/M ±7, B/W ±5, Contrast ±2,
-  WB A-B / G-M ±5; objective = mean ΔE76 of `renderLook` (OM-3 mode) against the LUT on a quarter of the photo pixels
-  plus all synthetic ones, + 0.015 v² per sector / WB step, 0.01 v² per tone step, 0.05 v² per Contrast step so
-  settings move only when they clearly help) → `python3 webapp/scripts/mkfilms.py fit.json
-  webapp/src/data/om3films.json` (camera names ≤ 15 characters, groups; fits worse than ΔE 8 left out; several fit
-  files can be given, ids `<group>/<lut>`, `fif/<film>/<lut>`, `parvec/<preset>`).
-- Lightroom presets: `python3 webapp/scripts/lr-prep.py XMP_DIR WORK/src.bin WORK_PV` renders each `.xmp` for the same
-  sample pixels with an approximate Lightroom model (HSL with Lightroom's 8 band centres, Point Color, colour grading /
-  split toning, the point tone curves; Clarity / Dehaze / grain / sharpening left out), then fit-luts.ts as above.
-  Adobe's maths isn't public, so these fits match the model, not Lightroom itself: their ΔE says how well the OM-3
-  settings follow the model.
-- Results (G'MIC): mean ΔE 4.8 (identity ≈ 8–9; the earlier hand-made library looks were 7–10 against the same LUTs).
-  Film is Fun: mean ΔE 3.7 over the 17 (gentler LUTs). PARVEC: mean ΔE 3.1 against the model. All 90: 4.35. Left
-  out: 14 instant films (fading and colour casts that depend on brightness), Superia 200 and Elite 100 cross-processed.
-- The fit is only as good as the preview model (`src/preview.ts`) is of the camera; check a film on the camera before
-  trusting it for anything critical.
+- 60 looks in `webapp/src/data/om3films.json`, one per film, made by `python3 webapp/scripts/films.py` from short
+  hand-written recipes (overall and per-family saturation, hue and lightness, WB shift, Contrast and tone). They're
+  our own designs, from public descriptions of each film (maker data sheets, reviews, sample photos) and tuned by eye
+  on the sample photos in the preview model; no LUTs, presets or other people's looks are used. Edit the recipes,
+  not the JSON.
+- No grain, Glow / Clarity or Art Effect in any film sim or in the start-up looks (`defaultBank` clears them from the
+  library looks it uses); those stay the user's choice.
+- Older film sim names (from earlier lists) map to the film that replaced them (`aliases` in the data), so looks added
+  before keep their film for Reset look and the in-list marks.
+- Not included: films the OM-3 controls can't make convincingly (redscale, cross-processing, heavily expired instant
+  film).
+- The looks are only as good as the preview model (`src/preview.ts`) is of the camera; check a film on the camera
+  before trusting it for anything critical.

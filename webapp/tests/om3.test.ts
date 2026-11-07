@@ -10,7 +10,7 @@ import { blankLook, parsePack, type Look } from '../src/pack';
 import { fromLibrary } from '../src/reset';
 import { COLORS, PER, defaultBank, emptyBank, parseBank, profilesBin, readProfiles, slowGrain, toOm3, validateBank, type Bank } from '../src/om3';
 import { parseLook } from '../src/pack';
-import { FILMS, FILM_GROUPS, FILM_SOURCES, filmLook } from '../src/om3films';
+import { FILMS, FILM_GROUPS, filmByName, filmLook } from '../src/om3films';
 import { validateProfile } from '../src/om3';
 
 const LIB = parsePack(libraryJson);
@@ -58,9 +58,12 @@ describe('OM-3 profile bank', () => {
       ['Classic Chrome', 'Classic Neg', 'Reala Ace', 'Eterna', 'Pro Neg Std'],
       ['Velvia 50', 'Kodachrome 64', 'Ektachrome E100', 'Provia 100F', 'Astia 100F'],
       ['Portra 400', 'Portra 160', 'Ektar 100', 'Gold 200', 'Fuji 400H'],
-      ['CineStill800', 'Kodak 2383', 'Vision3 250D', 'FP-100C', 'Bleach Byp.'],
+      ['CineStill 800T', 'Kodak 2383', 'Vision3 250D', 'FP-100C', 'Bleach Byp.'],
     ]);
     expect(b[0][0]!.origin).toBe('film:Classic Chrome');
+    for (const l of b.flat()) {   // no grain, Glow / Clarity or Art Effect in the start-up looks
+      expect(l!.effect).toBeNull(); expect(l!.art_effect).toBe('off'); expect(l!.film_grain).toBeUndefined();
+    }
   });
 
   it('toOm3: mono refused, ranges limited, v0.20 Extras kept (glow without colour, no Blur)', () => {
@@ -129,14 +132,17 @@ describe('OM-3 profile bank', () => {
     const names = new Set<string>();
     for (const f of FILMS) {
       expect(FILM_GROUPS.map(([g]) => g)).toContain(f.group);
-      expect(Object.keys(FILM_SOURCES)).toContain(f.src);
       expect(f.desc.length).toBeGreaterThan(20);
       const l = filmLook(f);
       expect(validateProfile(l)).toEqual([]);
       expect(names.has(f.name.toLowerCase())).toBe(false); names.add(f.name.toLowerCase());
       const back = readProfiles(profilesBin([[l]]))[0][0]!;
       expect(back.hue).toEqual(l.hue); expect(back.tone).toEqual(l.tone); expect(back.advice.contrast).toBe(f.contrast);
+      expect(l.effect).toBeNull(); expect(l.art_effect).toBe('off'); expect(l.film_grain).toBeUndefined();
     }
+    expect(new Set(FILMS.map((f) => f.film)).size).toBe(FILMS.length);   // one look per film
+    expect(filmByName('Portra 400 PV')?.name).toBe('Portra 400');        // older names map to their film
+    expect(filmByName('Polaroid 690')?.name).toBe('Polaroid 600');
   });
 });
 

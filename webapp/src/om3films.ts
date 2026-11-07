@@ -1,13 +1,12 @@
-// The film sims for the OM-3: looks fitted to film emulations (scripts/fit-luts.ts; the data file holds only the
-// fitted settings): the G'MIC film emulation LUTs, the Film is Fun LUTs and the PARVEC 35 mm Film Recipes 1 presets
-// (Lightroom presets, through scripts/lr-prep.py's approximate Lightroom model). A film can come from more than one source. Each becomes an ordinary OM-3 look: Hue / Light / Saturation per sector, Highlights / Shadows /
-// Midtones, Blacks / Whites, Contrast and the WB shift. `de` is the fit's mean ΔE76 against the LUT in the preview
-// model (lower = closer).
+// The film sims for the OM-3: our own looks, designed by hand from public descriptions of each film and tuned by eye
+// (scripts/films.py makes src/data/om3films.json from short recipes). Each becomes an ordinary OM-3 look: Hue / Light
+// / Saturation per sector, Highlights / Shadows / Midtones, Blacks / Whites, Contrast and the WB shift. No grain,
+// Glow / Clarity or Art Effects: those stay the user's choice.
 import filmsJson from './data/om3films.json';
 import { blankLook, type Look } from './pack';
 
 export interface Film {
-  name: string; group: FilmGroup; film: string; src: FilmSource; desc: string; de: number;
+  name: string; group: FilmGroup; film: string; desc: string;
   hue: number[]; light: number[]; sat: number[];
   tone: Look['tone']; contrast: number; wb: { a_b: number; g_m: number } | null;
 }
@@ -15,22 +14,18 @@ export type FilmGroup = 'fuji' | 'slide' | 'neg' | 'instant' | 'print';
 export const FILM_GROUPS: [FilmGroup, string][] = [
   ['fuji', 'Fujifilm simulations'], ['slide', 'Slide film'], ['neg', 'Colour negative'], ['instant', 'Instant film'], ['print', 'Cinema print'],
 ];
-export type FilmSource = 'gmic' | 'fif' | 'parvec';
-/** Where each fit came from, as shown in the film list. */
-export const FILM_SOURCES: Record<FilmSource, string> = { gmic: "G'MIC", fif: 'Film is Fun', parvec: 'PARVEC' };
-export const FILMS = (filmsJson as { films: Film[] }).films;
-
-/** How close the fit is, in words. */
-export const fitLabel = (de: number) => (de < 3 ? 'very close' : de < 4.5 ? 'close' : de < 6 ? 'approximate' : 'loose');
+const DATA = filmsJson as { films: Film[]; aliases: Record<string, string> };
+export const FILMS = DATA.films;
 
 /** A look's film sim, from its origin (`film:<name>`, set when it was added) or, for looks added before origins, its
- *  unchanged name. Renamed or edited looks keep their origin. */
+ *  unchanged name. Renamed or edited looks keep their origin. Names from earlier versions of the list map to the film
+ *  that replaced them. */
 export const FILM_ORIGIN = 'film:';
+export const filmByName = (name: string) => FILMS.find((f) => f.name === (DATA.aliases[name] ?? name));
 export function filmOf(l: Look): Film | undefined {
-  if (l.origin?.startsWith(FILM_ORIGIN)) return FILMS.find((f) => f.name === l.origin!.slice(FILM_ORIGIN.length));
-  return l.origin === undefined ? FILMS.find((f) => f.name === l.name) : undefined;
+  if (l.origin?.startsWith(FILM_ORIGIN)) return filmByName(l.origin.slice(FILM_ORIGIN.length));
+  return l.origin === undefined ? filmByName(l.name) : undefined;
 }
-export const filmByName = (name: string) => FILMS.find((f) => f.name === name);
 
 /** The film as an OM-3 look (no grain or Extras: those stay the user's choice). */
 export function filmLook(f: Film): Look {

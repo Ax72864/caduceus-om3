@@ -155,26 +155,28 @@ export function readProfiles(b: Uint8Array): Bank {
   return bank;
 }
 
-// ---- first visit: 20 looks, one theme per COLOR. `film:` = a film sim (fitted to a film emulation LUT), otherwise a
-// library look (films the LUTs don't cover).
+// ---- first visit: 20 looks, one theme per COLOR. `film:` = a film sim, otherwise a library look (a process rather
+// than a film).
 const DEFAULT_NAMES = [
-  ['film:Classic Chrome', 'Classic Neg', 'Reala Ace', 'Eterna', 'film:Pro Neg Std'],                          // Fujifilm
+  ['film:Classic Chrome', 'film:Classic Neg', 'film:Reala Ace', 'film:Eterna', 'film:Pro Neg Std'],              // Fujifilm
   ['film:Velvia 50', 'film:Kodachrome 64', 'film:Ektachrome E100', 'film:Provia 100F', 'film:Astia 100F'],     // slide
-  ['film:Portra 400', 'film:Portra 160', 'film:Ektar 100', 'Gold 200', 'film:Fuji 400H'],                      // negative
-  ['CineStill800', 'film:Kodak 2383', 'Vision3 250D', 'film:FP-100C', 'Bleach Byp.'],                          // cinema & instant
+  ['film:Portra 400', 'film:Portra 160', 'film:Ektar 100', 'film:Gold 200', 'film:Fuji 400H'],                 // negative
+  ['film:CineStill 800T', 'film:Kodak 2383', 'film:Vision3 250D', 'film:FP-100C', 'Bleach Byp.'],               // cinema & instant
 ];
+/** Start-up looks carry no grain, Glow / Clarity or Art Effect: those stay the user's choice. */
+const plain = (l: Look | null): Look | null => { if (l) { l.effect = null; l.art_effect = 'off'; delete l.film_grain; } return l; };
 export function defaultBank(library: Pack, fromLib: (l: Look) => Look): Bank {
   const colour = library.looks.filter((l) => l.kind === 'colour');
   const used = new Set<string>(), bank = emptyBank();
   DEFAULT_NAMES.forEach((row, k) => row.forEach((n, v) => {
     if (n.startsWith('film:')) { const f = filmByName(n.slice(5)); if (f) bank[k][v] = filmLook(f); return; }
     const src = colour.find((l) => l.name === n && !used.has(l.name));
-    if (src) { used.add(src.name); bank[k][v] = toOm3(fromLib(src)).look; }
+    if (src) { used.add(src.name); bank[k][v] = plain(toOm3(fromLib(src)).look); }
   }));
   for (let k = 0; k < COLORS; k++) for (let v = 0; v < PER; v++) {      // looks renamed in a newer library: fill gaps
     if (bank[k][v]) continue;
     const src = colour.find((l) => !used.has(l.name));
-    if (src) { used.add(src.name); bank[k][v] = toOm3(fromLib(src)).look; }
+    if (src) { used.add(src.name); bank[k][v] = plain(toOm3(fromLib(src)).look); }
   }
   return bank;
 }

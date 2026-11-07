@@ -6,26 +6,20 @@ same number is used here (test 17 = v0.17).
 ## Control Panel updates after v0.21
 No firmware change: these work with v0.21 as released.
 
-- **Film sims:** a new button (and "From the film sims…" on an empty number) with 60 film looks in five groups:
-  Fujifilm simulations (Provia, Velvia, Astia, Classic Chrome, Pro Neg Hi, Pro Neg Std), slide film, colour negative,
-  instant film and cinema print. Each look was fitted to a film emulation LUT: the closest OM-3 settings (Hue, Light
-  and Saturation per colour, Highlights / Shadows / Midtones, Blacks / Whites, Contrast, WB shift), with a label for
-  how close the match is. Preview on your photo, add to any empty number, remove like any look. Films the OM-3
-  controls can't reproduce (most Polaroid / Impossible instant films, cross-processing) are left out.
+- **Film sims:** a new button (and "From the film sims…" on an empty number) with 60 film looks, one for each film,
+  in five groups: Fujifilm simulations, slide film, colour negative, instant film and cinema print. They're our own
+  looks, designed by hand from what each film is known for and tuned on the sample photos, using only the OM-3's
+  colour settings (Hue, Light and Saturation per colour, Highlights / Shadows / Midtones, Blacks / Whites, Contrast,
+  WB shift). No grain, Glow / Clarity or Art Effects: add those yourself if you like. Preview on your photo, add to
+  any empty number, remove like any look.
 - The grain preview is gentler, closer to how the photo looks on screen.
-- **30 more film sims (90 in all):** CineStill 50D / 400D / 800T, Kodak Gold 200, ColorPlus 200, Ultramax 400,
-  Kodacolor 100, a Kodak disposable, Fuji C200, Fujifilm 200, Harman Phoenix 200, Candido 800, LomoChrome '92,
-  Lomography Color 400, One Hundred 100, and second and third versions of Portra 160 / 400 / 800, Ektar 100,
-  Provia 100F, Superia 400 and Ektachrome. They're fitted to the Film is Fun film emulation LUTs ("FiF") and to
-  PARVEC's 35 mm Film Recipes, which he built from his film colour measurements ("PV"). The film list shows where
-  each look came from and keeps a film's versions together.
 - **New sample photos** in OM-3 mode by Kyle O'Brien (used with permission): tulip fields, blue hour, a marina at
   dusk, forest, a crater under cloud, a palm sunset and ocean, next to the colour-frames photo and the portrait.
 - **Lists:** save all four COLORs' looks as a named list and switch between lists (Save as…, Rename, Delete above
   the looks). The list you're on is the one you edit; the looks you already had are the list "Default". When all 20
   numbers are used, adding a film sim asks first and then lets you pick the look to replace.
-- **New standard set** (first visit, and New › Reset looks to standard): one theme per COLOR, measured film sims
-  wherever the LUTs cover the film. COLOR 1 Fujifilm (Classic Chrome, Classic Neg, Reala Ace, Eterna, Pro Neg Std),
+- **New standard set** (first visit, and New › Reset looks to standard): one theme per COLOR, all film sims except
+  Bleach Bypass, with no grain, Glow or Art Effects. COLOR 1 Fujifilm (Classic Chrome, Classic Neg, Reala Ace, Eterna, Pro Neg Std),
   COLOR 2 slide (Velvia 50, Kodachrome 64, Ektachrome E100, Provia 100F, Astia 100F), COLOR 3 negative (Portra 400,
   Portra 160, Ektar 100, Gold 200, Fuji 400H), COLOR 4 cinema and instant (CineStill 800T, Kodak 2383, Vision3 250D,
   FP-100C, Bleach Bypass). Existing lists are not changed.

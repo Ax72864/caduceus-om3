@@ -36,8 +36,8 @@ camera's Looks page.
   camera saves those photos about 3 s more slowly and can't shoot fast bursts with them.
 - **Lists**: named sets of all 20 looks (localStorage `caduceus.om3.lists.v1`; the looks from before are "Default"),
   with Save as…, Rename and Delete; the current list is the one being edited.
-- **Film sims**: 60 looks fitted to film emulation LUTs (`src/data/om3films.json`, settings only; made with
-  `scripts/lut-prep.py` → `scripts/fit-luts.ts` → `scripts/mkfilms.py`), to preview and add to any empty number.
+- **Film sims**: 60 of our own film looks (`src/data/om3films.json`, made by `scripts/films.py` from hand-written
+  recipes), to preview and add to any empty number.
 - The preview turns hue the OM-3 way (+ toward the clockwise neighbour) and includes Contrast, Sharpness, Shading and
   the Grain (`research/grain/model.py`, as the full photo looks at the preview's size). Drag the line on the photo to compare before and
   after.
