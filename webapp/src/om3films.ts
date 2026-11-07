@@ -6,7 +6,7 @@ import filmsJson from './data/om3films.json';
 import { blankLook, type Look } from './pack';
 
 export interface Film {
-  name: string; group: FilmGroup; film: string; de: number;
+  name: string; group: FilmGroup; film: string; desc: string; de: number;
   hue: number[]; light: number[]; sat: number[];
   tone: Look['tone']; contrast: number; wb: { a_b: number; g_m: number } | null;
 }
@@ -26,6 +26,6 @@ export function filmLook(f: Film): Look {
   l.tone = { ...f.tone };
   l.advice = { contrast: f.contrast, sharpness: 0 };
   l.wb = f.wb ? { ...f.wb } : null;
-  l.notes = `${f.film}. Fitted to a film emulation LUT (${fitLabel(f.de)} match).`;
+  l.notes = f.desc;
   return l;
 }

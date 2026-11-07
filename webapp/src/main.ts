@@ -1205,16 +1205,16 @@ function om3LibraryPicker() {
 function om3FilmPicker(into?: { k: number; v: number }) {
   let group: FilmGroup | 'all' = 'all', query = '', sel: Film | null = null;
   const pv = h('canvas', { class: 'film-pv', 'aria-label': 'Preview of the selected film sim' });
-  const pvNote = h('p', { class: 'help' });
+  const pvNote = h('div', { class: 'film-desc' });
   const drawPv = () => {
-    if (!srcData) { pvNote.textContent = 'Pick a photo in the preview first.'; return; }
+    if (!srcData) { pvNote.replaceChildren(h('p', { class: 'help' }, 'Pick a photo in the preview first.')); return; }
     const sc = Math.min(1, 520 / srcData.width), W = Math.round(srcData.width * sc), H = Math.round(srcData.height * sc);
     const c = document.createElement('canvas'); c.width = srcData.width; c.height = srcData.height;
     const cx = c.getContext('2d')!;
     if (sel) { const out = cx.createImageData(srcData.width, srcData.height); renderLook(srcData, out, filmLook(sel), { advice: true, camera: CAM }); cx.putImageData(out, 0, 0); }
     else cx.putImageData(srcData, 0, 0);
     pv.width = W; pv.height = H; pv.getContext('2d')!.drawImage(c, 0, 0, W, H);
-    pvNote.textContent = sel ? `${sel.film} · ${fitLabel(sel.de)} match to its film emulation (average colour difference ${sel.de.toFixed(1)} ΔE). Shown on your current photo.` : 'Your current photo, no film. Click a film to preview it.';
+    pvNote.replaceChildren(...(sel ? [h('b', {}, sel.film), h('p', {}, sel.desc)] : [h('p', { class: 'help' }, 'Click a film to see it on your photo.')]));
   };
   const target = (): { k: number; v: number } | null => {
     if (into && !O.bank[into.k][into.v]) return into;
@@ -1256,8 +1256,7 @@ function om3FilmPicker(into?: { k: number; v: number }) {
       } }, t)));
   const search = h('input', { type: 'search', placeholder: 'Search films…', 'aria-label': 'Search films', oninput: (e: Event) => { query = (e.target as HTMLInputElement).value; drawRows(); } });
   const body = h('div', { class: 'film-dlg' },
-    h('div', { class: 'film-side' }, pv, pvNote,
-      h('p', { class: 'help' }, `${FILMS.length} film looks, each fitted to a film emulation LUT and made of ordinary OM-3 settings (Hue, Light, Saturation, the tone and the WB shift), so you can change them like any look. Add puts the film in an empty number; remove it with × in the list. Grain and the Extras stay yours to choose.`)),
+    h('div', { class: 'film-side' }, pv, pvNote),
     h('div', { class: 'film-main' }, h('div', { class: 'film-filters' }, search, chips), list));
   drawRows(); drawPv();
   modal(into ? `Film sim for ${at(into.k, into.v)}` : 'Film sims', body);

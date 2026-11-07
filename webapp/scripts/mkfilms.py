@@ -81,13 +81,15 @@ NAMES = {
 }
 SKIP = {'colorslide/kodak_ektachrome_100_vs_generic', 'colorslide/kodak_kodachrome_64_generic'}
 fit = {d['id']: d for d in json.load(open(sys.argv[1]))}
+import os
+DESC = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'film-descriptions.json')))
 out = []
 for idn, (name, grp, full) in NAMES.items():
     assert len(name) <= 15 and name.isascii(), name
     d = fit[idn]
     if d['after'] > 8:                 # the OM-3 controls can't make it (heavy fading, colour casts by brightness)
         print('left out', name, d['after']); continue
-    out.append({'name': name, 'group': grp, 'film': full, 'de': d['after'], 'hue': d['hue'], 'light': d['light'], 'sat': d['sat'],
+    out.append({'name': name, 'group': grp, 'film': full, 'desc': DESC[name], 'de': d['after'], 'hue': d['hue'], 'light': d['light'], 'sat': d['sat'],
                 'tone': d['tone'], 'contrast': d['contrast'], 'wb': d['wb']})
 missing = set(fit) - set(NAMES) - SKIP
 assert not missing, missing
