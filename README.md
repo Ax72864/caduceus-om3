@@ -8,7 +8,7 @@ of five complete looks for each of COLOR 1–4** that you build on the camera, o
 Control Panel**, and switch between with one dial on the **Film** page.
 
 **Latest: v0.20** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
-**[Using it](#using-it)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
+**[Using it](#using-it)** · **[Roadmap](ROADMAP.md)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]
 > **Early development, use at your own risk.** This is an unofficial, experimental firmware modification. Bugs will
