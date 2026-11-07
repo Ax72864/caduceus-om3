@@ -304,3 +304,13 @@ canvas.film-pv { width: 100%; height: auto; border-radius: 8px; background: #000
 .film-pick small { color: var(--muted); }
 .film-add { white-space: nowrap; }
 @media (max-width: 760px) { .film-dlg { grid-template-columns: 1fr; } .film-side { position: static; } .film-list { max-height: none; } }
+dialog.modal:has(.replace-grid) { width: min(780px, calc(100vw - 32px)); }
+.replace-box .modal-actions { padding: 8px 0 0; }
+.replace-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 10px 0; }
+@media (max-width: 640px) { .replace-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.replace-col { display: grid; gap: 4px; align-content: start; }
+.replace-col h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 2px; }
+.replace-slot { display: grid; grid-template-columns: 18px 1fr; gap: 6px; text-align: left; padding: 6px 8px; }
+.replace-slot .num { color: var(--muted); font-variant-numeric: tabular-nums; }
+.replace-slot .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.replace-slot:hover, .replace-slot:focus-visible { border-color: var(--accent); }

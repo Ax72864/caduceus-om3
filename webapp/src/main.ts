@@ -1224,15 +1224,34 @@ function om3FilmPicker(into?: { k: number; v: number }) {
     for (let k = 0; k < COLORS; k++) { const v = O.bank[k].findIndex((l) => !l); if (v >= 0) return { k, v }; }
     return null;
   };
-  const add = (f: Film) => {
-    let t = target();
-    if (!t) {
-      if (!confirm(`All 20 numbers are in use. Replace ${at(O.k, O.v)} ("${O.bank[O.k][O.v]?.name}") with ${f.name}?`)) return;
-      t = { k: O.k, v: O.v };
-    }
+  const place = (f: Film, t: { k: number; v: number }) => {
+    const old = O.bank[t.k][t.v];
     O.bank[t.k][t.v] = filmLook(f); O.k = t.k; O.v = t.v; into = undefined;
     save(); renderAll(); drawRows();
-    toast(`${f.name} added as ${at(t.k, t.v)}`);
+    toast(old ? `${f.name} replaced "${old.name}" as ${at(t.k, t.v)}` : `${f.name} added as ${at(t.k, t.v)}`);
+  };
+  // All 20 numbers in use: ask first, then let the user pick which COLOR and number to replace.
+  const askReplace = (f: Film) => {
+    const box = h('div', { class: 'replace-box' });
+    const dlg = modal(`Replace a look with ${f.name}?`, box);
+    const choose = () => {
+      box.replaceChildren(
+        h('p', { class: 'help' }, `Pick the look ${f.name} replaces. The look you pick is overwritten (Undo brings it back).`),
+        h('div', { class: 'replace-grid' }, ...O.bank.map((row, k) => h('div', { class: 'replace-col' },
+          h('h3', {}, `COLOR ${k + 1}`),
+          ...row.map((l, v) => h('button', { class: 'replace-slot', title: `Replace COLOR ${k + 1}, look ${v + 1}: ${l?.name ?? 'Empty'}`, onclick: () => { dlg.close(); place(f, { k, v }); } },
+            h('span', { class: 'num' }, String(v + 1)), h('span', { class: 'nm' }, l?.name ?? 'Empty')))))),
+        h('div', { class: 'modal-actions' }, h('button', { onclick: () => dlg.close() }, 'Cancel')));
+    };
+    box.replaceChildren(
+      h('p', {}, `All 20 look numbers (5 for each of COLOR 1–4) are in use. Do you want to replace one of your looks with ${f.name}?`),
+      h('div', { class: 'modal-actions' },
+        h('button', { onclick: () => dlg.close() }, 'No'),
+        h('button', { class: 'primary', onclick: choose }, 'Yes, choose a look…')));
+  };
+  const add = (f: Film) => {
+    const t = target();
+    if (t) place(f, t); else askReplace(f);
   };
   const inBank = () => new Set(O.bank.flat().filter(Boolean).map((l) => l!.name.toLowerCase()));
   const list = h('div', { class: 'film-list', role: 'list' });
