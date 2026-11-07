@@ -200,7 +200,9 @@ xb_wt:
  mov d1,mdr
  retf [],0
 
-/* property reads (s_nr): the site's `call getter,[d2,d3],12` frame, d0 key, d1, a0 as for the getter. Key 0x9719
+/* property reads (s_nr): the site's `call getter,[d2,d3],12` frame, d0 key, d1, a0 as for the getter. v0.22: key
+ * 0x8119 (Sharpness, the capture read): the COLOR slot's Sharp (slot +54, -5..+2) after the real read, -5 sent as -7
+ * (fully off for any picture-key class). Key 0x9719
  * (stills Noise Filter; capture and Exif sites): NR 1..3 -> the real read, then d0 = 0 Standard / -1 Low / -2 Off.
  * Key 0x8c21 (Shading Comp., sid 61; capture and lens-request sites, v0.21): VigFix 1 -> the real read, then d0 = 0
  * (Off, a stock value). Otherwise the getter as stock. */
@@ -214,6 +216,19 @@ xb_nr:
  add 8,sp
  cmp 0,a1
  beq 9f
+ cmp 33049,d1                     /* v0.22 key 0x8119 Sharpness (capture): slot +54 Sharp -5..+2 */
+ bne 4f
+ movbu (54,a1),d0
+ extb d0
+ cmp 2,d0
+ ble 3f
+ mov 2,d0
+3:
+ cmp -5,d0
+ bgt 6f
+ mov -7,d0                        /* -5 = Off: below every class base, so the gain index is 0 */
+ bra 6f
+4:
  cmp 38681,d1
  bne 5f
  movbu (51,a1),d0                 /* NR 1..3 */
@@ -621,7 +636,7 @@ xb_cell:
  add -12,d0
  bra 1b
 2:
- cmp 9,d0
+ cmp 10,d0
  bcc 9f
  mov XT_TAB,a1
  add d0,a1
@@ -1135,7 +1150,7 @@ xb_reloc:                         /* a2 = P (x_load) */
 /* ---- dial labels: OM3MOD/LABELS.BIN v2 = 'OM3V' | u32 total | u32 CRC-32 of bytes 12.. | u32 n (24) | n bitmaps
  * 30 rows x 9 bytes (70 px, MSB first, 1 = letter fill). One heap copy (XL_FILE B) and one 2 KB stream buffer; the
  * label is drawn and encoded (OSD type 11, 70 x 30) only when it changes. */
- .set XL_N, 24
+ .set XL_N, 26
  .set XL_BM, 270
  .set XL_FILE, 16+XL_N*XL_BM
  .set XL_OUT, 2048
@@ -1420,7 +1435,7 @@ xb_vl:
  movbu (AXIS,a2),d3
  cmp 3,d3
  bne 7f
- cmp 9,d2
+ cmp 10,d2
  bcc 7f
  movbu (EDK,a2),d3
  asl 6,d3
@@ -1441,7 +1456,12 @@ xb_vl:
  cmp 1,d0
  beq 4f
  bcs 3f
- bra 6f                           /* 2: fixed */
+ cmp 3,d0
+ bne 6f                           /* 2: fixed */
+ cmp -5,d3                        /* 3: first, or first + 1 at -5 (v0.22 Sharp Off) */
+ bne 6f
+ inc d1
+ bra 6f
 3:
  cmp 0,d3                         /* 0: first + value, 0..max */
  blt 6f
@@ -1497,7 +1517,7 @@ xb_lc:
  .long -1                         /* the label in it */
 xb_ll:
  .long 0                          /* its length */
-xb_vt:                            /* slice 1..9: slot byte, mode, first label, max */
+xb_vt:                            /* slice 1..10: slot byte, mode, first label, max */
  .byte 51,0,0,3                   /* 1 NR: Camera, Std, Low, Off */
  .byte 49,1,4,0                   /* 2 Glow (-), Clarity (+), Glow/Clar. (0) */
  .byte 26,1,7,0                   /* 3 Blue (-), Amber (+), A-B (0) */
@@ -1507,6 +1527,7 @@ xb_vt:                            /* slice 1..9: slot byte, mode, first label, m
  .byte 48,2,20,0                  /* 7 Whites */
  .byte 52,0,21,1                  /* 8 VigFix: Camera, Off (v0.21) */
  .byte 53,2,23,0                  /* 9 Grain (the readout shows the level) */
+ .byte 54,3,24,0                  /* 10 Sharp (v0.22): Sharp (the readout shows -4..+2), Sharp Off at -5 */
 xb_lpath:
  .asciz "C:\\OM3MOD\\LABELS.BIN"
  .balign 2

@@ -105,11 +105,11 @@
  add LIDX-32,a2
  bra 74f
 76:
- cmp 2,d3                         /* v0.20 Extras page: slice 0..7 (1..8 clockwise from 12 o'clock) -> slot byte xt_tab */
+ cmp 2,d3                         /* v0.20 Extras page: slice 0..9 (1..10 clockwise from 12 o'clock) -> slot byte xt_tab */
  bne 71f
  mov d2,d3
  and 63,d3
- cmp 9,d3
+ cmp 10,d3
  bcc \none
  and 0xc0,d2
  add a2,d2                        /* P + 64*slot */
@@ -429,7 +429,7 @@ s_x:                              /* Extras page: d2 = 64*slot + slice, d1 = val
                                    * xt_tab {slot byte, min, max}; A-B / G-M also turn the slot's WB override on */
  mov d2,d3
  and 63,d3
- cmp 9,d3
+ cmp 10,d3
  bcc s_bad
  mov xt_tab,a3
  add d3,a3
@@ -1478,7 +1478,7 @@ e_rst:
  mov a2,a0
  add d0,a0                        /* slot entry: hue[12] +0, light[12] +12 */
  clr d0
- mov 54,d1                        /* slot +0..53 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix) */
+ mov 55,d1                        /* slot +0..54 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix/Grain/Sharp) */
 2:
  movbu d0,(a0)
  inc a0
@@ -1967,6 +1967,8 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
  movbu d0,(50,a3)
  movbu (29,a0),d0                 /* slot +53 Grain -> record +51 */
  movbu d0,(51,a3)
+ movbu (30,a0),d0                 /* v0.22: slot +54 Sharp -> record +52 */
+ movbu d0,(52,a3)
  clr d3
 2:
  mov pf_ids,a0
@@ -2183,7 +2185,7 @@ pf_put:
  inc a0
  add -1,d1
  bne 2b
- mov pf_bt,a1                     /* rec +36..40, +47..50 -> slot +25..27, +47, +48, +49..52 (0 for neutral) */
+ mov pf_bt,a1                     /* rec +36..40, +47..52 -> slot +25..27, +47, +48, +49..54 (0 for neutral) */
 8:
  movbu (a1),d2
  movbu (1,a1),d3
@@ -2194,7 +2196,7 @@ pf_put:
 7:
  movbu d0,(d3,a0)
  add 2,a1
- cmp pf_bt+20,a1
+ cmp pf_bt+22,a1
  bne 8b
  movbu (7,a0),d0
  or 2,d0
@@ -2232,7 +2234,7 @@ pf_put:
  bne 5b
  ret [d2,d3,a2,a3],40
 pf_bt:                            /* record offset, slot offset - 24 */
- .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28, 51,29
+ .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28, 51,29, 52,30
 
 .section .ext1,"ax"
 /* lk_hold (v0.21) <- ed_event on the Looks page (axis 4), in its frame (a2 = P, a3 = parent, d2 = 4, (12,sp) cursor
@@ -2399,7 +2401,7 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
 pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
                                      (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
- .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, -5, 0,0,0,0,0,0,0,0,0,0,0,0
+ .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, -5, -5, 0,0,0,0,0,0,0,0,0,0,0
 pf_pnew:
  .asciz "C:\\OM3MOD\\LOOKS.NEW"
 pf_pbin:
@@ -2752,6 +2754,7 @@ xt_tab:                           /* Extras slices 1..9: slot byte, min, max (0 
  .byte 48,-5,5                    /* 7 Whites */
  .byte 52,0,1                     /* 8 VigFix: 0 Camera (Shading Comp. as set), 1 Off (v0.21) */
  .byte 53,0,3                     /* 9 Grain: 0 off, 1 Low, 2 Medium, 3 High (v0.21) */
+ .byte 54,-5,2                    /* 10 Sharp: the camera's sharpness, -5 (Off) .. +2; 0 = the camera's normal (v0.22) */
 
 /* ------------------------------------------------------------------ v0.20 test 5: code block from the card
  * The Extras effects run from a code block at the end of GUIDES.BIN (built with this firmware; tag XTAG), loaded
@@ -2792,6 +2795,9 @@ xt_tab:                           /* Extras slices 1..9: slot byte, min, max (0 
 
 .section .hook_nr2,"ax"
  call s_nr,[d2,d3],12             /* stock 0x603e7891 (capture +37674) */
+
+.section .hook_sh,"ax"
+ call s_nr,[d2,d3],12             /* v0.22 stock 0x603e767f: call getter (0x8119 Sharpness, capture +37648) */
 
 .section .ext2,"ax"
 /* xp: `call xp,[],0` -> a1 = the code block (relocated) or 0. Uses d0; returns through MDR. */

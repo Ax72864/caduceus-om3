@@ -40,6 +40,7 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_wt': (0x605048c1, bytes.fromhex('f824302c5802')),
          '.hook_nr1': (0x603c8038, bytes.fromhex('dd48b3c9ffc00c')),
          '.hook_nr2': (0x603e7891, bytes.fromhex('ddefbac7ffc00c')),
+         '.hook_sh': (0x603e767f, bytes.fromhex('dd01bdc7ffc00c')),   # v0.22 Sharp: capture Sharpness read (key 0x8119)
          '.hook_cl': (0x604955f1, bytes.fromhex('dd48790900a00c'))}   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
@@ -83,13 +84,13 @@ MAGIC = b'OM3B'
 RANGES = {'hue': (-7, 7), 'light': (-7, 7), 'grain': (0, 6), 'wb_flags': (0, 1), 'wb_ab': (-7, 7),
           'wb_gm': (-7, 7), 'effect_id': (0, 3), 'effect_strength': (0, 5), 'vignette': (-5, 5),
           'flags': (0, 3), 'colour': (0, 1), 'sat': (-5, 5), 'bloom_tint': (0, 4), 'art_effect': (0, 5),
-          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1), 'fgrain': (0, 3)}
+          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1), 'fgrain': (0, 3), 'sharp': (-5, 2)}
 
 
 def range_table():
     lay = json.loads(LAYOUT.read_text())
     fields = dict(lay['fields']); fields.update(lay['color_fields'])
-    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1], 'fgrain': [53, 1]})   # OM-3 Extras (v0.20; VigFix v0.21)
+    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1], 'fgrain': [53, 1], 'sharp': [54, 1]})   # OM-3 Extras (v0.20; VigFix v0.21; Sharp v0.22)
     lo, hi = [0] * 64, [0] * 64
     for name, (off, n, *_) in fields.items():
         a, b = RANGES[name]
