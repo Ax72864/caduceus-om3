@@ -1,5 +1,15 @@
 # Caduceus for OM-3
 
+> [!CAUTION]
+> **Experiment, parked: software grain on colour photos (grain test 4). Not a release. Do not use.**
+>
+> Adds film grain to COLOR photos in software, written into the finished image after the camera's blend step
+> (Extras sector 9, levels 1–5). It worked on the camera at about 3.2 s per photo. Kept for reference: v0.21 instead
+> uses the camera's own Monochrome grain engine (no delay), and this software route survives there only for looks
+> with Glow / Clarity or an Art Effect. This branch still contains test-only timing code.
+> Details: [`research/NOTES.md`](https://github.com/androidfanman/caduceus-om3/blob/main/research/NOTES.md) ("Grain test 4").
+> Current release: [`main`](https://github.com/androidfanman/caduceus-om3/tree/main).
+
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
 the camera's Color Profile wheel into a full colour editor (per-colour Hue and Light, and an **Extras** page with
