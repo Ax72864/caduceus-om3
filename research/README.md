@@ -31,8 +31,9 @@ the first time; later runs skip what is done. In `~/om3-work` (or `$OM3_WORK`) i
 
 1. checks the prerequisites (Python 3 with Pillow / NumPy / SciPy, Node, git, a C compiler, mtools);
 2. builds GNU binutils 2.42 for MN10300 (AM33) from the GNU release (via Ubuntu's archive, checksum-verified);
-3. finds the official OM-3 firmware 1.1 (`OLY_E_147_1100_0000_0000.BIN`, sha256 `8c133084…696d`): the argument,
-   `$OM3_STOCK`, files attached to a Claude chat, `~/Downloads`, or OM's update server. It is never committed;
+3. takes the official OM-3 firmware 1.1 (`OLY_E_147_1100_0000_0000.BIN`, sha256 `8c133084…696d`) from the path you
+   give (the file or its folder) or `$OM3_STOCK`; at a terminal it asks for the path, or offers to download it from
+   OM's update server. Everyone uses their own copy: it is never committed;
 4. decodes its main block (sha256 `5e8d376e…7d59`) for `tools/dis.sh` and analysis;
 5. clones [om-emu](https://github.com/flatpanda/om-emu) and unpacks the OM-3 (E147) blocks for it;
 6. builds this checkout, says whether it rebuilds the newest release byte for byte, and makes an emulator SD card

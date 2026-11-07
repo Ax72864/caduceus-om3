@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-step workspace for Caduceus for OM-3 firmware work (a fresh Claude session or a new computer).
 #
-#   research/setup.sh [PATH/TO/OLY_E_147_1100_0000_0000.BIN]
+#   research/setup.sh [PATH/TO/OLY_E_147_1100_0000_0000.BIN, or the folder that holds it]
 #
 # Makes, in $OM3_WORK (default ~/om3-work, outside the repo), and skips whatever is already there:
 #   toolchain/   GNU binutils 2.42 for MN10300 (as, ld, objcopy, objdump, nm), built from the GNU release
@@ -11,10 +11,10 @@
 #   out-check/   a build of this checkout, compared with the newest release
 #   env.sh       paths for later commands:  . ~/om3-work/env.sh
 #
-# The firmware is OM's: it is never committed. The script looks for it in this order: the argument, $OM3_STOCK,
-# $OM3_WORK/stock, /mnt/user-data/uploads (files attached to a Claude chat), ~/Downloads, the repo; then asks OM's
-# update server (often blocked in cloud sessions). If none works it stops at that step and says what to do; run it
-# again after the file is there. Everything else is fetched from Ubuntu's archive and GitHub.
+# The firmware is OM's: it is never committed, and each person supplies their own copy. The script uses the copy
+# already in $OM3_WORK/stock, else the argument (the file or its folder), else $OM3_STOCK; at a terminal it asks for
+# the path (or offers to download it from OM's update server). Without any of these it stops at that step and says
+# what to do; run it again with the path. Everything else is fetched from Ubuntu's archive and GitHub.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/.." && pwd)
@@ -57,28 +57,49 @@ fi
 say "3/6 official OM-3 firmware 1.1"
 mkdir -p "$WORK/stock"
 STOCK=$WORK/stock/OLY_E_147_1100_0000_0000.BIN
-if [ ! -f "$STOCK" ] || [ "$(sha "$STOCK")" != "$STOCK_SHA" ]; then
-  found=
-  for f in "${1:-}" "${OM3_STOCK:-}" /mnt/user-data/uploads/OLY_E_147_1100_0000_0000*.BIN /mnt/user-data/uploads/*/OLY_E_147_1100_0000_0000*.BIN \
-           "$HOME"/Downloads/OLY_E_147_1100_0000_0000*.BIN "$REPO"/OLY_E_147_1100_0000_0000*.BIN; do
-    [ -n "$f" ] && [ -f "$f" ] && [ "$(sha "$f")" = "$STOCK_SHA" ] && { cp "$f" "$STOCK"; found=$f; break; }
-  done
-  if [ -z "$found" ]; then
-    echo "not found locally; asking OM's update server ..."
-    (cd "$WORK/stock" && python3 "$REPO/firmware/patch.py" --download --out "$WORK/stock/patched-tmp" >/dev/null 2>&1) || true
-    for f in "$WORK/stock/patched-tmp/restore/E1479999.BIN" "$REPO"/firmware/OLY_E_147_1100_0000_0000*.BIN; do
-      [ -f "$f" ] && [ "$(sha "$f")" = "$STOCK_SHA" ] && { [ "$f" = "$STOCK" ] || cp "$f" "$STOCK"; found=$f; break; }
+if [ -f "$STOCK" ] && [ "$(sha "$STOCK")" != "$STOCK_SHA" ]; then rm -f "$STOCK"; fi     # a wrong or damaged copy
+# take PATH: PATH is the firmware file, or a folder holding it; copied in when its checksum is right
+take() {
+  local p=$1 f
+  [ -n "$p" ] || return 1
+  p=${p/#\~/$HOME}
+  if [ -d "$p" ]; then
+    for f in "$p"/OLY_E_147_1100_0000_0000*.BIN "$p"/*/OLY_E_147_1100_0000_0000*.BIN; do
+      [ -f "$f" ] && [ "$(sha "$f")" = "$STOCK_SHA" ] && { cp "$f" "$STOCK"; return 0; }
     done
-    rm -rf "$WORK/stock/patched-tmp"
+    echo "  no OLY_E_147_1100_0000_0000.BIN with the right checksum in $p"; return 1
   fi
-  if [ -z "$found" ] && [ ! -f "$STOCK" ]; then
-    cat <<EOF
-The official firmware file is needed and could not be found or downloaded here.
-  Owner: attach OLY_E_147_1100_0000_0000.BIN (about 240 MB, from OM's website or OM Workspace) to the chat, or link
-  the session to the computer that has it; then run this script again. Steps 1-2 are done and will be skipped.
-EOF
-    exit 2
-  fi
+  [ -f "$p" ] || { echo "  not found: $p"; return 1; }
+  [ "$(sha "$p")" = "$STOCK_SHA" ] || { echo "  $p is not the OM-3 firmware 1.1 (checksum differs)"; return 1; }
+  cp "$p" "$STOCK"
+}
+if [ ! -f "$STOCK" ]; then
+  take "${1:-}" || take "${OM3_STOCK:-}" || true
+fi
+if [ ! -f "$STOCK" ] && [ -t 0 ]; then                  # someone at a terminal: ask
+  echo "Where is the official OM-3 firmware 1.1 (OLY_E_147_1100_0000_0000.BIN, about 240 MB)?"
+  echo "Type its path or the folder it is in, or press Enter to try downloading it from OM."
+  while [ ! -f "$STOCK" ]; do
+    read -r -p "> " ans || break
+    if [ -z "$ans" ]; then
+      echo "asking OM's update server ..."
+      (python3 "$REPO/firmware/patch.py" --download --out "$WORK/stock/patched-tmp" >/dev/null 2>&1) || true
+      take "$WORK/stock/patched-tmp/restore/E1479999.BIN" >/dev/null || echo "  the download did not work here: type a path instead"
+      rm -rf "$WORK/stock/patched-tmp"
+    else
+      take "$ans" || true
+    fi
+  done
+fi
+if [ ! -f "$STOCK" ]; then
+  cat <<'MSG'
+This step needs the official OM-3 firmware 1.1 file, OLY_E_147_1100_0000_0000.BIN (about 240 MB, from OM's website
+or OM Workspace). It is never stored in the repository. Run the script again with the file or the folder it is in:
+  research/setup.sh PATH/TO/OLY_E_147_1100_0000_0000.BIN      (or the folder that holds it)
+(For a Claude session: ask the person where their copy is; they can attach it to the chat or link the session to the
+computer that has it. Steps 1-2 are done and will be skipped.)
+MSG
+  exit 2
 fi
 echo "ok: $STOCK"
 
