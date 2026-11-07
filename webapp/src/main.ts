@@ -35,10 +35,8 @@ const SAMPLES = [
 // blues, night light and sunset.
 const OM3_SAMPLES = [
   { id: 'frames', label: 'Colour frames' }, { id: 'portrait', label: 'Portrait' }, { id: 'headwrap', label: 'Portrait, headwrap' },
-  { id: 'smile', label: 'Portrait outdoors' },
-  { id: 'taxi', label: 'Yellow taxi' }, { id: 'meadow', label: 'Mountain meadow' },
-  { id: 'sea', label: 'Turquoise sea' }, { id: 'bluehour', label: 'Blue hour' }, { id: 'market', label: 'Night market' },
-  { id: 'sunset', label: 'Sunset' },
+  { id: 'taxi', label: 'Yellow taxi' }, { id: 'meadow', label: 'Mountain meadow' }, { id: 'ocean', label: 'Ocean' },
+  { id: 'bluehour', label: 'Blue hour' }, { id: 'paris', label: 'Night street' }, { id: 'sunset', label: 'Sunset' },
 ];
 const SWATCH = ['#e3c22f', '#e8932e', '#e0602a', '#d03434', '#c43c92', '#8a52c6', '#3d5bd0', '#3d8bd0', '#2fb2c6',
   '#2fb28c', '#45a845', '#9fc63b'];
