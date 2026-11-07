@@ -13,8 +13,8 @@
 > `firmware/build.py`). Emulator: 25 passes, no errors. Not yet run on a camera.
 >
 > The result decides where new features (such as the picture-mode sliders on
-> [`feature/v0.23-alpha-profile-sliders`](../../tree/feature/v0.23-alpha-profile-sliders)) can put their code.
-> For the current release, use [`main`](../../tree/main).
+> [`feature/v0.23-alpha-profile-sliders`](https://github.com/androidfanman/caduceus-om3/tree/feature/v0.23-alpha-profile-sliders)) can put their code.
+> For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main).
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It turns
