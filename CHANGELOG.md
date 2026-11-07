@@ -48,7 +48,7 @@ Film grain on colour photos, looks you save on purpose, and a `*` that means "no
 
 **Control Panel**
 - **Grain** (Off / Low / Med / High) and the **lens vignette correction** in the Extras, both written to `LOOKS.BIN`.
-- The preview shows the grain, at the camera's strength.
+- The preview shows the grain as the photo looks at that size.
 - **Drag the line on the photo** to compare before and after (it replaces the "Hold: original" button).
 - A note under Grain when a look combines it with Glow / Clarity or an Art Effect: slower saving and no fast burst.
 - Looks files keep Grain and the lens correction setting (the lens correction setting was lost on reopening before).

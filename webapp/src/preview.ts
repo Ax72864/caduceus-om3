@@ -246,14 +246,17 @@ function om3Settings(img: Float32Array, w: number, h: number, sharp: number, sha
 /** OM-3 v0.21 Grain (Low / Med / High), from research/grain/model.py: the camera's MONO grain shape. Per row, one
  *  xorshift32 per 4 pixels gives a triangular 0..30 value per pixel, smoothed down the columns and paired across, and
  *  each pixel's luma moves by ((64 h - 945) * G[Y] * S) / 2^18 (G: none in deep shadows, full from the midtones up).
- *  S is the camera's strength for the level, scaled for the preview size so the texture still reads on screen. */
+ *  S is the camera's strength for the level, reduced as the photo is when it is shown this small. */
 const GRAIN_S = [0, 28, 68, 112];
 const GRAIN_G = Array.from({ length: 256 }, (_, y) => {
   const ss = (t: number) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
   return Math.round(255 * (0.08 + 0.92 * ss((y - 25) / 75)) * (1 - 0.25 * ss((y - 200) / 55)));
 });
 function om3Grain(img: Float32Array, w: number, h: number, level: number) {
-  const S = GRAIN_S[Math.min(3, level)];   // the camera's strength: the texture as a 100% view of the photo shows it
+  // As the full-size photo looks at this size: the camera's grain is per pixel of a 5184-px photo, and shrinking it
+  // averages it out. Matched on fine detail to the model's full-size grain shrunk to 1024 px, and to a camera photo
+  // with Grain High shrunk the same way (both about 0.58 of the full strength at 1024 px: 3 / the shrink factor).
+  const S = GRAIN_S[Math.min(3, level)] * Math.min(1, (3 * w) / FULL_WIDTH);
   const V = new Int32Array(w).fill(15), H = new Int32Array(w);
   let r = 0x12345678;
   for (let y = 0; y < h; y++) {

@@ -35,7 +35,7 @@ camera's Looks page.
   monochrome. Names are up to 15 characters. A look with Grain and Glow / Clarity or an Art Effect gets a note: the
   camera saves those photos about 3 s more slowly and can't shoot fast bursts with them.
 - The preview turns hue the OM-3 way (+ toward the clockwise neighbour) and includes Contrast, Sharpness, Shading and
-  the Grain (`research/grain/model.py`, at the camera's strength). Drag the line on the photo to compare before and
+  the Grain (`research/grain/model.py`, as the full photo looks at the preview's size). Drag the line on the photo to compare before and
   after.
 - Open: the card's `OM3MOD/LOOKS.BIN` (to keep looks made on the camera), a looks file (`*.om3.json`), or a
   Caduceus pack / `LOOKS.BIN` / pack link: its first 20 colour looks become the 20 looks (limited to the OM-3 ranges).
