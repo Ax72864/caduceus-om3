@@ -36,7 +36,7 @@ const SAMPLES = [
 const OM3_SAMPLES = [
   { id: 'frames', label: 'Colour frames' }, { id: 'portrait', label: 'Portrait' }, { id: 'headwrap', label: 'Portrait, headwrap' },
   { id: 'smile', label: 'Portrait outdoors' },
-  { id: 'taxi', label: 'Yellow taxi' }, { id: 'oranges', label: 'Oranges' }, { id: 'meadow', label: 'Mountain meadow' },
+  { id: 'taxi', label: 'Yellow taxi' }, { id: 'meadow', label: 'Mountain meadow' },
   { id: 'sea', label: 'Turquoise sea' }, { id: 'bluehour', label: 'Blue hour' }, { id: 'market', label: 'Night market' },
   { id: 'sunset', label: 'Sunset' },
 ];
