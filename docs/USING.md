@@ -22,7 +22,7 @@ Blue-cyan, Cyan, Green-cyan, Green, Yellow-green.
 - **Saturation**: the camera's own.
 - **Hue** (−5..+5): + turns a slice toward its clockwise neighbour (Yellow → Orange, Blue → Blue-cyan).
 - **Light** (−5..+5): darker / brighter for that slice. Steps grow as they go out.
-- **Extras**: nine effect sectors (below).
+- **Extras**: ten effect sectors (below).
 
 ## The Extras page
 
@@ -40,6 +40,7 @@ stock wheel says "Vivid") names the sector and what its value does.
 | 7 | 6 | **Whites**: the bright end | + brighter, − softer (−5..+5) | Whites |
 | 8 | 7 | **VigFix**: the lens's vignette (shading) correction for each photo with this look | 0 Camera (your Shading Comp. setting), 1 Off (natural corners) | Vig Cam / Vig Off |
 | 9 | 8 | **Grain**: film grain from the camera's own grain engine | 0 Off, 1 Low, 2 Med, 3 High | Grain (with the number) |
+| 10 | 9 | **Sharp**: the camera's sharpening for each photo with this look (v0.22) | −5..+2 in the camera's own numbers: 0 its normal, +1 / +2 crisper, −1..−4 softer (−3 and −4 go past the stock menu), −5 Off (no sharpening) | Sharp / Sharp Off |
 
 - NR, Glow, Art Effects and VigFix are set per look, at every shot, without changing your menu settings. NR shows in
   the photo's recorded settings; its effect is mostly visible at high ISO.
@@ -51,6 +52,9 @@ stock wheel says "Vivid") names the sector and what its value does.
   delay. **With Glow / Clarity or an Art Effect** the camera can't add it that way, so it is added afterwards by the
   camera's processor in software (brightness only, the same look): each photo then takes **about 3 seconds longer to
   save**, and fast sequential (burst) shooting isn't possible with that look.
+- **Sharp** replaces the camera's own Sharpness setting for COLOR 1–4: from v0.22 that row is no longer on the COLOR
+  screen (Contrast is the last row), and the stock value is ignored for COLOR photos. Sharp 0 is exactly the camera's
+  normal sharpening.
 - The rear dial stops at each sector's first and last value.
 - The labels come from `OM3MOD/LABELS.BIN`, and the effects from code at the end of `OM3MOD/GUIDES.BIN`. Copy both
   from the same release as the firmware: with an older `GUIDES.BIN` the Extras values still save but the effects
@@ -73,7 +77,7 @@ change anything and it's back. A selected look normally shows a `*` too, because
 ## Looks and their names
 
 Each of COLOR 1–4 has five look numbers. A look holds everything: the wheels (Saturation, Hue, Light), the Extras
-page (NR, Glow/Clarity, WB shift, Art Effect, Blacks, Whites, VigFix, Grain) plus Contrast, Sharpness, Shading and
+page (NR, Glow/Clarity, WB shift, Art Effect, Blacks, Whites, VigFix, Grain, Sharp) plus Contrast, Shading and
 Shadows/Midtones/Highlights. On the **Film** page, the 12 o'clock spot picks one, and the label under the wheel shows
 its name:
 
@@ -98,7 +102,7 @@ Without `NAMES.BIN` (or with a damaged one) the label just says "Film".
    moves it to another number.
 3. Give it a name (up to 15 letters, numbers and symbols). Long names are squeezed to fit, and if one COLOR's five
    names don't fit the camera's space, its lettering is made a little smaller.
-4. Set the **Extras** the same way as on the camera: NR, lens vignette correction, Grain, Glow ↔ Clarity, Art Effect
+4. Set the **Extras** the same way as on the camera: NR, lens vignette correction, Grain, Sharp, Glow ↔ Clarity, Art Effect
    and the WB shift (Blacks and Whites are in the Tone panel). The preview shows the grain; drag the line on the photo
    to compare before and after. A look with Grain and Glow / Clarity or an Art Effect gets a note that it saves
    more slowly on the camera.
@@ -114,7 +118,7 @@ names follow only if `NAMES.BIN` is copied too.
 
 1. Open the COLOR's wheel, press **INFO** to the Film page and turn to a number that says **Empty**. Everything
    goes neutral.
-2. Build the look on the wheel pages and in the normal Picture Mode settings (Contrast, Sharpness, Shading,
+2. Build the look on the wheel pages and in the normal Picture Mode settings (Contrast, Shading,
    Shadows/Midtones/Highlights).
 3. Press **INFO** back to the Film page and **hold OK**: that saves it into that number. The next half-press writes
    `LOOKS.BIN` to the card. Turning to another number without holding OK first drops the changes.

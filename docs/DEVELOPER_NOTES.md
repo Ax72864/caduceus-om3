@@ -355,6 +355,23 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - AWB fine-tune keys 7401/7433 (A-B) and 7417/7449 (G-M) added to `wb_get` (capture branch 0x60457d22 / 0x60457ae4,
   population 0x618e6610..).
 
+## v0.22 Sharp (branch v022-sharp)
+- Extras slice 10 Sharp: slot +54, record +52, −5..+2 (`xt_tab` .byte 54,-5,2; `pf_bt` 52→30 of the slot block;
+  `pf_lo[52]` −5; label mode 3 in `xb_vt`: −5 → "Sharp Off", labels 24/25, LABELS.BIN n 26).
+- Capture: the stills Sharpness read 0x603e767f (`call getter`, d0 0x8119, sid 7; result halfword → capture +37648)
+  goes through `s_nr` (`.hook_sh`) → block +32 `xb_nr`: for a COLOR 1–4 still the slot's Sharp, −5 sent as −7. The
+  value feeds the gain helper ~0x60513d10 (index = class base 4..7 + sharp, clamped 0..10: −7 → index 0 for every
+  class) and the other copies of +37648 (0x6054fbfa, 0x60553d33, 0x60560da1, 0x604569c7); the readers seen clamp or
+  map it. Camera test 1: Off clearly softer than 0, +2 crisper, fine with quick grain.
+- Stock row: the Picture Mode column builder 0x611bd814 switches on the picture mode through the table at 0x61533520
+  (key mode + 1); COLOR 1–4 (54/55/56/64) went to 0x611bd8fd (`mov 0x61530758,a3` then the shared `mov 6,d0`).
+  Their four table words now point at `pm_color` (ext8: same list, 5 rows), and the list's last two words are
+  swapped at build time (`DATA` in build.py) to [111, 5397, 5398, 5399, 8 Contrast, 7 Sharpness], so item 7
+  (Sharpness) drops off. The hold-OK reset list (0x61536324 table, used by 0x611c3bd5) is unchanged, so a reset still
+  zeroes the hidden stock Sharpness. `ed_pmod` skips ids 904..907 for the `*`.
+- Control Panel: `advice.sharpness` is the Sharp value (−5..+2); `profilesBin(bank, fw)` with fw 22 / 21 / 20
+  (localStorage `caduceus.om3.fw`); `readProfiles` takes +52, else +42.
+
 ## Film sims (Control Panel, after v0.21)
 - 60 looks in `webapp/src/data/om3films.json`, one per film, made by `python3 webapp/scripts/films.py` from short
   hand-written recipes (overall and per-family saturation, hue and lightness, WB shift, Contrast and tone). They're

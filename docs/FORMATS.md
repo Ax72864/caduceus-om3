@@ -22,12 +22,15 @@ older files, which therefore load unchanged).
 
 Record (64 bytes): `+0` hue[12], `+12` light[12], `+24` saturation[12] (all −5..5, slices clockwise from Yellow),
 `+36` WB shift on (0/1), `+37` A/B, `+38` G/M, `+39` Blacks, `+40` Whites (−5..5), `+41` Contrast (−2..2),
-`+42` Sharpness (−2..2), `+43` Shading (−5..5), `+44` Shadows, `+45` Midtones, `+46` Highlights (−7..7),
+`+42` Sharpness (−2..2; 0 from v0.22, see `+52`), `+43` Shading (−5..5), `+44` Shadows, `+45` Midtones, `+46` Highlights (−7..7),
 v0.20: `+47` Glow (−5..−1) / Clarity (1..5), `+48` Art Effect (0 Off, 1 Star Light, 2 Pin Hole, 3 none, 4 White Edge,
 5 Frame: the Caduceus ids), `+49` NR (0 Camera, 1 Standard, 2 Low, 3 Off), v0.21: `+50` VigFix (0 Camera: the lens
-shading correction as set, 1 Off), `+51` Grain (0 Off, 1 Low, 2 Med, 3 High), `+52..63` zero. Bytes `+47..+49` and
-`+51` are checked as −5..5 by the camera, `+50` as −1..1; the editor keeps them in the ranges above. v0.20 and older
-require `+50` and `+51` to be 0 (they ignore the whole file otherwise), so the Control Panel's v0.20 export leaves them out.
+shading correction as set, 1 Off), `+51` Grain (0 Off, 1 Low, 2 Med, 3 High), v0.22: `+52` Sharp (−5..+2, the
+camera's own sharpness numbers, 0 its normal, −5 Off; the Control Panel's v0.22 export leaves `+42` at 0), `+53..63`
+zero. Bytes `+47..+49` and `+51` are checked as −5..5 by the camera, `+50` as −1..1, `+52` as −5..2; the editor keeps
+them in the ranges above. v0.20 and older require `+50` and `+51` to be 0, and v0.21 and older `+52` (they ignore the
+whole file otherwise), so the Control Panel's older exports leave them out; its v0.21 export puts the look's sharpness
+in `+42` instead (−2..+2, softer values as −2).
 
 The camera checks size, magic, CRC, version, selection range and every record byte's range; a file that fails is
 ignored and left alone (the Looks page is then hidden). With no file, the camera starts a neutral bank and
@@ -43,7 +46,7 @@ u32 payload 512 | u32 CRC-32 over bytes 0..15 + 20..543 | 4 bytes decoded-firmwa
 8 slots × 64 bytes (slot k = COLOR k+1): hue[12] `+0`, light[12] `+12`, `+25` WB flags (bit 0 on), `+26` A/B,
 `+27` G/M, `+31` flags (bit 1 = Hue/Light on), `+47` Blacks, `+48` Whites, v0.20 Extras: `+49` Glow/Clarity,
 `+50` Art Effect, `+51` NR (as the LOOKS.BIN record's `+47..+49`), v0.21: `+52` VigFix, `+53` Grain (the record's
-`+50`, `+51`).
+`+50`, `+51`), v0.22: `+54` Sharp (the record's `+52`).
 
 ## GUIDES.BIN v4
 

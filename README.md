@@ -31,12 +31,12 @@ Control Panel**, and switch between with one dial on the **Film** page.
 | Feature | What you get | Status |
 |---|---|---|
 | **Hue and Light pages** | The Color Profile wheel gains pages, and **INFO** cycles them from any slice. Hue turns a colour toward its neighbour; Light brightens or darkens it, for each of the 12 colours. | Camera-tested |
-| **Extras page** | One wheel for the look's extras, as in Caduceus: **1 NR** (the camera's noise reduction per look: Camera / Std / Low / Off), **2 Glow ← → Clarity** (−5..+5), **3 WB amber/blue**, **4 WB green/magenta**, **5 Art Effect** (Star Light, Pin Hole, White Edge, Frame), **6 Blacks**, **7 Whites**, **8 VigFix** (lens vignette correction off per look), **9 Grain** (Off / Low / Med / High). The label next to the value names the sector and what it does ("Glow", "Clarity", "A", "B", "NR Low", "Frame", "Grain" …). WB A/B and G/M work in every WB mode, Auto WB included. | Camera-tested (v0.21) |
+| **Extras page** | One wheel for the look's extras, as in Caduceus: **1 NR** (the camera's noise reduction per look: Camera / Std / Low / Off), **2 Glow ← → Clarity** (−5..+5), **3 WB amber/blue**, **4 WB green/magenta**, **5 Art Effect** (Star Light, Pin Hole, White Edge, Frame), **6 Blacks**, **7 Whites**, **8 VigFix** (lens vignette correction off per look), **9 Grain** (Off / Low / Med / High), **10 Sharp** (the camera's sharpening per look, −5 Off..+2; replaces the Sharpness row, v0.22). The label next to the value names the sector and what it does ("Glow", "Clarity", "A", "B", "NR Low", "Frame", "Grain" …). WB A/B and G/M work in every WB mode, Auto WB included. | Camera-tested (v0.21) |
 | **Film grain on COLOR** | The camera's own Monochrome grain, at its Low / Med / High strengths, on colour photos. With every other setting it costs no time; with Glow / Clarity or an Art Effect it is added a slower way (about 3 s more per photo, no fast burst). | Camera-tested (v0.21) |
 | **Glow, clarity and Art Effects on COLOR** | The camera's own Soft Focus passes, five glow strengths and five clarity strengths (Caduceus's levels), and its Art Effects, on COLOR photos without an Art Filter. Glow and Art Effects also show in **live view**. | Camera-tested (v0.20) |
 | **White frame** | The Frame Art Effect draws a clean **white** border of the stock size instead of the rough black film edge (everywhere, Art Filters included). | Camera-tested (v0.20) |
 | **Noise reduction per look** | NR is applied at every photo from the selected look and follows a profile switch, without changing your Noise Filter menu setting. | New in v0.20 (pixel comparison still to do) |
-| **Look bank** | A **Film** page with 0–5: **1–5** load a whole look (every wheel and Extras value plus Contrast, Sharpness, Shading and Shadows/Midtones/Highlights), **0** is the COLOR's factory settings. Five per COLOR, 20 in all. Hold **OK** on the Film page to save your changes into the selected look; turn to another look without saving and they're dropped. A `*` means something differs from the factory settings. | Camera-tested (v0.21) |
+| **Look bank** | A **Film** page with 0–5: **1–5** load a whole look (every wheel and Extras value plus Contrast, Shading and Shadows/Midtones/Highlights), **0** is the COLOR's factory settings. Five per COLOR, 20 in all. Hold **OK** on the Film page to save your changes into the selected look; turn to another look without saving and they're dropped. A `*` means something differs from the factory settings. | Camera-tested (v0.21) |
 | **Look names** | On the Film page, the label under the wheel shows the selected look's name ("Velvia", "Empty" …) in the camera's own label style, from `NAMES.BIN` made by the Control Panel. | Camera-tested |
 | **Saved on the card** | Your edits and the bank save to `OM3MOD` on the SD card at the next half-press, written to a new file and read back before the old one is replaced. | Camera-tested |
 | **Control Panel** | The Caduceus Control Panel, shared with Caduceus for the E-P7: a switch at the top picks **OM SYSTEM OM-3** or **Olympus PEN E-P7**. On the OM-3 it makes and previews looks on test photos (or your own), then saves them for the card. It starts with 20 Caduceus film looks and takes Caduceus look codes and packs. | Works in any browser |
@@ -129,7 +129,7 @@ in your browser. It is the same tool as Caduceus for the E-P7: the switch at the
   standard set you start with uses them: Fujifilm on COLOR 1, slide on COLOR 2, negative on COLOR 3, cinema and
   instant on COLOR 4.
 - Edit Hue, Lightness and Saturation for each of the 12 colours, the tone (Highlights, Shadows, Midtones, Blacks,
-  Whites), the camera's Contrast, Sharpness and Shading, the **Extras** (NR, lens vignette correction, Grain,
+  Whites), the camera's Contrast and Shading, the **Extras** (NR, lens vignette correction, Grain, Sharp,
   Glow ↔ Clarity, Art Effect) and the WB shift, with a live preview on test photos or your own (drag the line on the
   photo to compare before and after; grain, glow and clarity are previewed, Art Effects, NR and the lens correction
   are not). A look that combines Grain with Glow / Clarity or an Art Effect gets a note that it saves more slowly.
@@ -204,7 +204,7 @@ sequential (burst) shooting isn't possible with that look. Making this fast is o
 
 **Looks:**
 1. On the Film page, turn the 12 o'clock spot to a number. The look loads at once: every wheel and Extras value, plus
-   Contrast, Sharpness, Shading and Shadows/Midtones/Highlights on the camera's normal screens.
+   Contrast, Shading and Shadows/Midtones/Highlights on the camera's normal screens.
 2. Change anything you like, on the wheel pages or in the normal Picture Mode settings. You shoot with the changes
    straight away.
 3. **To keep them in the look:** go back to the Film page (INFO) and **hold OK**. The bank saves to the card at the
