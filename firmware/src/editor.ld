@@ -23,6 +23,7 @@ SECTIONS {
   .ext9         0x619a9670 : { *(.ext9) }
 }
 color_builder = 0x60518381;
+pm_back       = 0x611bd90f;
 color_resume  = 0x6051861a;
 getter        = 0x60063380;
 trig          = 0x60415343;

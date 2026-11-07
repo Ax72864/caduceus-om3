@@ -49,7 +49,12 @@ ROOT = HERE.parent                               # card files: card/mkguides.py 
 WORDS = {0x60e57480: (0x60b86de7, 'ed_get'), 0x60e57490: (0x60b86e09, 'pf_cnt'), 0x60e57494: (0x60b87031, 'pf_vbi'), 0x60e57510: (0x60b86e44, 'ed_default'),
          **{a + 4: (0x6122393a, 'ed_init') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
          **{a + 44: (0x6122661b, 'ed_info') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
-         **{a + 36: (0x61225d52, 'ed_event') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)}}
+         **{a + 36: (0x61225d52, 'ed_event') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
+         # v0.22: the Picture Mode column for COLOR1-4 (modes 54/55/56/64 + 1 in the builder's switch table) -> pm_color
+         **{a: (0x611bd8fd, 'pm_color') for a in (0x615335e4, 0x615335ec, 0x61533614, 0x61533574)}}
+# v0.22: data bytes, stock -> new. The COLOR column list 0x61530758 [111, 5397, 5398, 5399, 7 Sharpness, 8 Contrast]:
+# its last two swapped, so pm_color's 5 rows end on Contrast
+DATA = {0x61530768: (bytes.fromhex('0700000008000000'), bytes.fromhex('0800000007000000'))}
 EXT2 = (0x607187a8, 0x60718800)            # section-2 tail (FF from 0x607187a4, end 0x60718800; v0.20)
 EXT7 = (0x6164afd0, 0x6164b000)            # section-7 tail (FF from 0x6164afcc, end 0x6164b000; v0.20)
 EXT9 = (0x619a9670, 0x619a97f0)            # section-9 tail (FF from 0x619a966c, end 0x619a9800)
@@ -169,6 +174,9 @@ def build(defaults, testfile, out):
         m[o(addr):o(addr) + len(stock)] = blobs[s]
     for a, (stock, name) in WORDS.items():
         struct.pack_into('<I', m, o(a), sy[name])
+    for a, (stock, new) in DATA.items():
+        assert bytes(m[o(a):o(a) + len(stock)]) == stock, hex(a)
+        m[o(a):o(a) + len(stock)] = new
     WB_SITES = [0x60457982, 0x6045799c, 0x60457b91, 0x60457ba9, 0x60457c4d, 0x60457c65, 0x60457ce5, 0x60457cff,
                 0x604631b2, 0x604631c5, 0x604876c3, 0x604876d8]
     for a in WB_SITES:

@@ -1545,6 +1545,10 @@ ed_pmod:
  inc4 a2
 2:
  mov (a2),d0
+ mov d0,d1
+ add -904,d1                      /* v0.22: the stock Sharpness (904..907) is off the COLOR 1-4 screen and unused there */
+ cmp 4,d1                         /* (the Sharp slice decides), so it never makes the '*' */
+ bcs 4f
  call ed_isd0,[d2,d3,a2],24
  cmp d3,d0
  bne 4f
@@ -1995,6 +1999,14 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
  * a file that fails the check -> no bank (the file is left alone). P+LIDX+k = the saved selection. Stores: P+LPTR,
  * P+LIDX, the heap buffer, own frame. */
 .section .ext8,"ax"
+/* pm_color (v0.22) <- the Picture Mode column builder 0x611bd814, its switch on the picture mode (table 0x61533520: the
+ * COLOR 1-4 entries, stock 0x611bd8fd `mov 0x61530758,a3` and the shared `mov 6,d0`). The same list with 5 rows: its
+ * last two entries are swapped to Contrast, Sharpness at build time, so the stock Sharpness row (item 7) is left out. */
+pm_color:
+ mov 0x61530758,a3
+ mov 5,d0
+ jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
+
 pf_load:
  mov PF_LEN,d0
  call malloc,[],4
