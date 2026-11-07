@@ -13,8 +13,9 @@ No firmware change: these work with v0.21 as released.
   WB shift). No grain, Glow / Clarity or Art Effects: add those yourself if you like. Preview on your photo, add to
   any empty number, remove like any look.
 - The grain preview is gentler, closer to how the photo looks on screen.
-- **New sample photos** in OM-3 mode by Kyle O'Brien (used with permission): tulip fields, blue hour, a marina at
-  dusk, forest, a crater under cloud, a palm sunset and ocean, next to the colour-frames photo and the portrait.
+- **New sample photos** in OM-3 mode: public-domain (CC0) photos at higher resolution, picked for skin, strong
+  colour, greens, blues, night light and sunset, next to the colour-frames photo. The preview is sharp on Retina
+  screens and the right size in Safari.
 - **Lists:** save all four COLORs' looks as a named list and switch between lists (Save as…, Rename, Delete above
   the looks). The list you're on is the one you edit; the looks you already had are the list "Default". When all 20
   numbers are used, adding a film sim asks first and then lets you pick the look to replace.

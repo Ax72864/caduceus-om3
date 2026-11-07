@@ -285,8 +285,7 @@ Full page-by-page guide: [docs/USING.md](docs/USING.md). Card file formats: [doc
 
 Built on **[Caduceus](https://github.com/cakelesscoder/caduceus-ep7)** by cakelesscoder (Apache-2.0), firmware patches
 for the Olympus PEN E-P7: the on-camera editor design, the bundle-table layout, the Caduceus Control Panel (shared by both cameras), its tone
-model and the starter film looks. Sample photos by Kyle O'Brien (used with permission) and
-public-domain (CC0) photos; see [webapp/public/samples/CREDITS.md](webapp/public/samples/CREDITS.md). Camera emulation by
+model and the starter film looks. Sample photos are public domain (CC0); see [webapp/public/samples/CREDITS.md](webapp/public/samples/CREDITS.md). Camera emulation by
 [om-emu](https://github.com/flatpanda/om-emu).
 
 "OM SYSTEM", "Olympus" and "OM-3" are trademarks of their owners, as are the film names used for the starter looks.

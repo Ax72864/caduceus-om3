@@ -31,12 +31,13 @@ const SAMPLES = [
   { id: 'neon', label: 'Neon' }, { id: 'harbour', label: 'Harbour' }, { id: 'portrait', label: 'Portrait' },
   { id: 'forest', label: 'Forest' }, { id: 'brasserie', label: 'Night' },
 ];
-// OM-3 mode: the colour-frames test photo, then photos by Kyle O'Brien (used with permission), then Portrait for skin.
+// OM-3 mode: the colour-frames test photo first, then public-domain (CC0) photos picked for skin, strong colour, greens,
+// blues, night light and sunset.
 const OM3_SAMPLES = [
-  { id: 'frames', label: 'Colour frames' }, { id: 'tractor', label: 'Tulip field' }, { id: 'tulip', label: 'Red tulip' },
-  { id: 'clock', label: 'Blue hour' }, { id: 'marina', label: 'Marina at dusk' }, { id: 'creek', label: 'Forest creek' },
-  { id: 'crater', label: 'Crater and clouds' }, { id: 'sunset', label: 'Palm sunset' }, { id: 'ocean', label: 'Ocean' },
-  { id: 'portrait', label: 'Portrait' },
+  { id: 'frames', label: 'Colour frames' }, { id: 'portrait', label: 'Portrait' }, { id: 'smile', label: 'Portrait outdoors' },
+  { id: 'taxi', label: 'Yellow taxi' }, { id: 'oranges', label: 'Oranges' }, { id: 'meadow', label: 'Mountain meadow' },
+  { id: 'sea', label: 'Turquoise sea' }, { id: 'bluehour', label: 'Blue hour' }, { id: 'market', label: 'Night market' },
+  { id: 'sunset', label: 'Sunset' },
 ];
 const SWATCH = ['#e3c22f', '#e8932e', '#e0602a', '#d03434', '#c43c92', '#8a52c6', '#3d5bd0', '#3d8bd0', '#2fb2c6',
   '#2fb28c', '#45a845', '#9fc63b'];
