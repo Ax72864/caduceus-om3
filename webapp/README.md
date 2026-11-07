@@ -34,6 +34,8 @@ camera's Looks page.
   NR, Glow / Clarity, Art Effect (v0.20), lens vignette correction and Grain Off / Low / Med / High (v0.21). No
   monochrome. Names are up to 15 characters. A look with Grain and Glow / Clarity or an Art Effect gets a note: the
   camera saves those photos about 3 s more slowly and can't shoot fast bursts with them.
+- **Lists**: named sets of all 20 looks (localStorage `caduceus.om3.lists.v1`; the looks from before are "Default"),
+  with Save as…, Rename and Delete; the current list is the one being edited.
 - **Film sims**: 60 looks fitted to film emulation LUTs (`src/data/om3films.json`, settings only; made with
   `scripts/lut-prep.py` → `scripts/fit-luts.ts` → `scripts/mkfilms.py`), to preview and add to any empty number.
 - The preview turns hue the OM-3 way (+ toward the clockwise neighbour) and includes Contrast, Sharpness, Shading and

@@ -115,6 +115,10 @@ in your browser. It is the same tool as Caduceus for the E-P7: the switch at the
 
 - The left side shows COLOR 1–4 with looks 1–5, numbered as on the camera's Film page ("Empty" for an unused
   number). Drag a look to another number, or use ↑ ↓; × empties a number.
+- **Lists** keep whole sets of looks (all four COLORs) under a name, like playlists: **Save as…** stores the
+  current set as a new list, the **List** menu switches between them, and **Rename** / **Delete** manage them.
+  Changes save into the list you're on; the looks you had before are the list **Default**. Lists stay in this
+  browser; export a list to put it on the card.
 - **Film sims** opens 60 film looks: the Fujifilm simulations (Provia, Velvia, Astia, Classic Chrome, Pro Neg Hi /
   Std), slide films (Velvia 50, Provia, Kodachrome, Ektachrome…), colour negatives (Portra, Ektar, Superia, Fuji
   400H…), FP-100C and Polaroid 690, and cinema print stocks. Each was fitted to a film emulation LUT and is made of

@@ -61,6 +61,34 @@ const samples = () => (isOm3() ? OM3_SAMPLES : SAMPLES);
 if (isOm3()) S.image = 'frames';
 /** The OM-3 look bank: 4 COLORs x 5 numbers, positional like the camera's Film page. */
 const O = { name: 'OM-3 looks', bank: startBank(), k: 0, v: 0 };
+// Saved lists ("playlists"): named copies of all four COLORs' looks, kept in this browser. The list you're on is the
+// one you edit: every change is saved into it. The looks you had before lists existed are the list "Default".
+const STORE_LISTS = 'caduceus.om3.lists.v1', LIST_NAME_MAX = 40;
+interface Lists { current: string; lists: Record<string, Bank> }
+const LISTS: Lists = (() => {
+  try {
+    const raw = localStorage.getItem(STORE_LISTS);
+    if (raw) {
+      const j = JSON.parse(raw) as { current?: unknown; lists?: Record<string, unknown> };
+      const lists: Record<string, Bank> = {};
+      for (const [n, b] of Object.entries(j.lists ?? {})) {
+        try { lists[n] = parseBank({ schema: BANK_SCHEMA, name: n, bank: b }, parseLook).bank; } catch { /* skip a damaged list */ }
+      }
+      const names = Object.keys(lists);
+      if (names.length) {
+        const current = typeof j.current === 'string' && lists[j.current] ? j.current : names[0];
+        return { current, lists };
+      }
+    }
+  } catch { /* storage blocked or damaged: start from the looks you have */ }
+  return { current: 'Default', lists: { Default: O.bank } };
+})();
+O.bank = LISTS.lists[LISTS.current]; O.name = LISTS.current;
+function storeLists() {
+  LISTS.lists[LISTS.current] = O.bank;
+  try { localStorage.setItem(STORE_LISTS, JSON.stringify({ current: LISTS.current, lists: LISTS.lists })); } catch { /* private mode */ }
+}
+const listNames = () => Object.keys(LISTS.lists).sort((a, b) => (a === 'Default' ? -1 : b === 'Default' ? 1 : a.localeCompare(b)));
 function startBank(): Bank {
   try {
     const s = localStorage.getItem(STORE_OM3);
@@ -110,7 +138,7 @@ function loadStored(): Pack | null {
 let saveTimer = 0;
 function flush() {
   clearTimeout(saveTimer);
-  try { if (isOm3()) localStorage.setItem(STORE_OM3, bankSnapshot()); else localStorage.setItem(STORE, JSON.stringify(S.pack)); } catch { /* private mode */ }
+  try { if (isOm3()) { localStorage.setItem(STORE_OM3, bankSnapshot()); storeLists(); } else localStorage.setItem(STORE, JSON.stringify(S.pack)); } catch { /* private mode */ }
 }
 function persist() { clearTimeout(saveTimer); saveTimer = window.setTimeout(flush, 250); }
 window.addEventListener('pagehide', flush);
@@ -1120,6 +1148,51 @@ function clearSlot(k: number, v: number) {
   save(); renderAll();
   toast(`Removed "${l.name}" from ${at(k, v)} (Undo brings it back)`);
 }
+/** The saved-lists bar above the looks: pick a list to load it, save the current looks as a new list, rename or
+ *  delete. */
+function listsBar(): HTMLElement {
+  const names = listNames();
+  const sel = h('select', { 'aria-label': 'Saved list', onchange: (e: Event) => switchList((e.target as HTMLSelectElement).value) },
+    ...names.map((n) => h('option', { value: n, selected: n === LISTS.current }, n)));
+  return h('div', { class: 'lists-bar' },
+    h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'List'), sel),
+    h('div', { class: 'lists-btns' },
+      h('button', { onclick: () => nameDialog('Save as a new list', '', 'Save', (n) => {
+        flush(); LISTS.lists[n] = JSON.parse(JSON.stringify(O.bank)) as Bank; switchList(n, `Saved as "${n}". You're now on "${n}"; changes save into it.`);
+      }), title: 'Save all four COLORs\' looks under a new name' }, 'Save as…'),
+      h('button', { onclick: () => nameDialog(`Rename "${LISTS.current}"`, LISTS.current, 'Rename', (n) => {
+        const b = LISTS.lists[LISTS.current]; delete LISTS.lists[LISTS.current];
+        LISTS.lists[n] = b; LISTS.current = n; O.name = n; flush(); renderList(); toast(`Renamed to "${n}"`);
+      }) }, 'Rename'),
+      h('button', { class: 'danger', disabled: names.length < 2, title: names.length < 2 ? 'The only list can\'t be deleted' : undefined, onclick: () => {
+        if (!confirm(`Delete the list "${LISTS.current}"? Its looks are removed from this browser (this can't be undone).`)) return;
+        const gone = LISTS.current; delete LISTS.lists[gone];
+        LISTS.current = listNames()[0]; O.bank = LISTS.lists[LISTS.current]; O.name = LISTS.current; O.k = 0; O.v = 0;
+        hist = new History(snapshot(), 200); undoUi(); flush(); renderAll(); toast(`Deleted "${gone}"; now on "${LISTS.current}"`);
+      } }, 'Delete')));
+}
+function switchList(n: string, msg?: string) {
+  if (!LISTS.lists[n]) return;
+  flush();
+  LISTS.current = n; O.bank = LISTS.lists[n]; O.name = n; O.k = 0; O.v = 0;
+  hist = new History(snapshot(), 200); undoUi();
+  flush(); renderAll(); toast(msg ?? `Loaded "${n}"`);
+}
+function nameDialog(title: string, value: string, ok: string, done: (name: string) => void) {
+  const help = h('p', { class: 'help' }, `Up to ${LIST_NAME_MAX} characters.`);
+  const input = h('input', { type: 'text', value, maxlength: LIST_NAME_MAX, 'aria-label': 'List name', autocomplete: 'off' });
+  const problem = (n: string) => (!n ? 'Type a name.' : n !== value && LISTS.lists[n] ? `There's already a list called "${n}".` : null);
+  const submit = () => {
+    const n = input.value.trim(), p = problem(n);
+    if (p) { help.textContent = p; help.className = 'help err'; input.focus(); return; }
+    dlg.close(); if (n !== value || !value) done(n);
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  const dlg = modal(title, h('div', { class: 'name-dlg' }, input, help),
+    [h('button', { onclick: () => dlg.close() }, 'Cancel'), h('button', { class: 'primary', onclick: submit }, ok)]);
+  input.focus(); input.select();
+}
+
 function renderBank() {
   const el = $('#list');
   const bad = new Set(validateBank(O.bank).map((p) => p.look));
@@ -1157,6 +1230,7 @@ function renderBank() {
       return li;
     }))));
   el.replaceChildren(
+    listsBar(),
     h('div', { class: 'list-head' }, h('span', {}, 'Looks'), h('span', { class: 'count' }, `${used} / ${COLORS * PER}`)),
     ...groups,
     h('p', { class: 'help' }, 'The number is the Film page dial (1–5) for that COLOR; 0 on the camera is "nothing". Drag a look to another number, or use ↑ ↓. An empty number shows "Empty" on the camera and loads neutral there.'));

@@ -314,3 +314,8 @@ dialog.modal:has(.replace-grid) { width: min(780px, calc(100vw - 32px)); }
 .replace-slot .num { color: var(--muted); font-variant-numeric: tabular-nums; }
 .replace-slot .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .replace-slot:hover, .replace-slot:focus-visible { border-color: var(--accent); }
+.lists-bar { display: grid; gap: 6px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.lists-bar select { width: 100%; }
+.lists-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.lists-btns button { font-size: 13px; padding: 4px 10px; }
+.name-dlg input { width: 100%; }
