@@ -18,9 +18,15 @@
 .section .hook_shutter,"ax"
  jmp pr_hook
 .section .hook_set,"ax"
- call ed_set,[d2,d3,a2,a3],68     /* stock: call 0x60bb528f,[d2,d3,a2,a3],68 (settings manager) */
+ call sl_set,[d2,d3,a2,a3],68     /* stock: call 0x60bb528f,[d2,d3,a2,a3],68 (settings manager); sl_set -> ed_set */
 .section .hook_tone,"ax"
  call tone,[d2,d3,a2,a3],56       /* stock 0x605197d7: mov d3,a0; call 0x60518fa4,[d2,d3,a2,a3],56 */
+.section .hook_rng,"ax"
+ jmp sl_rng                       /* v0.23 stock 0x611d1041: call facade; mov 7,d0; bra (the Sharpness slider's -2..+2) */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_dot,"ax"
+ jmp sl_dot                       /* v0.23 stock 0x611d10fb: mov (8,sp),a0; mov a2,d1; mul 155,d1 */
+ .byte 0xcb,0xcb,0xcb
 .section .hook_pmod,"ax"
  jmp ed_pmod                      /* stock 0x6129ba07: clr d3; mov 0x6037ec10,a2 (its first 5 bytes) */
 
@@ -1999,14 +2005,6 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
  * a file that fails the check -> no bank (the file is left alone). P+LIDX+k = the saved selection. Stores: P+LPTR,
  * P+LIDX, the heap buffer, own frame. */
 .section .ext8,"ax"
-/* pm_color (v0.22) <- the Picture Mode column builder 0x611bd814, its switch on the picture mode (table 0x61533520: the
- * COLOR 1-4 entries, stock 0x611bd8fd `mov 0x61530758,a3` and the shared `mov 6,d0`). The same list with 5 rows: its
- * last two entries are swapped to Contrast, Sharpness at build time, so the stock Sharpness row (item 7) is left out. */
-pm_color:
- mov 0x61530758,a3
- mov 5,d0
- jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
-
 pf_load:
  mov PF_LEN,d0
  call malloc,[],4
@@ -2912,3 +2910,205 @@ x_tagref:
  mov d0,(XPTR,a2)
 9:
  ret [d2,d3],12
+
+/* ------------------------------------------------------------------ base-image tail (sliders, v0.23 test)
+ * 0x60133000.. inside the FF run 0x60128e40..0x60134000 at the end of the image's first part (after its build-date
+ * strings; nothing reads or writes it while the camera runs, emulator). */
+.section .ext11,"ax"
+
+/* pm_color <- the Picture Mode column builder 0x611bd814, its switch on the picture mode (table 0x61533520: the
+ * COLOR 1-4 entries, stock 0x611bd8fd `mov 0x61530758,a3` and the shared `mov 6,d0`): our list, our count. */
+pm_color:
+ mov pm_list,a3
+ mov PM_N,d0
+ jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
+.balign 4
+pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Shading, Sharpness (= Sharp), Contrast */
+ .long 111, 5397, 5398, 5399, 7, 8
+.set PM_N, (. - pm_list) / 4
+
+/* Sliders (v0.23): the stock Sharpness row of COLOR 1-4 (item 7; its slider is setting 904 + k) is the slot's Sharp
+ * (+54, -5..+2). Facade answers for those ids: GetValue (sl_get), count 8 (sl_cnt), value by index -5..+2 (sl_vbi),
+ * selectable (sl_sel), SetValue (sl_set: into the slot, dirty, then the manager for a refresh). Anything else: as before. */
+
+/* sl_slot: `call sl_slot,[d2,d3,a2],16`, d0 id -> a0 = slot k (P + 32 + 64k), or 0. 904..907: k = id - 904; 7 (the
+ * row's own id): k from the picture mode (54/55/56/64 = COLOR 1-4). */
+sl_slot:
+ mov d0,d2
+ exthu d2
+ add -904,d2
+ cmp 4,d2
+ bcs 2f
+ mov d0,d3
+ exthu d3
+ cmp 7,d3
+ bne 8f
+ mov 111,d0
+ call sget,[],4                   /* picture mode */
+ clr d2
+ cmp 54,d0
+ beq 2f
+ inc d2
+ cmp 55,d0
+ beq 2f
+ inc d2
+ cmp 56,d0
+ beq 2f
+ inc d2
+ cmp 64,d0
+ bne 8f
+2:
+ PVAL 8f
+ asl 6,d2
+ add 32,d2
+ add d2,a2
+ mov a2,a0
+ ret [d2,d3,a2],16
+8:
+ mov 0,a0
+ ret [d2,d3,a2],16
+
+/* sl_get <- facade +12 word 0x60e57480 (CALLS: d0 id, a0 facade, a1 out -> d0 0, (a1) value); else ed_get. */
+sl_get:
+ cmp 0,a1
+ beq 9f
+ movm [d2,d3,a2,a3],(sp)
+ add -4,sp                        /* (0,sp): the return address slot of our own call */
+ mov d0,d2
+ mov a0,d3
+ mov a1,a2
+ mov mdr,d1
+ mov d1,a3
+ call sl_slot,[d2,d3,a2],16       /* d0 = id still */
+ mov a3,d1
+ mov d1,mdr
+ cmp 0,a0
+ beq 8f
+ movbu (54,a0),d0
+ extb d0
+ mov d0,(a2)
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ clr d0
+ rets
+8:
+ mov d2,d0
+ mov d3,a0
+ mov a2,a1
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+9:
+ jmp ed_get
+
+/* SL_ID miss: d0 = 904..907 and P valid (a2 = P, d2 = k). Uses d2, d3, a2. */
+ .macro SL_ID miss
+ mov d0,d2
+ exthu d2
+ add -904,d2
+ cmp 4,d2
+ bcc \miss
+ PVAL \miss
+ .endm
+
+/* sl_cnt <- facade +28 word 0x60e57490 (d0 id, a0 -> d0 count); else pf_cnt. */
+sl_cnt:
+ movm [d2,d3,a2],(sp)
+ SL_ID 8f
+ movm (sp),[d2,d3,a2]
+ mov 8,d0
+ rets
+8:
+ movm (sp),[d2,d3,a2]
+ jmp pf_cnt
+
+/* sl_vbi <- facade +32 word 0x60e57494 (d0 id, d1 index, a0, a1 out or 0 -> d0 value, -1 none); else pf_vbi. */
+sl_vbi:
+ movm [d2,d3,a2],(sp)
+ SL_ID 8f
+ mov d1,d0
+ cmp 8,d0
+ bcs 1f
+ mov -1,d0
+ bra 2f
+1:
+ add -5,d0
+2:
+ cmp 0,a1
+ beq 3f
+ mov d0,(a1)
+3:
+ movm (sp),[d2,d3,a2]
+ rets
+8:
+ movm (sp),[d2,d3,a2]
+ jmp pf_vbi
+
+/* sl_sel <- facade +40 word 0x60e5749c (selectable: d0 id, d1 value, a0 -> d0 1 / 0); else stock 0x60b86a01. */
+sl_sel:
+ movm [d2,d3,a2],(sp)
+ SL_ID 8f
+ clr d0
+ cmp -5,d1
+ blt 3f
+ cmp 2,d1
+ bgt 3f
+ mov 1,d0
+3:
+ movm (sp),[d2,d3,a2]
+ rets
+8:
+ movm (sp),[d2,d3,a2]
+ jmp stock_sel
+
+/* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
+ * d2/d3/a2/a3 saved by the call, frame 68). 904..907: -5..+2 into slot +54, then ed_set's dirty + manager refresh. */
+sl_set:
+ SL_ID 9f
+ cmp -5,d1
+ blt 7f
+ cmp 2,d1
+ bgt 7f
+ asl 6,d2
+ mov a2,a3
+ add d2,a3
+ movbu d1,(86,a3)                 /* P + 64k + 32 + 54 */
+ jmp s_dirty
+7:
+ clr d0
+ ret [d2,d3,a2,a3],68
+9:
+ jmp ed_set
+
+/* sl_rng <- jmp from 0x611d1041 (the slider bar setup 0x611d0f99, item 7 Sharpness; same frame): as stock, the value
+ * of 7 into (24,sp), then the bar's ends a3 = min, d0 = max: -5..+2 on COLOR 1-4 (the Sharp slider), else -2..+2. */
+sl_rng:
+ call facade,[],4
+ mov (a0),a2
+ mov sp,a1
+ mov (12,a2),a2
+ add 24,a1
+ mov 7,d0
+ calls (a2)
+ mov 7,d0
+ call sl_slot,[d2,d3,a2],16
+ mov -2,d0
+ cmp 0,a0
+ beq 1f
+ mov -5,d0
+1:
+ mov d0,a3                        /* min: the "-" greys out there (and sl_dot knows the Sharp bar by it) */
+ mov 2,d0
+ jmp rng_back                     /* 0x611d1090: mov d0,(4,sp) */
+
+/* sl_dot <- jmp from 0x611d10fb (same frame): the dot's x = centre + value x step, stock step 155 px (a -2..+2 bar).
+ * The Sharp bar (min -5, from sl_rng) steps 62 px like Shading's -5..+5 bar, so 0 stays in the middle. */
+sl_dot:
+ mov (8,sp),a0
+ mov a2,d1
+ mov 155,d0
+ cmp -5,a3
+ bne 1f
+ mov 62,d0
+1:
+ mul d0,d1
+ jmp dot_back                     /* 0x611d1103: add d1,d2 */
