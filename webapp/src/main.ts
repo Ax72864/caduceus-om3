@@ -808,6 +808,14 @@ async function onPhoto(e: Event) {
   } catch { toast('That file could not be read as an image', 'err'); }
 }
 
+/** The photo frame: the photo's shape, as wide as the pane allows but no taller than 70% of the window. */
+function sizeFrame(w: number, h: number) {
+  const frame = canvas.parentElement as HTMLElement | null;
+  if (!frame) return;
+  frame.style.aspectRatio = `${w} / ${h}`;
+  frame.style.width = `min(100%, ${(70 * w / h).toFixed(2)}vh)`;
+}
+
 function schedulePreview() {
   if (previewQueued) return;
   previewQueued = true;
@@ -815,6 +823,7 @@ function schedulePreview() {
     previewQueued = false;
     if (!srcData || !canvas) return;
     if (canvas.width !== srcData.width || canvas.height !== srcData.height) { canvas.width = srcData.width; canvas.height = srcData.height; }
+    sizeFrame(srcData.width, srcData.height);
     if (beforeOf !== srcData) {           // the untouched photo, drawn once per photo
       beforeCv.width = srcData.width; beforeCv.height = srcData.height; beforeCv.getContext('2d')!.putImageData(srcData, 0, 0); beforeOf = srcData;
     }
