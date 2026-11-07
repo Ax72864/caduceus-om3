@@ -729,3 +729,17 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   hook that pushes registers with movm must `add -4,sp` before its own `call` (and undo it), as pf_cnt does.
   Also `call` overwrites MDR: save it around calls in a `rets` routine.
 
+
+## Session wrap-up (2026-11-07)
+- Released: v0.22 (Sharp, camera-tested; film sims carry Sharp). Control Panel live with it.
+- Pushed branches: `feature/v0.23-alpha-profile-sliders` (Sharp on the Sharpness row; emulator only; DO NOT FLASH:
+  code in unloaded space, must move first), `experiment/firmware-space-probe` (GX1 probe on v0.21; not yet run on
+  the camera), `experiment/grain-cpu-colour` (parked grain test 4). Old `v022-sharp` branch on GitHub is stale
+  (same as v0.22); the owner may delete it.
+- Repo now holds the whole lab: this notebook, tools, emulator scripts, archives, `CLAUDE.md`,
+  `research/setup.sh` (asks for the owner's firmware file; tested from scratch), `docs/FILM_SIMULATION_ROADMAP.md`,
+  `docs/PHOTO_TO_LOOK.md`. The claude.ai Project "Om3 Firmware Build" has matching custom instructions.
+- The official firmware file stays on the owner's Mac (too large for chat or Project uploads, 30 MB limit): link the
+  session to the Mac or have it attached.
+- Next (see the roadmap): 1. the owner runs the firmware-space probe on the camera; 2. emulator research on split
+  toning and coloured glow; 3. WB mode / exposure compensation per look; 4. move the slider code to proven space.
