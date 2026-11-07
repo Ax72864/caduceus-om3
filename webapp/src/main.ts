@@ -19,7 +19,7 @@ import {
   slowGrain, toOm3, validateBank, type Bank,
 } from './om3';
 import { namesBin } from './om3names';
-import { FILMS, FILM_GROUPS, filmLook, filmOf, fitLabel, type Film, type FilmGroup } from './om3films';
+import { FILMS, FILM_GROUPS, FILM_SOURCES, filmLook, filmOf, fitLabel, type Film, type FilmGroup } from './om3films';
 import { parseLook } from './pack';
 
 // ---------------------------------------------------------------- state
@@ -1294,7 +1294,8 @@ function om3FilmPicker(into?: { k: number; v: number }) {
     if (sel) { const out = cx.createImageData(srcData.width, srcData.height); renderLook(srcData, out, filmLook(sel), { advice: true, camera: CAM }); cx.putImageData(out, 0, 0); }
     else cx.putImageData(srcData, 0, 0);
     pv.width = W; pv.height = H; pv.getContext('2d')!.drawImage(c, 0, 0, W, H);
-    pvNote.replaceChildren(...(sel ? [h('b', {}, sel.film), h('p', {}, sel.desc)] : [h('p', { class: 'help' }, 'Click a film to see it on your photo.')]));
+    pvNote.replaceChildren(...(sel ? [h('b', {}, sel.film), h('p', {}, sel.desc), h('p', { class: 'help' }, sel.src === 'parvec' ? `Fitted to a model of PARVEC's Lightroom preset (colour only) · ${fitLabel(sel.de)} match to the model`
+      : `Fitted to ${FILM_SOURCES[sel.src]}'s film emulation LUT · ${fitLabel(sel.de)} match`)] : [h('p', { class: 'help' }, 'Click a film to see it on your photo.')]));
   };
   const target = (): { k: number; v: number } | null => {
     if (into && !O.bank[into.k][into.v]) return into;
@@ -1342,12 +1343,15 @@ function om3FilmPicker(into?: { k: number; v: number }) {
   const list = h('div', { class: 'film-list', role: 'list' });
   const drawRows = () => {
     const have = where(), q = query.trim().toLowerCase();
-    const rows = FILMS.filter((f) => (group === 'all' || f.group === group) && (!q || `${f.name} ${f.film}`.toLowerCase().includes(q)));
+    // versions of the same film sit together, in source order (G'MIC, Film is Fun, PARVEC)
+    const srcOrder = Object.keys(FILM_SOURCES);
+    const rows = FILMS.filter((f) => (group === 'all' || f.group === group) && (!q || `${f.name} ${f.film} ${FILM_SOURCES[f.src]}`.toLowerCase().includes(q)))
+      .sort((a, b) => a.film.localeCompare(b.film) || srcOrder.indexOf(a.src) - srcOrder.indexOf(b.src));
     const sections = FILM_GROUPS.filter(([g]) => rows.some((f) => f.group === g)).map(([g, label]) =>
       h('div', { class: 'film-group' }, h('h3', {}, label), ...rows.filter((f) => f.group === g).map((f) =>
         h('div', { class: `film-row${sel === f ? ' on' : ''}${have.has(f.name) ? ' in-list' : ''}`, role: 'listitem' },
           h('button', { class: 'film-pick', onclick: () => { sel = f; drawPv(); drawRows(); }, 'aria-pressed': String(sel === f) },
-            h('b', {}, f.name), h('small', {}, `${f.film} · ${fitLabel(f.de)}`)),
+            h('b', {}, f.name), h('small', {}, `${f.film} · ${FILM_SOURCES[f.src]} · ${fitLabel(f.de)}`)),
           have.has(f.name) ? h('span', { class: 'in-list-tag', title: `Already in "${LISTS.current}": ${have.get(f.name)!.join(', ')}` }, '✓ ', have.get(f.name)!.join(', ')) : null,
           h('button', { class: 'film-add', onclick: () => add(f), title: `Add ${f.name} to your looks` }, '+ Add')))));
     list.replaceChildren(...(sections.length ? sections : [h('p', { class: 'empty' }, 'No film matches.')]));

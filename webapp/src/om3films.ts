@@ -1,12 +1,13 @@
-// The film sims for the OM-3: looks fitted to film-emulation LUTs (scripts/fit-luts.ts; the data file holds only the
-// fitted settings). Each becomes an ordinary OM-3 look: Hue / Light / Saturation per sector, Highlights / Shadows /
+// The film sims for the OM-3: looks fitted to film emulations (scripts/fit-luts.ts; the data file holds only the
+// fitted settings): the G'MIC film emulation LUTs, the Film is Fun LUTs and the PARVEC 35 mm Film Recipes 1 presets
+// (Lightroom presets, through scripts/lr-prep.py's approximate Lightroom model). A film can come from more than one source. Each becomes an ordinary OM-3 look: Hue / Light / Saturation per sector, Highlights / Shadows /
 // Midtones, Blacks / Whites, Contrast and the WB shift. `de` is the fit's mean ΔE76 against the LUT in the preview
 // model (lower = closer).
 import filmsJson from './data/om3films.json';
 import { blankLook, type Look } from './pack';
 
 export interface Film {
-  name: string; group: FilmGroup; film: string; desc: string; de: number;
+  name: string; group: FilmGroup; film: string; src: FilmSource; desc: string; de: number;
   hue: number[]; light: number[]; sat: number[];
   tone: Look['tone']; contrast: number; wb: { a_b: number; g_m: number } | null;
 }
@@ -14,6 +15,9 @@ export type FilmGroup = 'fuji' | 'slide' | 'neg' | 'instant' | 'print';
 export const FILM_GROUPS: [FilmGroup, string][] = [
   ['fuji', 'Fujifilm simulations'], ['slide', 'Slide film'], ['neg', 'Colour negative'], ['instant', 'Instant film'], ['print', 'Cinema print'],
 ];
+export type FilmSource = 'gmic' | 'fif' | 'parvec';
+/** Where each fit came from, as shown in the film list. */
+export const FILM_SOURCES: Record<FilmSource, string> = { gmic: "G'MIC", fif: 'Film is Fun', parvec: 'PARVEC' };
 export const FILMS = (filmsJson as { films: Film[] }).films;
 
 /** How close the fit is, in words. */

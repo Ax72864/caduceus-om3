@@ -10,7 +10,7 @@ import { blankLook, parsePack, type Look } from '../src/pack';
 import { fromLibrary } from '../src/reset';
 import { COLORS, PER, defaultBank, emptyBank, parseBank, profilesBin, readProfiles, slowGrain, toOm3, validateBank, type Bank } from '../src/om3';
 import { parseLook } from '../src/pack';
-import { FILMS, FILM_GROUPS, filmLook } from '../src/om3films';
+import { FILMS, FILM_GROUPS, FILM_SOURCES, filmLook } from '../src/om3films';
 import { validateProfile } from '../src/om3';
 
 const LIB = parsePack(libraryJson);
@@ -129,6 +129,8 @@ describe('OM-3 profile bank', () => {
     const names = new Set<string>();
     for (const f of FILMS) {
       expect(FILM_GROUPS.map(([g]) => g)).toContain(f.group);
+      expect(Object.keys(FILM_SOURCES)).toContain(f.src);
+      expect(f.desc.length).toBeGreaterThan(20);
       const l = filmLook(f);
       expect(validateProfile(l)).toEqual([]);
       expect(names.has(f.name.toLowerCase())).toBe(false); names.add(f.name.toLowerCase());

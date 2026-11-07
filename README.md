@@ -119,10 +119,12 @@ in your browser. It is the same tool as Caduceus for the E-P7: the switch at the
   current set as a new list, the **List** menu switches between them, and **Rename** / **Delete** manage them.
   Changes save into the list you're on; the looks you had before are the list **Default**. Lists stay in this
   browser; export a list to put it on the card.
-- **Film sims** opens 60 film looks: the Fujifilm simulations (Provia, Velvia, Astia, Classic Chrome, Pro Neg Hi /
-  Std), slide films (Velvia 50, Provia, Kodachrome, Ektachrome…), colour negatives (Portra, Ektar, Superia, Fuji
-  400H…), FP-100C and Polaroid 690, and cinema print stocks. Each was fitted to a film emulation LUT and is made of
-  ordinary OM-3 settings, with how close the match is. Click one to preview it on your photo, **+ Add** puts it in an
+- **Film sims** opens 90 film looks: the Fujifilm simulations (Provia, Velvia, Astia, Classic Chrome, Pro Neg Hi /
+  Std), slide films (Velvia 50, Provia, Kodachrome, Ektachrome…), colour negatives (Portra, Ektar, Gold, ColorPlus,
+  Ultramax, Superia, Fuji 400H, CineStill 50D / 400D / 800T, Harman Phoenix, LomoChrome '92…), FP-100C and Polaroid
+  690, and cinema print stocks. Each was fitted to a film emulation (the G'MIC and Film is Fun LUTs, and PARVEC's
+  35 mm Film Recipes presets) and is made of ordinary OM-3 settings, with how close the match is and where it came
+  from. Some films come in more than one version (for example Portra 400, Portra 400 FiF and Portra 400 PV). Click one to preview it on your photo, **+ Add** puts it in an
   empty number, and × in the list removes it again. Films already in your list are marked with where they are. The
   standard set you start with uses them: Fujifilm on COLOR 1, slide on COLOR 2, negative on COLOR 3, cinema and
   instant on COLOR 4.
@@ -283,7 +285,9 @@ Full page-by-page guide: [docs/USING.md](docs/USING.md). Card file formats: [doc
 
 Built on **[Caduceus](https://github.com/cakelesscoder/caduceus-ep7)** by cakelesscoder (Apache-2.0), firmware patches
 for the Olympus PEN E-P7: the on-camera editor design, the bundle-table layout, the Caduceus Control Panel (shared by both cameras), its tone
-model and the starter film looks. Sample photos by Kyle O'Brien (used with permission) and
+model and the starter film looks. Film sims fitted to the G'MIC film emulation LUTs, the [Film is Fun](https://filmisfun.shop) film emulation LUTs and
+the [PARVEC](https://www.parvec.es/35-mm-color-science-project) 35 mm Film Recipes presets (settings only; no LUT or
+preset files are included). Sample photos by Kyle O'Brien (used with permission) and
 public-domain (CC0) photos; see [webapp/public/samples/CREDITS.md](webapp/public/samples/CREDITS.md). Camera emulation by
 [om-emu](https://github.com/flatpanda/om-emu).
 

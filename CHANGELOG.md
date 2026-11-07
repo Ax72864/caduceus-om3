@@ -13,6 +13,12 @@ No firmware change: these work with v0.21 as released.
   how close the match is. Preview on your photo, add to any empty number, remove like any look. Films the OM-3
   controls can't reproduce (most Polaroid / Impossible instant films, cross-processing) are left out.
 - The grain preview is gentler, closer to how the photo looks on screen.
+- **30 more film sims (90 in all):** CineStill 50D / 400D / 800T, Kodak Gold 200, ColorPlus 200, Ultramax 400,
+  Kodacolor 100, a Kodak disposable, Fuji C200, Fujifilm 200, Harman Phoenix 200, Candido 800, LomoChrome '92,
+  Lomography Color 400, One Hundred 100, and second and third versions of Portra 160 / 400 / 800, Ektar 100,
+  Provia 100F, Superia 400 and Ektachrome. They're fitted to the Film is Fun film emulation LUTs ("FiF") and to
+  PARVEC's 35 mm Film Recipes, which he built from his film colour measurements ("PV"). The film list shows where
+  each look came from and keeps a film's versions together.
 - **New sample photos** in OM-3 mode by Kyle O'Brien (used with permission): tulip fields, blue hour, a marina at
   dusk, forest, a crater under cloud, a palm sunset and ocean, next to the colour-frames photo and the portrait.
 - **Lists:** save all four COLORs' looks as a named list and switch between lists (Save as…, Rename, Delete above

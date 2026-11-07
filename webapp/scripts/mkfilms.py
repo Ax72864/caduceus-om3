@@ -1,5 +1,8 @@
-"""fit-luts.ts output -> src/data/om3films.json: the fitted settings with camera names (15 characters) and groups.
-Fits worse than ΔE 8 are left out. usage: python3 scripts/mkfilms.py FIT.json src/data/om3films.json"""
+"""fit-luts.ts output -> src/data/om3films.json: the fitted settings with camera names (15 characters), groups and
+sources. Fits worse than ΔE 8 are left out.
+usage: python3 scripts/mkfilms.py FIT.json [FIT.json ...] src/data/om3films.json
+  ids: <group>/<lut> for the G'MIC LUTs (lut-prep.py), fif/<film>/<lut> for the Film is Fun LUTs (lut-prep.py on
+  their rec709 folders), parvec/<preset> for the PARVEC Lightroom presets (lr-prep.py)."""
 import json, sys
 NAMES = {
  'fujixtransiii/fuji_xtrans_iii_classic_chrome': ('Classic Chrome', 'fuji', 'Fujifilm Classic Chrome'),
@@ -78,9 +81,42 @@ NAMES = {
  'print/fuji_3513_constlmap': ('Fuji 3513', 'print', 'Fujicolor Positive 3513DI cinema print'),
  'print/kodak_2383_constlmap': ('Kodak 2383', 'print', 'Kodak Vision 2383 cinema print'),
  'print/kodak_2393_constlmap': ('Kodak 2393', 'print', 'Kodak Vision Premier 2393 cinema print'),
+ # Film is Fun film emulation LUTs (rec709 versions); a film that's already in the list gets " FiF"
+ 'fif/400D/400D': ('CineStill 400D', 'neg', 'CineStill 400D'),
+ 'fif/50D/50D': ('CineStill 50D', 'neg', 'CineStill 50D'),
+ 'fif/800T/800T': ('CineStill 800T', 'neg', 'CineStill 800T'),
+ 'fif/Colorplus/Colorplus': ('ColorPlus 200', 'neg', 'Kodak ColorPlus 200'),
+ 'fif/Ektachrome/E100': ('Ektachrome FiF', 'slide', 'Kodak Ektachrome E100'),
+ 'fif/Ektar_100/Ektar': ('Ektar 100 FiF', 'neg', 'Kodak Ektar 100'),
+ 'fif/Fuji_C200/c200': ('Fuji C200', 'neg', 'Fujicolor C200'),
+ 'fif/Gold/Gold': ('Kodak Gold 200', 'neg', 'Kodak Gold 200'),
+ 'fif/Kodacolor_100/Kodacolor_100': ('Kodacolor 100', 'neg', 'Kodak Kodacolor 100'),
+ 'fif/Kodak_Dispo/Kodak_Dispo': ('Kodak Dispo', 'neg', 'Kodak disposable camera'),
+ 'fif/Phoenix_200/Phoenix': ('Phoenix 200', 'neg', 'Harman Phoenix 200'),
+ 'fif/Portra_160/P160': ('Portra 160 FiF', 'neg', 'Kodak Portra 160'),
+ 'fif/Portra_400/Portra_400': ('Portra 400 FiF', 'neg', 'Kodak Portra 400'),
+ 'fif/Portra_800/Portra_800': ('Portra 800 FiF', 'neg', 'Kodak Portra 800'),
+ 'fif/Provia_100F/Provia': ('Provia 100F FiF', 'slide', 'Fujichrome Provia 100F'),
+ 'fif/Superia_400/Superia_400': ('Superia 400 FiF', 'neg', 'Fujicolor Superia X-Tra 400'),
+ 'fif/Ultramax/Ultramax_warm': ('Ultramax 400', 'neg', 'Kodak UltraMax 400 (warm)'),
+ # PARVEC 35 mm Film Recipes 1 (Lightroom presets, through lr-prep.py's model); a film already in the list gets " PV"
+ 'parvec/Candido_800T': ('Candido 800', 'neg', 'Candido 800'),
+ 'parvec/Cinestill_50D': ('CineStill50D PV', 'neg', 'CineStill 50D'),
+ 'parvec/Film_One_Hundred_100': ('1Hundred 100', 'neg', 'One Hundred Film 100'),
+ 'parvec/Fujifilm_200': ('Fujifilm 200', 'neg', 'Fujifilm 200'),
+ 'parvec/Kodak_Color_Plus_200': ('ColorPlus PV', 'neg', 'Kodak ColorPlus 200'),
+ 'parvec/Kodak_Ektar_100': ('Ektar 100 PV', 'neg', 'Kodak Ektar 100'),
+ 'parvec/Kodak_Gold_200': ('Kodak Gold PV', 'neg', 'Kodak Gold 200'),
+ 'parvec/Kodak_Portra_160': ('Portra 160 PV', 'neg', 'Kodak Portra 160'),
+ 'parvec/Kodak_Portra_400': ('Portra 400 PV', 'neg', 'Kodak Portra 400'),
+ 'parvec/Kodak_Ultramax_400': ('Ultramax PV', 'neg', 'Kodak UltraMax 400'),
+ 'parvec/LomoChrome_92__400': ('LomoChrome 92', 'neg', "LomoChrome Color '92"),
+ 'parvec/Lomography_Color_400': ('Lomo Color 400', 'neg', 'Lomography Color Negative 400'),
+ 'parvec/Phoenix_200': ('Phoenix 200 PV', 'neg', 'Harman Phoenix 200'),
 }
+SRC = lambda idn: 'parvec' if idn.startswith('parvec/') else 'fif' if idn.startswith('fif/') else 'gmic'
 SKIP = {'colorslide/kodak_ektachrome_100_vs_generic', 'colorslide/kodak_kodachrome_64_generic'}
-fit = {d['id']: d for d in json.load(open(sys.argv[1]))}
+fit = {d['id']: d for p in sys.argv[1:-1] for d in json.load(open(p))}
 import os
 DESC = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'film-descriptions.json')))
 out = []
@@ -89,10 +125,12 @@ for idn, (name, grp, full) in NAMES.items():
     d = fit[idn]
     if d['after'] > 8:                 # the OM-3 controls can't make it (heavy fading, colour casts by brightness)
         print('left out', name, d['after']); continue
-    out.append({'name': name, 'group': grp, 'film': full, 'desc': DESC[name], 'de': d['after'], 'hue': d['hue'], 'light': d['light'], 'sat': d['sat'],
+    out.append({'name': name, 'group': grp, 'film': full, 'src': SRC(idn), 'desc': DESC[name], 'de': d['after'], 'hue': d['hue'], 'light': d['light'], 'sat': d['sat'],
                 'tone': d['tone'], 'contrast': d['contrast'], 'wb': d['wb']})
 missing = set(fit) - set(NAMES) - SKIP
 assert not missing, missing
-json.dump({'source': "Fitted to the G'MIC film emulation LUTs (sRGB) with webapp/scripts/fit-luts.ts; settings only.",
-           'films': out}, open(sys.argv[2], 'w'), separators=(',', ':'))
+names = [f['name'] for f in out]; assert len(set(names)) == len(names), 'duplicate names'
+json.dump({'source': "Fitted with webapp/scripts/fit-luts.ts to the G'MIC film emulation LUTs, the Film is Fun film emulation "
+           "LUTs and (through lr-prep.py's Lightroom model) the PARVEC 35 mm Film Recipes 1 presets; settings only.",
+           'films': out}, open(sys.argv[-1], 'w'), separators=(',', ':'))
 print(len(out), 'films; mean ΔE', round(sum(f['de'] for f in out) / len(out), 2), 'worst', max((f['de'], f['name']) for f in out))
