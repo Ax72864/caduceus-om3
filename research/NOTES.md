@@ -1430,3 +1430,9 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Film); the half-press save (ed_trig -> pf_save -> block +72 xb_lw) runs only from the editor's states, so the log
   was never written. Also 5 shots > 4 slots (slot = mark & 3: the fifth overwrites the first). Redo: exactly 4
   photos, then Picture Mode back to a COLOR, half-press, wait, switch off.
+- fg2 camera run 2 (2026-11-08, owner): 4 photos (PB081435..438), Picture Mode back to COLOR, half-press: no save
+  at all (BUNDLES.NEW, GLOG.BIN unchanged). Reading (analysis): (1) the log buffers are made only at a half-press
+  save, and with nothing changed the power-on half-press does not save, so this run had no buffers; (2) the dirty mark
+  xb_mark sets during a capture did not cause a save in run 1 or run 2 (possibly the capture runs on the other CPU
+  and the write is not seen; not checked). Workaround for run 3: change a Picture Mode row (and back) before the first
+  half-press and again before the last one, so the editor's own change flag triggers both saves.
