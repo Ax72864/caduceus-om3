@@ -1457,3 +1457,18 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   any stage (GF's 0x0100 development), B = the first kind-3 stage 0x01xx (the Art pass), C = the final. Firmware
   unchanged (v0.24.1); GUIDES.BIN 0ecb6bc8…, 14968 B. Shots asked: GF II, GF II + Pin Hole, GF II + Frame, COLOR +
   Grain High; Blk change and back before the first and the last half-press (in COLOR).
+- fg3 camera run (2026-11-08, owner; PB081443..446: GF II, + Pin Hole, + Frame, COLOR + Grain High): GLOG.BIN
+  ('GLG3', 2 marks, 19 records, 3982 selector calls) written at 1445's time; no save after 1446.
+  - Saves: the capture mark's dirty flag DOES work: the half-press of the NEXT shot saves (first save = buffers, next =
+    the log). Here: 1443 marked before the buffers existed (not logged), 1444's half-press made the buffers... -> slot 0
+    = GF II + Pin Hole (full), slot 1 = GF II + Frame (marked at the save, 1 record). The final Blk-change half-press
+    did not save (not understood). Procedure from now: after each photo, one plain half-press saves the log so far.
+  - GF II + Pin Hole, full copies (camera-tested log; analysis): development = kind 0, stage 0x0100, combiner 1,
+    request +10 = 0x68 (the Art id; COLOR stills have 11, our grain 12), +1751 = 0 (no MONO grain level), output
+    +1100 = 0x0c02 (to memory), no 2nd output. Then the Art pass (kind 3, stage 0x0101, combiner 9, effect 0x0200)
+    and the finals (stage 0). => Grainy Film's grain is not the MONO grain (+1751 / 0x1c02 output stage, lost on any
+    extra pass): it is made in the 0x0100 development itself (baked into the 0x0c02 image), so it survives Art passes.
+    Grainy Film is a monochrome Art Filter, so colour safety is still open.
+  - Next: diff this development request against a COLOR development (plain and Grain High) to find what makes the
+    grain (request fields vs combiner 1's set-up for context 0x01020068); run: COLOR plain, COLOR + Grain High,
+    GF II, each followed by a plain half-press.
