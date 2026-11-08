@@ -1,12 +1,15 @@
 /* v0.24 film test 7 (owner): the wheel's Film and Extras pages are hidden (their code stays; 1 brings them back) */
  .set W_FILM, 0
  .set W_EXTRAS, 0
- .set W_SALL, 1                   /* film test 8 (owner): Saturation always shows all colours (no single-colour page) */
- .set W_SONE, 1                   /* film test 11 (owner): the Saturation page shows ONE colour at a time (film test 8
+/* film test 12 (owner, camera: test 11 went "sat, hue, sat, lum, all weird"): "work with the firmware, not against
+ * it" -> the wheel's own order again, Color -> Color All -> Hue -> Luminance (the guide keeps the name Luminance).
+ * W_SALL / W_SONE / W_HSL 0; their code stays. */
+ .set W_SALL, 0                   /* film test 8 (owner): Saturation always shows all colours (no single-colour page) */
+ .set W_SONE, 0                   /* film test 11 (owner): the Saturation page shows ONE colour at a time (film test 8
                                    * misread "hide the color select wheel": the page the owner meant was the all-colours
                                    * one, whose guide reads "Color Select [INFO]"); all colours never come on (0: film
                                    * test 8, all colours always). Needs W_SALL 1 */
- .set W_HSL, 1                    /* film test 10 (owner): pages in HSL order, Hue -> Saturation -> Luminance, opening on
+ .set W_HSL, 0                    /* film test 10 (owner): pages in HSL order, Hue -> Saturation -> Luminance, opening on
                                    * Hue; their dial labels Hue / Saturation / Luminance (0: S -> H -> L, open on S) */
 /* OM-3 1.1 editor test 1 (= probe 2 + on-camera Hue/Light pages + card save).
  * Probe 2 part: looks in a heap block, loaded from C:\OM3MOD\BUNDLES.BIN when valid.
