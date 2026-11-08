@@ -39,24 +39,6 @@ writes the file the first time a look is used. Writes go to `LOOKS.NEW`, are rea
 Generators: `card/mkprofiles.py` (JSON → file) and the Control Panel (`webapp/src/om3.ts`: `profilesBin` / `readProfiles`), byte-identical
 (`webapp/tests/om3.test.ts`).
 
-## EDITS.BIN (1648 bytes, v0.24)
-
-Written by the camera only (at the half-press save, when something changed); the changes you make to each film and
-COLOR 1–4's own settings while a film sits on that COLOR. The films as built stay in `LOOKS.BIN`.
-
-| Offset | Size | Field |
-|---|---|---|
-| 0 | 4 | magic `OM3T` |
-| 4 | 4 | total length 1648 |
-| 8 | 4 | CRC-32 of bytes 12..1647 |
-| 12 | 4 | valid bits: bit r = record r holds saved settings |
-| 16 | 24 × 68 | record r: 64 bytes in the `LOOKS.BIN` record format, then a u32 check |
-
-Records 0..19 = film j (the `LOOKS.BIN` record of the same number; its check is the CRC-32 of that `LOOKS.BIN`
-record when the changes were saved, so a film rebuilt in the Control Panel starts again as built). Records 20..23 =
-COLOR 1–4's own settings (check 0). A file that fails the size, magic or CRC check is ignored. Deleting it puts every
-film back as built.
-
 ## BUNDLES.BIN (544 bytes)
 
 Caduceus BUNDLES.BIN v1 layout with OM-3 identity: `OM3B` | u16 version 1 | u16 header 32 | u32 firmware build 1100 |

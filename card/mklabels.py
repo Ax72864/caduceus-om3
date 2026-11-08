@@ -2,7 +2,7 @@
 """LABELS.BIN for the OM-3 Extras wheel (v0.20): the dial label next to the value ("Vivid" on the stock wheel) names
 the selected Extras slice and what its value does. Drawn from scratch to the stock label's metrics (70 x 30, OM-3 OSD
 palette: 0 clear, 7 dark edge, 8 grey, 9 faint, 10 white fill, 11/12 soft fill); no camera graphics are copied.
-LABELS.BIN v2: 'OM3V' | u32 total | u32 crc32(bytes 12..) | u32 n (24 from v0.21, 26 from v0.22, 27 from v0.23) | n bitmaps of 30 rows x 9 bytes (70 px + 2 spare
+LABELS.BIN v2: 'OM3V' | u32 total | u32 crc32(bytes 12..) | u32 n (24 from v0.21, 26 from v0.22) | n bitmaps of 30 rows x 9 bytes (70 px + 2 spare
 bits, MSB first, 1 = letter fill). The camera draws the label from its bitmap (firmware code block): fill 10, a 1 px
 dark edge 7 (8 neighbours), then grey 8 out to 2 px, and encodes it as an OSD type-11 stream (render() below is the
 same rule, for the preview and the tests).
@@ -14,7 +14,7 @@ from scipy import ndimage
 
 W, H, BASE, CAP = 70, 30, 26, 24
 FONTS = ['/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf', '/Library/Fonts/Arial Narrow.ttf']
-LABELS = ['NR', 'NR Std', 'NR Low', 'NR Off', 'NR High',          # slice 1: 0 camera, 1 Standard, 2 Low, 3 Off, 4 High (v0.23)
+LABELS = ['NR', 'NR Std', 'NR Low', 'NR Off',                     # slice 1: 0 camera, 1 Standard, 2 Low, 3 Off
           'Glow', 'Clarity', 'Glo/Cla',                         # slice 2: negative, positive, zero
           'B', 'A', 'A/B',                                      # slice 3 (A-B): blue, amber, zero
           'M', 'G', 'G/M',                                      # slice 4 (G-M): magenta, green, zero
