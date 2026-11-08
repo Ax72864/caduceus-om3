@@ -1329,4 +1329,16 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     [INFO]" (card/mkguides.py PAGES). GUIDES.BIN would pass the loader's 16 KB (16844 B), so the hidden Film page's
     guide stream is left out (length 0; mkguides SKIP): 14144 B.
   - Emulator: opens on Hue, then Saturation All, Luminance, Hue; arrows move the colour on Hue.
+  - Package film test 10: E1479999.BIN 91bd1746…, GUIDES.BIN da1303db…, LABELS.BIN 903af75b…. On the owner's card,
+    checked by checksum. Camera result: pending.
+- OPEN (owner, 2026-11-08, camera): a COLOR still with Shading on comes out monochrome. The stock OM-3 keeps Shading
+  colour (Color Profile Control lists Shading), so it is ours. Analysis only (the emulator cannot capture):
+  - Not the Art Effect converter hook: Shading reaches it as a nonzero Art Effect id (stock ids 8 / 9 "Shade",
+    flags 0x800 / 0x1000), and xb_cap sends any nonzero id straight to the stock code (fx_back). Not the camera grain
+    route either: xb_gt is cleared at every capture and set only with no Art Effect.
+  - Suspect: hl_pp (hook_color 0x60518615) writes Hue / Light into output records at (12,a2)+854 whenever the
+    effective COLOR slot has its H/L bit, whatever the job; if Shading builds the job differently, those writes may
+    land on other fields. Also possible: tone (Blacks / Whites LUT) and wb_get, both slot-dependent.
+  - Asked the owner for two shots: a factory COLOR with only Shading, and a film with Shading. Colour + mono -> the
+    slot-dependent hooks (start with hl_pp); both mono -> a logging build.
 
