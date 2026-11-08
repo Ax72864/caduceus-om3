@@ -16,6 +16,9 @@ SECTIONS {
   .hook_rng     0x611d1041 : { *(.hook_rng) }
   .hook_dot     0x611d10fb : { *(.hook_dot) }
   .hook_lc      0x611d1982 : { *(.hook_lc) }
+  .hook_bar     0x611d1035 : { *(.hook_bar) }
+  .hook_rda     0x611d16b4 : { *(.hook_rda) }
+  .hook_rdb     0x611d1725 : { *(.hook_rdb) }
   .ext2         0x607187a8 : { *(.ext2) }
   .ext7         0x6164afd0 : { *(.ext7) }
   .ext3         0x6081fe10 : { *(.ext3) }
@@ -32,6 +35,17 @@ stock_sel     = 0x60b86a01;
 rng_back      = 0x611d1090;
 dot_back      = 0x611d1103;
 lc_back       = 0x611d19b4;
+lc5_back      = 0x611d0a09;
+f2c_obj       = 0x611c2ce8;
+f2c_none      = 0x611c2d42;
+bar_59        = 0x611d1057;
+bar_5399      = 0x611d1074;
+bar_none      = 0x611d1092;
+rda_none      = 0x611d16ee;
+rda_11        = 0x611d16e6;
+rdb_none      = 0x611d175f;
+rdb_11        = 0x611d1757;
+
 color_resume  = 0x6051861a;
 getter        = 0x60063380;
 trig          = 0x60415343;

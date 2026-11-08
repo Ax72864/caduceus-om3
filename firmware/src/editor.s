@@ -27,6 +27,15 @@
 .section .hook_dot,"ax"
  jmp sl_dot                       /* v0.23 stock 0x611d10fb: mov (8,sp),a0; mov a2,d1; mul 155,d1 */
  .byte 0xcb,0xcb,0xcb
+.section .hook_bar,"ax"
+ jmp rw_bar                       /* v0.23 stock 0x611d1035 (bar setup): cmp 59,d0; beq; cmp 5399,d0; beq; bra 0x611d1092 */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_rda,"ax"
+ jmp rd_a                         /* v0.23 stock 0x611d16b4 (readout sign): cmp 1011; beq; cmp 5397; beq; bra */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_rdb,"ax"
+ jmp rd_b                         /* v0.23 stock 0x611d1725 (readout digit): the same */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
 .section .hook_lc,"ax"
  jmp gr_lc                        /* v0.23 stock 0x611d1982 (left-column id lookup): cmp 5400,d0; beq 0x611d19ac;
                                    * bra 0x611d19b4 */
@@ -2927,58 +2936,141 @@ pm_color:
  mov PM_N,d0
  jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
 .balign 4
-pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Shading, Sharpness (= Sharp), Contrast,
-                                   * Film Grain Effect (= Grain) */
- .long 111, 5397, 5398, 5399, 7, 8, 5400   /* + the camera's Film Grain Effect row (MONO 1-4) = Grain */
+pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Shading, Shading Comp. (= VigFix),
+                                   * Sharpness (= Sharp), Contrast, Noise Filter (= NR), Film Grain Effect (= Grain) */
+ .long 111, 5397, 5398, 5399, VF_IT, 7, 8, NR_IT, 5400
 .set PM_N, (. - pm_list) / 4
 
-/* Sliders (v0.23): the stock Sharpness row of COLOR 1-4 (item 7; its slider is setting 904 + k) is the slot's Sharp
- * (+54, -5..+2). Facade answers for those ids: GetValue (sl_get), count 8 (sl_cnt), value by index -5..+2 (sl_vbi),
- * selectable (sl_sel), SetValue (sl_set: into the slot, dirty, then the manager for a refresh). Anything else: as before. */
-
-/* Grain (v0.23 test 4): the camera's Film Grain Effect row (item 5400; Off / Low / Medium / High). Its setting id per
- * picture mode comes from two 4-entry tables, MONO 1-4 only (0x6153670c for the row, 0x6154cc80 for its left-column
- * icon: 999..1002); COLOR 1-4 got none. build.py points both lookups at gr_tab (8 entries): the stock four plus our
- * own ids GRB + k on COLOR 1-4 (picture modes 54/55/56/64), which only the facade handlers below take: slot +53
- * (0..3, the Extras Grain). */
+/* Picture Mode rows of COLOR 1-4 that are Extras settings of the selected look (slot k = P + 32 + 64k):
+ *   class 1 Sharp:  the stock Sharpness slider (item 7), slot +54, -5..+2; its bar is setting 904 + k (stock)
+ *   class 2 Grain:  the camera's Film Grain Effect row (item 5400, MONO 1-4's), slot +53, 0..3 (Off/Low/Med/High)
+ *   class 3 NR:     new row NR_IT "Noise Filter", slot +51 (0 Camera, 1 Std, 2 Low, 3 Off) as a slider -2..+1:
+ *                   -2 Off, -1 Low, 0 Camera (the camera's own Noise Filter), +1 Standard
+ *   class 4 VigFix: new row VF_IT "Shading Comp.", slot +52 (0 Camera, 1 Off) as a slider -1..0: -1 Off, 0 Camera
+ * Ids: our setting ids GRB/NRB/VFB + k for the rows' bars (only our facade handlers take them), and the rows' own
+ * left-column ids 7, 998 (Film Grain's), NR_IT, VF_IT, answered by picture mode (54/55/56/64 = COLOR 1-4).
+ * The new rows: item table entries (it_tab, 19 entries, build.py copies the stock 17), entries in the column's 9 row
+ * switches (build.py: as item 7's, f2c -> nr_f / vf_f), the bar's ends (rw_bar), dot (sl_dot), readout (rd_a/rd_b). */
 .set GRB, 0x7e00
+.set NRB, 0x7e10
+.set VFB, 0x7e20
+.set NR_IT, 5394
+.set VF_IT, 5389
+
 .balign 4
-gr_tab:
+gr_tab:                           /* Film Grain Effect: picture mode -> setting id (stock MONO four first) */
  .long 57, 999, 58, 1000, 59, 1001, 65, 1002
  .long 54, GRB, 55, GRB + 1, 56, GRB + 2, 64, GRB + 3
+nr_tab:
+ .long 54, NRB, 55, NRB + 1, 56, NRB + 2, 64, NRB + 3
+vf_tab:
+ .long 54, VFB, 55, VFB + 1, 56, VFB + 2, 64, VFB + 3
+it_tab:                           /* the stock 17 item entries (filled by build.py), then ours (40 B each) */
+ .space 17 * 40
+ .long NR_IT, 0, 0, 0, nr_title, 0, 0x00010000, 0, 0, 0     /* +16 title, +26 left-column icon (1: the S) */
+ .long VF_IT, 0, 0, 0, vf_title, 0, 0x00040000, 0, 0, 0     /* icon 4: Shading's */
+nr_title:
+ .short 4, 188                    /* string 188 "Noise Filter" */
+ .long 0x6154b480
+vf_title:
+ .short 4, 254                    /* string 254 "Shading Comp." */
+ .long 0x6154b480
+nr_s2v:                           /* NR slot value 0..3 -> slider value */
+ .byte 0, 1, -1, -2
+nr_v2s:                           /* slider value -2..+1 (index + 2) -> slot value */
+ .byte 3, 2, 0, 1
 
-/* gr_lc <- jmp from 0x611d1982 (the left column's item -> setting id lookup 0x611d1963, same frame; d0 item): the
- * Film Grain Effect row searches gr_tab (8 entries) instead of the stock MONO-only 0x6154cc80 (4). */
+/* gr_lc <- jmp from 0x611d1982 (the left column's item -> setting id lookup 0x611d1963, same frame; d0 item): Film
+ * Grain Effect searches gr_tab (8 entries) instead of the stock MONO-only 0x6154cc80 (4); our rows nr_tab / vf_tab. */
 gr_lc:
  cmp 5400,d0
  bne 1f
  mov gr_tab,a3
  mov 8,d2
+ bra 9f
 1:
+ cmp NR_IT,d0
+ bne 2f
+ mov nr_tab,a3
+ mov 4,d2
+ bra 9f
+2:
+ cmp VF_IT,d0
+ bne 9f
+ mov vf_tab,a3
+ mov 4,d2
+9:
  jmp lc_back                      /* 0x611d19b4: cmp 0,a3 */
 
-/* sl_slot: `call sl_slot,[d2,d3,a2],16`, d0 id -> a0 = slot k (P + 32 + 64k), or 0. 904..907 / GRB..GRB+3: k = id -
- * base; 7 and 998 (the rows' left-column ids): k from the picture mode (54/55/56/64 = COLOR 1-4). */
+/* nr_f / vf_f <- row switch 0x61536f2c (0x611c2c35: the row's bar object, its setting id by picture mode; frame
+ * [d2,a2,a3],20, a2 = 0): our id NRB/VFB + k on COLOR 1-4 -> 0x611c2ce8 (as item 7's case), else none. */
+nr_f:
+ mov NRB,d2
+ bra pm_f
+vf_f:
+ mov VFB,d2
+pm_f:
+ mov 111,d0
+ call sget,[],4                   /* picture mode (keeps d2) */
+ cmp 54,d0
+ beq 3f
+ inc d2
+ cmp 55,d0
+ beq 3f
+ inc d2
+ cmp 56,d0
+ beq 3f
+ inc d2
+ cmp 64,d0
+ bne 9f
+3:
+ mov d2,d0
+ jmp f2c_obj                   /* mov d0,(4,sp); make the bar object */
+9:
+ jmp f2c_none                   /* no object */
+
+/* sl_slot: `call sl_slot,[d2,d3,a2],16`, d0 id -> a0 = slot k (P + 32 + 64k), d1 = class (1..4), or a0 = 0.
+ * Bar ids (904 / GRB / NRB / VFB + k): k = id - base; left-column ids 7 / 998 / NR_IT / VF_IT: k by picture mode. */
 sl_slot:
- mov d0,d2
- exthu d2
+ mov d0,d3
+ exthu d3
+ mov 1,d1
+ mov d3,d2
  add -904,d2
  cmp 4,d2
  bcs 2f
- mov d0,d2
- exthu d2
+ mov 2,d1
+ mov d3,d2
  add -GRB,d2
  cmp 4,d2
- bcs 2f                           /* GRB..GRB+3: k */
- mov d0,d3
- exthu d3
+ bcs 2f
+ mov 3,d1
+ mov d3,d2
+ add -NRB,d2
+ cmp 4,d2
+ bcs 2f
+ mov 4,d1
+ mov d3,d2
+ add -VFB,d2
+ cmp 4,d2
+ bcs 2f
+ mov 1,d1
  cmp 7,d3
  beq 1f
+ mov 2,d1
  cmp 998,d3                       /* the left column's Film Grain Effect icon asks 998 (MONO: the mode's grain) */
+ beq 1f
+ mov 3,d1
+ cmp NR_IT,d3
+ beq 1f
+ mov 4,d1
+ cmp VF_IT,d3
  bne 8f
 1:
+ mov d1,d3                        /* the class, over the getter */
  mov 111,d0
- call sget,[],4                   /* picture mode */
+ call sget,[],4                   /* picture mode (keeps d2, d3) */
+ mov d3,d1
  clr d2
  cmp 54,d0
  beq 2f
@@ -2992,7 +3084,9 @@ sl_slot:
  cmp 64,d0
  bne 8f
 2:
+ mov d1,a0                        /* PVAL uses d3, a2 */
  PVAL 8f
+ mov a0,d1
  asl 6,d2
  add 32,d2
  add d2,a2
@@ -3001,6 +3095,36 @@ sl_slot:
 8:
  mov 0,a0
  ret [d2,d3,a2],16
+
+/* sl_val: d1 class, a0 slot -> d0 the row's value (Sharp -5..+2, Grain 0..3, NR -2..+1, VigFix -1..0). */
+ .macro SL_VAL
+ cmp 2,d1
+ bne 91f
+ movbu (53,a0),d0
+ bra 99f
+91:
+ cmp 3,d1
+ bne 92f
+ movbu (51,a0),d0
+ and 3,d0
+ add nr_s2v,d0
+ mov d0,a0
+ movbu (a0),d0
+ extb d0
+ bra 99f
+92:
+ cmp 4,d1
+ bne 93f
+ movbu (52,a0),d0
+ and 1,d0
+ not d0
+ inc d0                           /* 0 -> 0, 1 -> -1 */
+ bra 99f
+93:
+ movbu (54,a0),d0
+ extb d0
+99:
+ .endm
 
 /* sl_get <- facade +12 word 0x60e57480 (CALLS: d0 id, a0 facade, a1 out -> d0 0, (a1) value); else ed_get. */
 sl_get:
@@ -3014,24 +3138,11 @@ sl_get:
  mov mdr,d1
  mov d1,a3
  call sl_slot,[d2,d3,a2],16       /* d0 = id still */
- mov a3,d1
- mov d1,mdr
+ mov a3,d0
+ mov d0,mdr
  cmp 0,a0
  beq 8f
- mov d2,d0
- exthu d0
- cmp 998,d0
- beq 3f
- add -GRB,d0
- cmp 4,d0
- bcc 1f
-3:
- movbu (53,a0),d0                 /* Grain 0..3 */
- bra 2f
-1:
- movbu (54,a0),d0
- extb d0
-2:
+ SL_VAL
  mov d0,(a2)
  add 4,sp
  movm (sp),[d2,d3,a2,a3]
@@ -3046,120 +3157,164 @@ sl_get:
 9:
  jmp ed_get
 
-/* SL_ID miss: d0 = 904..907 and P valid (a2 = P, d2 = k). Uses d2, d3, a2. */
- .macro SL_ID miss
+/* REAL miss: d0 = a bar id (904 / GRB / NRB / VFB + k) and P valid -> a3 = class 1..4, d2 = k, a2 = P.
+ * Uses d2, d3, a2, a3. */
+ .macro REAL miss
+ mov 1,a3
  mov d0,d2
  exthu d2
  add -904,d2
  cmp 4,d2
- bcc \miss
- PVAL \miss
- .endm
-
-/* GR_ID miss: d0 = GRB..GRB+3 and P valid (a2 = P, d2 = k). Uses d2, d3, a2. */
- .macro GR_ID miss
+ bcs 90f
+ mov 2,a3
  mov d0,d2
  exthu d2
  add -GRB,d2
  cmp 4,d2
+ bcs 90f
+ mov 3,a3
+ mov d0,d2
+ exthu d2
+ add -NRB,d2
+ cmp 4,d2
+ bcs 90f
+ mov 4,a3
+ mov d0,d2
+ exthu d2
+ add -VFB,d2
+ cmp 4,d2
  bcc \miss
+90:
  PVAL \miss
  .endm
 
-/* sl_cnt <- facade +28 word 0x60e57490 (d0 id, a0 -> d0 count); else pf_cnt. */
+/* sl_cnt <- facade +28 word 0x60e57490 (d0 id, a0 -> d0 count); else pf_cnt. Sharp 8, Grain 4, NR 4, VigFix 2. */
 sl_cnt:
- movm [d2,d3,a2],(sp)
- SL_ID 7f
+ movm [d2,d3,a2,a3],(sp)
+ REAL 8f
  mov 8,d0
- bra 6f
-7:
- GR_ID 8f
+ cmp 1,a3
+ beq 6f
  mov 4,d0
+ cmp 4,a3
+ bne 6f
+ mov 2,d0
 6:
- movm (sp),[d2,d3,a2]
+ movm (sp),[d2,d3,a2,a3]
  rets
 8:
- movm (sp),[d2,d3,a2]
+ movm (sp),[d2,d3,a2,a3]
  jmp pf_cnt
+
+/* the class's lowest value (d0) and count (d1) for index <-> value: Sharp -5/8, Grain 0/4, NR -2/4, VigFix -1/2 */
+ .macro LOWCNT
+ mov -5,d0
+ mov 8,d1
+ cmp 1,a3
+ beq 99f
+ clr d0
+ mov 4,d1
+ cmp 2,a3
+ beq 99f
+ mov -2,d0
+ cmp 3,a3
+ beq 99f
+ mov -1,d0
+ mov 2,d1
+99:
+ .endm
 
 /* sl_vbi <- facade +32 word 0x60e57494 (d0 id, d1 index, a0, a1 out or 0 -> d0 value, -1 none); else pf_vbi. */
 sl_vbi:
- movm [d2,d3,a2],(sp)
- SL_ID 7f
- mov d1,d0
- cmp 8,d0
+ movm [d2,d3,a2,a3],(sp)
+ REAL 8f
+ mov d1,d2                        /* the index (REAL keeps d1) */
+ LOWCNT
+ cmp d1,d2
  bcs 1f
  mov -1,d0
  bra 2f
 1:
- add -5,d0
- bra 2f
-7:
- GR_ID 8f
- mov d1,d0                        /* Grain: index = value 0..3 */
- cmp 4,d0
- bcs 2f
- mov -1,d0
+ add d2,d0
 2:
  cmp 0,a1
  beq 3f
  mov d0,(a1)
 3:
- movm (sp),[d2,d3,a2]
+ movm (sp),[d2,d3,a2,a3]
  rets
 8:
- movm (sp),[d2,d3,a2]
+ movm (sp),[d2,d3,a2,a3]
  jmp pf_vbi
 
 /* sl_sel <- facade +40 word 0x60e5749c (selectable: d0 id, d1 value, a0 -> d0 1 / 0); else stock 0x60b86a01. */
 sl_sel:
- movm [d2,d3,a2],(sp)
- SL_ID 7f
+ movm [d2,d3,a2,a3],(sp)
+ REAL 8f
+ mov d1,d2                        /* value */
+ LOWCNT
+ sub d0,d2                        /* index */
  clr d0
- cmp -5,d1
- blt 3f
- cmp 2,d1
- bgt 3f
- mov 1,d0
- bra 3f
-7:
- GR_ID 8f
- clr d0
- cmp 0,d1
- blt 3f
- cmp 3,d1
- bgt 3f
+ cmp d1,d2
+ bcc 3f
  mov 1,d0
 3:
- movm (sp),[d2,d3,a2]
+ movm (sp),[d2,d3,a2,a3]
  rets
 8:
- movm (sp),[d2,d3,a2]
+ movm (sp),[d2,d3,a2,a3]
  jmp stock_sel
 
 /* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
- * d2/d3/a2/a3 saved by the call, frame 68). 904..907: -5..+2 into slot +54, then ed_set's dirty + manager refresh. */
+ * d2/d3/a2/a3 saved by the call, frame 68): our bar ids -> the slot byte, then ed_set's dirty + manager refresh. */
 sl_set:
- SL_ID 6f
- cmp -5,d1
+ REAL 9f
+ asl 6,d2
+ add a2,d2                        /* d2 = P + 64k */
+ cmp 1,a3
+ bne 2f
+ cmp -5,d1                        /* Sharp -5..+2 -> +54 */
  blt 7f
  cmp 2,d1
  bgt 7f
- asl 6,d2
- mov a2,a3
- add d2,a3
- movbu d1,(86,a3)                 /* P + 64k + 32 + 54 */
+ mov d2,a3
+ movbu d1,(86,a3)
  jmp s_dirty
-6:
- GR_ID 9f
- cmp 0,d1
+2:
+ cmp 2,a3
+ bne 3f
+ cmp 0,d1                         /* Grain 0..3 -> +53 */
  blt 7f
  cmp 3,d1
  bgt 7f
- asl 6,d2
- mov a2,a3
- add d2,a3
- movbu d1,(85,a3)                 /* P + 64k + 32 + 53: Grain */
+ mov d2,a3
+ movbu d1,(85,a3)
+ jmp s_dirty
+3:
+ cmp 3,a3
+ bne 4f
+ cmp -2,d1                        /* NR -2..+1 -> +51 (3 Off, 2 Low, 0 Camera, 1 Std) */
+ blt 7f
+ cmp 1,d1
+ bgt 7f
+ mov d1,d3
+ add 2,d3
+ add nr_v2s,d3
+ mov d3,a3
+ movbu (a3),d3
+ mov d2,a3
+ movbu d3,(83,a3)
+ jmp s_dirty
+4:
+ cmp -1,d1                        /* VigFix -1..0 -> +52 (1 Off, 0 Camera) */
+ blt 7f
+ cmp 0,d1
+ bgt 7f
+ mov d1,d3
+ not d3
+ inc d3                           /* -1 -> 1, 0 -> 0 */
+ mov d2,a3
+ movbu d3,(84,a3)
  jmp s_dirty
 7:
  clr d0
@@ -3188,19 +3343,125 @@ sl_rng:
  mov 2,d0
  jmp rng_back                     /* 0x611d1090: mov d0,(4,sp) */
 
-/* sl_dot <- jmp from 0x611d10fb (same frame): the dot's x = centre + value x step, stock step 155 px (a -2..+2 bar).
- * The Sharp bar (min -5, from sl_rng) is split at 0, which stays on the centre mark: below 0 it steps 62 px (-5 at
- * the left end, like Shading's bar), above 0 the stock 155 px (+2 at the right end). Camera test 2: one step size for
- * the whole bar left +2 short of the end. */
+/* rw_bar <- jmp from 0x611d1035 (bar setup, d0 = the row's item; stock: 59 -> 0x611d1057, 5399 -> 0x611d1074, else
+ * 0x611d1092 = no value). Our rows: their value into (24,sp) (left-column id, as stock reads 7), ends a3 = min,
+ * d0 = max: Noise Filter -2..+1, Shading Comp. -1..0. Keeps d2, d3 (the stock function's). */
+rw_bar:
+ cmp 59,d0
+ bne 1f
+ jmp bar_59
+1:
+ cmp 5399,d0
+ bne 2f
+ jmp bar_5399
+2:
+ cmp NR_IT,d0
+ beq 3f
+ cmp VF_IT,d0
+ beq 3f
+ jmp bar_none
+3:
+ mov d0,a3
+ call facade,[],4
+ mov (a0),a2
+ mov sp,a1
+ mov (12,a2),a2
+ add 24,a1
+ mov a3,d0
+ calls (a2)                       /* GetValue(item) -> (24,sp) */
+ cmp NR_IT,a3
+ bne 4f
+ mov -2,a3
+ mov 1,d0
+ jmp rng_back
+4:
+ mov -1,a3
+ clr d0
+ jmp rng_back
+
+/* sl_dot <- jmp from 0x611d10fb (same frame; a2 value, a3 min, (4,sp) max): the dot's x = centre (d2) + d1, stock
+ * value x 155 px (a -2..+2 bar). Ours keep 0 on the centre mark where 0 is inside, and the ends at the bar's ends:
+ *   Sharp -5..+2: below 0 62 px a step, above 155 (camera test 2: one step size left +2 short of the end)
+ *   NR -2..+1: below 0 155, above 310
+ *   VigFix -1..0: the two ends (-310 / +310). */
 sl_dot:
  mov (8,sp),a0
  mov a2,d1
+ cmp -1,a3
+ bne 2f
+ mov 620,d0
+ mul d0,d1
+ add 310,d1
+ jmp dot_back
+2:
  mov 155,d0
- cmp -5,a3
- bne 1f
  cmp 0,a2
- bge 1f
+ bge 4f
+ cmp -5,a3                        /* below 0 */
+ bne 5f
  mov 62,d0
-1:
+ bra 5f
+4:
+ cmp -2,a3                        /* 0 and above: NR's +1 at the end */
+ bne 5f
+ mov (4,sp),d0
+ cmp 1,d0
+ beq 6f
+ mov 155,d0
+ bra 5f
+6:
+ mov 310,d0
+5:
  mul d0,d1
  jmp dot_back                     /* 0x611d1103: add d1,d2 */
+
+/* lc_vf <- row switch 0x6155124c (the left column's cell, frame of 0x611d0848): as Shading's case 0x611d09de (cell
+ * type 5: Shading's icon) but the value of Shading Comp.'s own id instead of 1016 -> 0x611d0a09. (Noise Filter takes
+ * item 7's case: cell type 4 with icon 1, the "S"; the camera's type-4 icons are only S / Contrast / Saturation.) */
+lc_vf:
+ mov VF_IT,d2
+ mov (20,sp),a3
+ mov 5,d0
+ add d1,a3
+ movbu d0,(a3)
+ mov (24,sp),a1
+ add 26,a1
+ movhu (a1),d0
+ cmp 0,d0
+ beq 2f
+ movbu d0,(166,a3)
+2:
+ call facade,[],4
+ mov (a0),a2
+ mov (40,sp),a1
+ mov (12,a2),a2
+ mov d2,d0
+ calls (a2)                       /* GetValue(row id) -> (108,sp) */
+ jmp lc5_back                     /* 0x611d0a09: the readout */
+
+/* rd_a / rd_b <- jmp from 0x611d16b4 / 0x611d1725 (the readout glyph lookups, d0 = item): 1011, 5397 (stock) and
+ * our rows take the 11-entry -5..+5 tables (0x611d16e6 / 0x611d1757), else none (0x611d16ee / 0x611d175f). */
+rd_a:
+ cmp 1011,d0
+ beq 1f
+ cmp 5397,d0
+ beq 1f
+ cmp NR_IT,d0
+ beq 1f
+ cmp VF_IT,d0
+ beq 1f
+ jmp rda_none
+1:
+ jmp rda_11
+rd_b:
+ cmp 1011,d0
+ beq 1f
+ cmp 5397,d0
+ beq 1f
+ cmp NR_IT,d0
+ beq 1f
+ cmp VF_IT,d0
+ beq 1f
+ jmp rdb_none
+1:
+ jmp rdb_11

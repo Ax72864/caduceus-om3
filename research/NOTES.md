@@ -861,3 +861,31 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   unchanged) and touch on the row.
 - Strings: the camera's text table is in decoded section 01 (UTF-16LE); index at file offset 0x24a0ac, u32 entries
   minus 0xa4f22020 = the string's file offset (256 Sharpness, 91 Contrast, 227 Saturation, 4809 Shading Effect).
+
+### Test 5: two new rows, Noise Filter and Shading Comp. (emulator only)
+- New Picture Mode rows on COLOR 1-4 (the camera has no row for either): **Noise Filter** (string 188, the camera's
+  name for its NR) = slot +51 as a slider -2..+1 (-2 Off, -1 Low, 0 Camera, +1 Standard), and **Shading Comp.**
+  (string 254) = VigFix slot +52 as a slider -1..0 (-1 Off, 0 Camera). Row order: Picture Mode, wheel, H&S, Shading,
+  Shading Comp., Sharpness, Contrast, Noise Filter, Film Grain Effect.
+- Item ids NR_IT 5394, VF_IT 5389 (not in the item table; picked so their keys miss the row switches); bar ids
+  NRB 0x7e10 + k, VFB 0x7e20 + k.
+- How a row exists (all in the column code 0x611c2xxx / 0x611d0xxx):
+  - Item table 0x6154c2a8 (17 x 40 B: id, +4/+16 title struct {4, string id, 0x6154b480}, +26 left-column icon) is
+    searched at 0x611d040d and 0x611d0846 (count 17): both now take it_tab (stock 17 + ours, count 19).
+  - Nine hash switches on item - 6 ({key, target} x 32 or 16, linear probing, key 0 = empty): 0x61536a2c / b2c / c2c
+    / d2c (row actions; item 7's targets are generic), 0x61536f2c (the bar object's setting id: our nr_f / vf_f give
+    NRB/VFB + k), 0x615510cc (bar setup, generic), 0x615511cc (generic), 0x6155124c (left-column cell: item 7's =
+    type-4 cell, GetValue(item id); Shading Comp. uses lc_vf = Shading's type-5 cell with its own id), 0x6155134c
+    (generic). build.py inserts ours at the first empty slot of each probe chain.
+  - Bar setup 0x611d0f99: hook_bar at 0x611d1035 gives our rows their value (GetValue(item)) and ends; sl_dot keeps 0
+    on the centre mark (NR: 155 px below 0, 310 above; VigFix: the two ends). Readout lookups 0x611d1697 / 0x611d1708:
+    hook_rda / hook_rdb send our rows to the 11-entry -5..+5 tables. The left column's id lookup (gr_lc) gives our
+    per-mode ids for the enable check.
+  - Left-column icons: type-4 cells have only 1 S, 2 Contrast, 3 Saturation (others draw the S); type-5 cells draw
+    Shading's icon. Noise Filter uses the S for now (no fitting icon); Shading Comp. the Shading icon.
+- Lesson: `jmp 0x611c2ce8` in our code assembles as a relative jump by that amount (emulator trap at 0xc211b75a).
+  Name stock addresses in editor.ld and jump to the names.
+- Facade handlers reworked by class (REAL macro, LOWCNT): Sharp / Grain / NR / VigFix: count, value by index,
+  selectable, set (with the NR mapping table) all checked in the emulator with Sharp -3, Grain Medium, VigFix -1,
+  NR -2 / +1. GetValue of the rows' own ids (5394, 5389) is answered on COLOR 1-4 only.
+- Package test 5: E1479999.BIN 8cfa7096…, GUIDES.BIN b8c1ea1a…, LABELS unchanged. Camera result: pending.
