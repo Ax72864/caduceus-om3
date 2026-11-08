@@ -5,6 +5,7 @@ SECTIONS {
   .ext4         0x60a8f100 : { *(.ext4) }
   .hook_set     0x60b8798b : { *(.hook_set) }
   .hook_pmod    0x6129ba07 : { *(.hook_pmod) }
+  .hook_rsp     0x611c3cb5 : { *(.hook_rsp) }
   .hook_tone    0x605197d7 : { *(.hook_tone) }
   .hook_fx      0x60555e50 : { *(.hook_fx) }
   .hook_lv      0x6046b8bb : { *(.hook_lv) }
@@ -13,6 +14,19 @@ SECTIONS {
   .hook_nr2     0x603e7891 : { *(.hook_nr2) }
   .hook_sh      0x603e767f : { *(.hook_sh) }
   .hook_cl      0x604955f1 : { *(.hook_cl) }
+  .hook_rng     0x611d1041 : { *(.hook_rng) }
+  .hook_dot     0x611d10fb : { *(.hook_dot) }
+  .hook_lc      0x611d1982 : { *(.hook_lc) }
+  .hook_str     0x610f56a6 : { *(.hook_str) }
+  .hook_pg      0x611d07a4 : { *(.hook_pg) }
+  .hook_pg2     0x611c3709 : { *(.hook_pg2) }
+  .hook_arw     0x611d0be0 : { *(.hook_arw) }
+  .hook_rev     0x611b21e8 : { *(.hook_rev) }
+  .hook_stp     0x611b201b : { *(.hook_stp) }
+  .hook_ic      0x610f5611 : { *(.hook_ic) }
+  .hook_bar     0x611d1035 : { *(.hook_bar) }
+  .hook_rda     0x611d16b4 : { *(.hook_rda) }
+  .hook_rdb     0x611d1725 : { *(.hook_rdb) }
   .ext2         0x607187a8 : { *(.ext2) }
   .ext7         0x6164afd0 : { *(.ext7) }
   .ext3         0x6081fe10 : { *(.ext3) }
@@ -21,9 +35,43 @@ SECTIONS {
   .ext10        0x61aa4300 : { *(.ext10) }
   .ext6         0x60f49590 : { *(.ext6) }
   .ext9         0x619a9670 : { *(.ext9) }
+  .ext11        0x60f49800 : { *(.ext11) }
 }
 color_builder = 0x60518381;
 pm_back       = 0x611bd90f;
+stock_sel     = 0x60b86a01;
+rng_back      = 0x611d1090;
+dot_back      = 0x611d1103;
+lc_back       = 0x611d19b4;
+cha_back      = 0x611c2446;
+chb_back      = 0x611c25a1;
+chc_back      = 0x611c2705;
+chd_back      = 0x611c2867;
+chf_back      = 0x611c2d03;
+lch_back      = 0x611d0b72;
+nf_get        = 0x60063380;
+pg_back       = 0x611d07bd;
+pgm_back      = 0x611c3710;
+rsp_back      = 0x611c3cbd;
+sf_stock      = 0x604be2aa;
+arw_back      = 0x611d0be8;
+rv_469        = 0x611b21f2;
+rv_back       = 0x611b2217;
+stp_back      = 0x611b2021;
+stp_end       = 0x611b2041;
+str_lang      = 0x610f56bd;
+str_back      = 0x610f56ac;
+lc5_back      = 0x611d0a09;
+f2c_obj       = 0x611c2ce8;
+f2c_none      = 0x611c2d42;
+bar_59        = 0x611d1057;
+bar_5399      = 0x611d1074;
+bar_none      = 0x611d1092;
+rda_none      = 0x611d16ee;
+rda_11        = 0x611d16e6;
+rdb_none      = 0x611d175f;
+rdb_11        = 0x611d1757;
+
 color_resume  = 0x6051861a;
 getter        = 0x60063380;
 trig          = 0x60415343;
@@ -94,6 +142,8 @@ TBUF          = 836;
 stock_up      = 0x61223ef7;
 stock_down    = 0x612241b6;
 stock_event   = 0x61225d52;
+stock_left    = 0x6122471c;
+stock_right   = 0x61224c1c;
 fx_back       = 0x60555e56;
 fx_tail       = 0x60555ed6;
 XPTR          = 692;

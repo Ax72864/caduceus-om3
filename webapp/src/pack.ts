@@ -6,9 +6,10 @@ export const SECTORS = ['Yellow', 'Orange', 'Orange-red', 'Red', 'Magenta', 'Vio
 // v0.22 firmware "natural grain" (camera Noise Filter). JSON name -> slot byte -> camera label:
 //   off -> 0 "Global" (Noise Filter untouched), standard -> 6 "Off" (Standard), fine -> 1 "Fine" (Low), film -> 2 "Film" (Off).
 // Older bytes 3..5 read as film. Index = share-code digit (v1/v2: off/fine/film = old 0/1/2; standard = digit 6, v5/v6).
-export const GRAINS = ['off', 'fine', 'film', 'standard'] as const;
-export const GRAIN_BYTE: Record<string, number> = { off: 0, fine: 1, film: 2, standard: 6 };
-export const GRAIN_LABEL: Record<string, string> = { off: 'Camera', standard: 'Standard', fine: 'Low', film: 'Off (most texture)' };   // "Noise reduction: …"
+// v0.23 (OM-3 only): high -> the camera's Noise Filter High; the E-P7 has none and writes it as standard.
+export const GRAINS = ['off', 'fine', 'film', 'standard', 'high'] as const;
+export const GRAIN_BYTE: Record<string, number> = { off: 0, fine: 1, film: 2, standard: 6, high: 6 };
+export const GRAIN_LABEL: Record<string, string> = { off: 'Camera', standard: 'Standard', fine: 'Low', film: 'Off (most texture)', high: 'High' };   // "Noise reduction: …"
 // Older names (packs / share codes made before v0.22), by their old byte: low -> fine, medium..extreme -> film.
 export const LEGACY_GRAINS = ['off', 'low', 'medium', 'high', 'heavy', 'extreme'] as const;
 export const grainFromByte = (b: number): Grain => (b <= 0 ? 'off' : b === 1 ? 'fine' : b === 6 ? 'standard' : b > 6 ? 'off' : 'film');

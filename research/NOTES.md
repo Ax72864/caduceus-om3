@@ -944,7 +944,7 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   0x611d1a5f, end bound 0x611d060a / 0x611d1a74). Both switches do nothing for an unknown item.
 - Emulator: Blacks 0 -> -5, Whites +5 -> +2, bar ends and dots right, left column follows; other rows unchanged.
 - Package test 8: E1479999.BIN 21eb72c2…, GUIDES.BIN 6d109d75…, LABELS.BIN 903af75b… (as test 6). On the owner's card,
-  checked by checksum. Camera result: pending.
+  checked by checksum. Camera result: see test 9.
 
 ### A-B / G-M: the camera's WB grid (research started 2026-11-08; analysis + emulator observation)
 - Owner wants A-B / G-M on COLOR 1-4 as the camera's own WB fine-tune grid, not sliders ("research the grid first").
@@ -1040,3 +1040,373 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   with the dials moving the dot, not on a separate screen. Next: study how the H&S curve row is built and drawn, and
   draw a grid there (the WB screen's grid helpers 0x611c7785 / 0x611c782f, tables 0x615513dc.., 0x61551c50, may help).
   The test 12 route stays in the code for now.
+
+### On-screen WB grid research (2026-11-08; emulator + analysis, nothing for the camera yet)
+- Object kind 7 (factory table 0x61502654, ctor 0x61223340) is the camera's generic 2-D control: Highlight & Shadow
+  (keys 5444..5451 by picture mode, table 0x6153672c) and the WB fine-tune (keys 1580..1618) both use it. Its children
+  come from table 0x615ae434 {key, n, list}: key 1580 -> bars 1580 (A-B) and 1593 (G-M). Tables 0x615aed5c (43 {key,
+  2039 WB / 1153 H&S}) and 0x615ae948 (87 {key, 0x13f, 500, 100}; a 208-byte panel 0x612233de) are read by its ctor.
+- Experiment (branch, not packaged): our A-B / G-M row with item 5398's cases and its row object = kind 7 on key 1580
+  (gk_f): the dials change the look's A-B / G-M (facade redirect while gr_flag is set), but the picture shows the H&S
+  curve: the curve is Picture Mode's own panel (+4920, a 548-byte subclass of the base screen 0x611c76db, ctor
+  0x61287fb4, vtable 0x615e6258), shown by its case 0x611d04e5 (0x611d15d7: +295 = 1, show). With item 7's case there
+  instead, nothing is drawn: the kind-7 object does not draw a grid by itself.
+- Where grids are drawn: the WB screen (0x0417, class vtable 0x61551c6c, 5260 B, base 0x611c76db) draws its grid as
+  part of its own layout: row type 2 (WB±) 0x611d257a sets +393 = 1 (grid on), +5188..5191 B/A/G/M box states,
+  +5194 / +5198 A-B / G-M non-zero, dot x = 594 + 13 A-B (+80 when 0x611d2941 = 1), y = 280 - 13 G-M, and lines at
+  613 + 13 A-B / 299 - 13 G-M. The fine-tune screen (0x0408) is another class (0x612900a5, 3188 B, vtable 0x615ee29c,
+  base 0x611c84eb) with its own layout. Picture Mode's layout (vtable 0x615513cc) has no grid elements.
+- So an on-screen grid needs drawing added to Picture Mode's screen (its layout / compose), e.g. the WB screen's grid
+  elements, or our own pictures (box, letters, dot) placed by the same mechanism. Not started.
+- (continued, 2026-11-08) How the camera draws the WB grid: it is a GUI scene of its own, element type 24813 (record
+  0x6136d9fc, class ctor 0x61192c01, vtable 0x6148d1ac, 15 children at +792 from records 0x6148ccd4.. (box 10904,
+  B/A boxes 10176/10177, G/M 10166/10167, lines, dot 10905 ...), child getter 0x61192c5d). Scene index 485 in the
+  scene-by-index switch 0x61121cec (table 0x6136f59c) creates it. Its update 0x61192dc6 reads property 256, an 18-byte
+  block the WB screen publishes from its +5188 (0x610cd5c4 = publish(d0 id, a0 src, d1 size, a1 flag)): bytes 0..3
+  B/A/G/M box picture states (3 normal, 2 lit), byte 6 A-B line on, h8 A-B line x, byte 10 G-M line on, h12 G-M
+  line y, h14 / h16 dot x / y (594 + 13 A-B, 280 - 13 G-M, +80 when 0x611d2941 = 1). Example (WB Auto, 0 / 0):
+  03030303 00000000 b502 0000 2b01 a202 1801.
+- Scenes live in holder elements (0x610cdf05 = load scene index d0 into holder a0; -1 empties; +768 index, +776 the
+  scene). At start-up the GUI fills ~25 top-layer holders (one with 485, captured by sc_cap); every screen empties
+  them (-1) when it opens and loads its own layers (Picture Mode: 497, 288, 287, 286, 285, 501, 502, 457, 456; WB
+  screen: 497, 456, 498, 457; the grid comes inside the WB screen's layer 498).
+- Tries (emulator, branch only): publishing property 256 from Picture Mode alone shows nothing (no grid scene there);
+  loading 485 into the start-up holder from Picture Mode's update crashed; doing it while Picture Mode loads its
+  layer 501 does not crash but no grid shows and the grid scene's update never runs (the scene-by-index path for 485
+  is not taken there; not understood yet). Next: find how layer 498 creates its grid child, or create element 24813
+  directly (0x6111caee with record 0x6136d9fc) under one of Picture Mode's layers.
+
+### Test 13: the WB grid on the Picture Mode screen (emulator only)
+- Scene indices are looked up as index - 13 in table 0x6136f59c: the WB grid (element 24813, record 0x6136d9fc) is
+  scene **498** (not 485; 485 is element 24800). The WB screen loads it as one of its layers (497, 456, 498, 457).
+- A layer only draws when its holder is part of the shown screen: a scene loaded into a start-up top-layer holder or
+  into Picture Mode's hidden layers (287, 501, 502) gets no canvas (+0x24 = 0) and its elements stay at state +0x2c = 0
+  (0x610c9ce8 draws state 1 -> 2). Picture Mode's drawn layers: 497, 288, 286, 285, 457 (the bottom bar), 456.
+- Ours: sc_cap (hook 0x610cdf05) remembers the holder of Picture Mode's layer 457. On our A-B / G-M row, gr_upd (hook
+  0x611d04ec, the Picture Mode update) loads scene 498 into that holder (0x610cdf05), publishes the grid block
+  (property 256, gr_pub) and makes the scene re-read it (method 0x61192d6c); on any other row, or when leaving Picture
+  Mode (gx_map), the holder gets 457 back. gr_is checks the holder's scene is element 24813 (scene +4).
+- The row: item 5398's cases (its object = the camera's 2-D control on WB key 1580, gk_f), item 7's left cell with
+  +26 = 7 (the camera's WB± picture 12545 in ic_list) and item 7's main-area case (no curve). A dial change writes the
+  look's slot +26 / +27 (facade redirect while gr_flag), then gr_pub / gr_ref move the dot and lines.
+- Emulator: grid with the look's values (dot and lines move with the dials), Shading's bar back on the next row, COLOR 2
+  its own values, the camera's own WB screen unchanged afterwards. No value text (the fine-tune screen's "A3 . G2"
+  header is not part of this scene).
+- Package test 13: E1479999.BIN e0efd67c…, GUIDES.BIN 83f72a22…, LABELS.BIN 903af75b… (unchanged). Card not connected
+  at packaging; copied later and checked by checksum. Camera (owner, 2026-11-08): not what they wanted; the grid route
+  is dropped for two sliders (test 14). The grid findings stay here for later.
+
+### Test 14: A-B and G-M as two slider rows (emulator only)
+- Owner: drop the grid, use two sliders. Firmware code back to test 11 (camera-tested), then two rows after Whites
+  built exactly like Blacks / Whites: items AB_IT 5384 "A-B", GM_IT 5383 "G-M" (our strings), bar ids ABB 0x7e50 /
+  GMB 0x7e60 + k, classes 7 / 8, the look's slot +26 / +27, -7..+7 (count 15). A write also sets wb_flags +25 bit0
+  and clears bit7, as the Extras wheel does. Bars: rw_bar ends -7 / +7, sl_dot 44 px a step, top-down (rv_chk) and
+  stop at the ends (st_chk). Readout: our 15-entry sign / digit tables rd15_a / rd15_b fed to the stock search loops
+  (0x611d16ee / 0x611d175f). Left column: item 7's slider cell with +26 = 7 / 8 and our icons "A-B" / "G-M"
+  (firmware/mkicons.py; IC_AB 0x7f82 / IC_GM 0x7f83; ic_list now 8 choices).
+- Emulator: A-B +3, stops at -7 (minus greys out), G-M -2, Shading's bar on the next row; slot values and wb flag set.
+- Package test 14: E1479999.BIN 61fdfcb7…, GUIDES.BIN 8d56b7e9…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08): works ("this is truly amazing") -> A-B / G-M rows camera-tested.
+
+### Test 15: side-bar titles, row order, a smaller Extras wheel (emulator only)
+- Owner asks: (1) the side bar showed only "Off" / "On" / "Std" for Noise Filter and Vignette Correction: give them a
+  short title; (2) a better row order; (3) take NR, A-B, G-M, Blacks, Whites, VigFix, Grain and Sharp off the Extras
+  wheel (they are Picture Mode rows now): Glow/Clarity at 12 o'clock, Art Effect at 6 o'clock. Owner is thinking of
+  dropping Glow/Art until they run faster with grain (undecided).
+- (1) firmware/mkicons.py now draws 10 pictures: the four 46 x 46 slider icons and six 100 x 76 two-line pictures
+  ("Vignette" over Off / On, "Noise" over Off / Low / Std / High), our ids IC_BK 0x7f80 .. 0x7f89. ic_get answers the
+  range from a table ic_ent; descriptors ic_d0..9 (build.py fills w, h, size, payload), streams packed into ic_pay
+  (16 KiB, 14128 B used). Finding: in a choice row's item entry the FIRST icon list (nr_l1 / vf_l1) is the left column
+  and the SECOND (nr_l2 / vf_l2) is the strip under the title (the old comments had them the other way round; both
+  lists held the same words, so it never showed). Strip keeps the camera's words / Off-On icons.
+- (2) pm_list: Picture Mode, Color (wheel), Contrast, Highlight & Shadow, Blacks, Whites, A-B, G-M, Sharpness, Noise
+  Filter, Vignette Correction, Shading, Film Grain (look -> tone -> white balance -> detail -> lens -> finish).
+- (3) xt_tab / xb_vt: sector 0 (12 o'clock) Glow/Clarity +49, sector 6 (6 o'clock) Art +50, all others slot byte 0
+  (no cell). xb_vl: slot byte 0 -> the stock readout picture. LABELS.BIN unchanged (label numbers kept).
+- Emulator: rows in the new order; side bar "Noise / Std", "Vignette / On"/"Off" follow the value; strips unchanged.
+  Wheel (sub dial = slice, main = value): 12 o'clock main+2 -> +49 = 2; the other sectors refuse; 6 o'clock -> +50
+  steps; "Color All" (stock all-cells mode) steps both. The emulator does not draw the wheel itself.
+- Package test 15: E1479999.BIN 77f0aea2…, GUIDES.BIN dc6ad9a9…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
+  checked by checksum. Camera result: pending. docs/USING.md (main) still describes the old wheel: update at release.
+
+## v0.24 film list (2026-11-08; branch feature/v0.24-film-list)
+- Owner: the Picture Mode list should show COLOR 1-4 and then every film (look) on the card; a film's tweaks are saved
+  into that film. (Caduceus for the E-P7 does not add entries: it shows the chosen look's name in place of COLOR n.)
+- How the list is made (emulator traces + disassembly): on the COLOR position the Picture Mode row (item 111) shows the
+  value list of setting **901** (the COLOR picture mode). Table 0x6152f8a0 = {setting, count, records} x 6: 111 (40),
+  898 (8), 899 (31), 900 (1), 988 (MONO 1-4), 901 (COLOR 1-4: 4 records at 0x6152f850). Record 20 B {value, id, value,
+  0, func}: the builder 0x611b3250.. keeps a value when func(value) (+16) or else GetValue(id) (+4, 1072..1075 for
+  COLOR 1-4) is non-zero, then asks facade selectable(901, value) (sl_sel); the current value is GetValue(901) from
+  0x611b32ae; the left column reads GetValue(901) from 0x611d1869. Choosing calls SetValue(901, value) (our sl_set).
+  GetValue(111) (the picture mode everywhere else: 0x610fd979 often, the column builder 0x611bd835, ...) is never
+  touched. Pictures / strings per value come from item 111's three option lists (it_tab entry 0: title, left column,
+  strip; 48 x 12 B each).
+- Test 1 (emulator only): build.py points 901 at fl_rec (the stock four + 20 records {FV0 + j, FLB + j, FV0 + j, 0, 0},
+  FV0 = 100) and item 111's lists at fl_l0..2 (the stock 48 + 20 type-4 strings ST_F0 + j). fl_get: GetValue(FLB + j)
+  = film j there (a name, or any non-zero record byte); GetValue(901) from the two GUI callers = FV0 + 5k + n - 1 when
+  COLOR k has look n and that film is there. fl_sel: selectable = film there. fl_set: a film -> COLOR k = j / 5 gets
+  look n = j % 5 + 1 (pf_put, as the Film page), then the manager sets 901 = COLOR k; COLOR k itself -> look 0. fl_str:
+  the name as UTF-16 in a buffer after the LOOKS.BIN copy (pf_load mallocs PF_LEN + 680), unnamed -> "Look n".
+- Emulator: the strip reads COLOR 1-4, then the films by name; right / left switch COLOR and look (LIDX follows, e.g.
+  3,3,0,1); the title shows the full name; reopening after a half-press highlights the film; the saved selection is
+  written to LOOKS.BIN. Strip cells are narrow: names longer than ~5 letters are cut ("SoftOff" -> "oftOf"). The SCP
+  and live view still say COLOR n.
+- Known in test 1: choosing COLOR n itself sets its look to 0 (the factory settings, as the Film page's 0), and a film
+  keeps its tweaks only when saved with OK held on the Film page (v0.21 behaviour). Both are for test 2 (owner: tweaks
+  go into the film; COLOR 1-4 should keep their own settings).
+- Package film test 1: E1479999.BIN 2006939f…, GUIDES.BIN 914f5642…, LABELS.BIN 903af75b… (includes v0.23 test 15).
+  Card not connected at packaging; copied later and checked by checksum. Camera (owner, 2026-11-08): "it works" ->
+  the film list is camera-tested (films by name, switching, title).
+- Film test 2 (emulator only): owner: cells "FILM 1, 2, ..." in the same style and size as COLOR 1-4 ("it should look
+  seamless"), the film's name as the big title. The camera's list font is too big: "Film 12" on one line is cut and
+  "FILM" + line break spills out of the cell (a line break, 10, does work in type-4 strings). So pictures: measured the
+  stock COLOR cells (strip 100 x 76: "COLOR" fill rows 16..36, x 13..85, 2 px edge, stems ~3 px; digits rows 43..68,
+  9..16 px wide; left column 82 x 62) and matched our font to them (firmware/mkicons.py: "FILM" cap 20, baseline 36,
+  0.88 width, thresholds 0.2 / 0.4 / 0.6; digits cap 26, baseline 69, 0.95 width). 20 finished pictures would be
+  ~30 KB of firmware, so the camera draws them: fl_mk (called by pf_load after the films load, HLS task) composes each
+  row from fl_top (the "FILM" line, 2000 B, 4 bits a pixel) or the digit pictures fl_dig (10 x 360 B; one digit at x 40,
+  two at x 31 / 49, a digit pixel replacing clear or edge only) and encodes runs as type-11 tokens (fl_emit) into up to
+  3 heap blocks of 14 KB; block 0 holds 20 slot words + 20 descriptors; P+TTAB (816, unused before) = the slot words.
+  The strip list's film entries are type 3 IC_FM0 + j (0x7f90..); ic_get -> fl_ic counts the films before j for the
+  number. Bug found in the emulator: fl_ic called fl_has, which overwrote mdr, and ic_get returns with retf (through
+  mdr) -> crash; fl_ic now saves and restores mdr. Emulator: all 20 pictures byte-identical to mkicons.film_cell(n)
+  (memory dump), the strip reads COLOR 1-4, FILM 1 .. FILM 13 with the names as titles. The left column still shows
+  COLOR n (it does not use these lists). ext11 31.9 KB of 64 KB.
+- Package film test 2: E1479999.BIN 8657819e…, GUIDES.BIN 8b742cfb…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Owner (2026-11-08): "this looks great" (look approved).
+- Film test 3 (emulator only): owner: (1) the quick menu (Super Control Panel) should show the film, (2) changes to a
+  film are kept, not reset.
+  - Quick menu: its picture-mode cell is a picture, 160 x 48, ids 15746..15749 = "COLOR 1..4", 15750..15753 = with
+    "*" (choice records {76, 76, id, 0xffff} at 0x61408260..); its text style: no dark edge, fill 13, soft 14 / 15 / 7,
+    ink rows 7..40, stems ~5 px, letters ~2 px apart. Its title "Color Profile k" = strings 2755 / 2756 / 2757 / 4769
+    (the only string asked when it opens). ic_get -> fl_scp: when COLOR k holds a film that is there, "FILM N" (N its
+    list number) drawn by fl_sp into a heap block (P+TORG, allocated by fl_mk: 4 slot words, 4 descriptors, 4 drawn
+    numbers, 4 pictures) and redrawn only when N changes; st_get -> fl_tt: those titles -> the film's name. Parts from
+    firmware/mkicons.py sp_parts (each letter drawn on its own, cap 32, 0.75 width, 0.6 px blur, 2 px apart, 6 px
+    before the number; the "*" picture shows the same "FILM N"). Emulator: the cell reads FILM 1, the title the
+    film's name; the picture is byte-identical to mkicons.sp_film(1) (memory dump).
+  - Keeping changes: leaving a film (choosing another film or COLOR n in the list, or turning the Film page) now saves
+    COLOR k into the film first: fl_sw (in place of pf_put's call in s_look and fl_set) = pf_cap(k, old look) + dirty,
+    then pf_put. pf_cap takes everything (wheels, Extras, WB shift, Blacks / Whites, the 18 camera settings). Holding
+    OK on "COLOR n" still resets it and sets its look to 0 (nothing saved over the film). Emulator: FILM 1 Contrast
+    +1 -> +2, FILM 2, back to FILM 1: +2; after a half-press LOOKS.BIN record 0 +41 = 2.
+  - ext11 38.6 KB of 64 KB.
+- Package film test 3: E1479999.BIN 590db381…, GUIDES.BIN 7830515b…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Not flashed (owner asked for test 4 first).
+- Film test 4 (emulator only): owner: COLOR 1-4 keep what you adjust; OK held resets COLOR 1-4 and FILM 1-20 to their
+  defaults.
+  - Changes are kept apart from the films as built: new card file EDITS.BIN (docs/FORMATS.md), written by the camera
+    at the half-press save when changed (fl_save in place of pf_save's call in ed_trig), read when the films load (fl_mk;
+    bad size / magic / CRC -> nothing valid). Record r = film j (0..19) or COLOR k's own settings (20 + k), LOOKS.BIN
+    record format (pf_capto / pf_put), + a check (films: CRC-32 of the LOOKS.BIN record it came from, so a film
+    rebuilt in the Control Panel drops its old changes). LOOKS.BIN is no longer changed by switching (only by the
+    Film page's OK-held save, which makes that the film's new default, and the selection bytes).
+  - fl_sw (every look switch, list or Film page): COLOR k leaving look 0 -> its own settings saved (r = 20 + k);
+    leaving film j -> its changes saved (r = j); then the new one loads from its record when valid (pf_put1: pf_put
+    from any record), else as built (pf_put; look 0 without own settings = factory).
+  - OK held with a film selected: the camera sends the reset to the rows listed for the selected picture mode
+    (table 0x61536324, 8 entries {mode, count, rows}: MONO / COLOR 1-4; read at 0x611c3c07, bound `cmp 8` at
+    0x611c3cae); a film value had no entry, so nothing happened and the OK release left the screen. build.py points it
+    at fl_rtab (the stock 8 + 20 films with one row, 5397, the wheel: the stock rows 7 / 8 / 5398 / 5399 would put
+    their settings to factory after the film loads). xb_lkh (0xf881) with COLOR k on film j: j's changes dropped,
+    the next capture skipped, look 0, then facade SetValue(901, FV0 + j) -> fl_set / fl_sw load the film as built.
+    OK held on COLOR n itself: the stock factory reset, as before.
+  - Bug found: 0x611d1869 (made to read the film value in test 1) is the "COLOR k changed?" check behind the Reset
+    guide and the held-OK reset, not the left column; it reads COLOR k again.
+  - Emulator: COLOR 1 Contrast +2 -> FILM 1 (+1 as built) -> back to COLOR 1: +2; FILM 1 to +2, FILM 2, back: +2; OK
+    held on FILM 1: +1, stays on FILM 1, its record equal to LOOKS.BIN's; COLOR 1 still +2 after. OK held on COLOR 1
+    (+2): 0, '*' gone, still 0 after a film. EDITS.BIN written (CRC ok), LOOKS.BIN records unchanged.
+  - Owner's card: LOOKS.BIN / BUNDLES.BIN equal their .NEW copies (saving healthy; the older FAT dates are cosmetic).
+- Package film test 4: E1479999.BIN 8408e7a8…, GUIDES.BIN 11962fd4…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08): "nearly perfect" -> COLOR 1-4 / film keeping and the held-OK
+  resets camera-tested; one quirk: after adjusting a film the title read "Picture Mode" (owner photo: FILM 6, Blk -1).
+- Film test 5 (emulator only): the title on the Picture Mode row is the item's own title, string 203 "Picture Mode",
+  whenever the row is reached with up / down (stock behaviour for COLOR n as well); the selection's title (l0) shows
+  only when the value is changed. st_get -> fl_pm: string 203 while the GUI state is 0x0418 (Picture Mode screen; the
+  state is the two bytes at the pointer 0x603713a4 on the OM-3 = E-P7's 0x60368b88, from om-emu src/fw/ports.mjs)
+  and COLOR k is selected -> fl_tt with "Color Profile k" (the film's name when it holds one). Emulator: after an edit
+  and up to the row: "Color Profile 1" on COLOR 1, "SoftOff" on FILM 1; the quick menu still FILM 1 / SoftOff.
+- Package film test 5: E1479999.BIN 0c3a0925…, GUIDES.BIN 7d301e73…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08, photos): the title keeps the film's name ("Classic Chrome") ->
+  camera-tested. Two issues: (1) the row's left cell still reads COLOR 1 on a film; (2) the '*' were wrong: after
+  cycling through the films COLOR 2-4 had '*' (they held films), and films showed '*' too.
+- Film test 6 (emulator only):
+  - Pictures per COLOR / MONO profile: 82 x 62 (unused here), 100 x 76 cell, 100 x 76 cell with '*' (14519..14530
+    COLOR, 14507..14518 MONO). The star: the cell builder (0x611d0e2a) asks "COLOR changed?" (0x6129ba07) for a
+    COLOR value and swaps in the '*' picture (table 0x61550fc0 {value, id}); any other value draws as listed.
+  - Left cell: GetValue(111) returning to 0x611d08f4 (the left column's generic cell) -> the film value (fl_get), and
+    item 111's left-column list has the film cell pictures (IC_FM0 + j); the cell draws "FILM n" (+ a '*' mark when
+    the film is changed, see below).
+  - '*' rules: COLOR n = its own settings differ from the factory; a film = it differs from how it was built.
+    .hook_pmod -> fl_pmod: COLOR k holding a film -> for the cell (any caller but 0x611d1837): its own settings' flag
+    (EDITS.BIN record 20 + k byte +63, set by fl_sw from ed_pmod when they are saved); for the row's own check
+    (0x611d182f, return 0x611d1837: the row '*' and the Reset guide): the film changed? (its 18 settings via fl_isdef
+    and the slot's pf_bt bytes against LOOKS.BIN record j). The seven "is at default" sites (ISDEF_SITES) -> fl_isdef:
+    one of COLOR k's 18 settings (pf_ids) while COLOR k holds a film -> default when equal to the film as built
+    (Saturation sectors: Hue and Light too); else ed_isdef.
+  - Emulator: FILM 14 as built: no '*'; Contrast +1 -> +2: "+2*", left cell FILM* 14, Reset guide; OK held: all
+    clear; after cycling all films COLOR 2-4 have no '*', COLOR 1* (changed itself) keeps it. (The row's return address
+    was first taken as 0x611d1835: the call is 7 bytes.)
+- Package film test 6: E1479999.BIN f70024c2…, GUIDES.BIN 3e240b4b…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08): "so so close": FILM n in the left cell works; two asks: the
+  numbers a little smaller; a changed film shows no '*' in the list.
+- Film test 7 (emulator only), with three more owner asks:
+  - Digits: cap 24, baseline 68, 0.92 width (box 18 px; firmware constants FDB / FDS / FX1 / FX2 / FX2B from build.py).
+  - "FILM*": a second "FILM" line with our font's asterisk over its top-right corner (as the stock "COLOR*": star
+    rows ~4..21, just past the word's end). fl_mk draws 40 pictures (20 plain + 20 starred; slot / descriptor 20 + n - 1;
+    up to 6 heap blocks of 14 KB; if they run out, the plain ones are used). fl_ic: a list cell (IC_FM0 + j) of a
+    changed film (fl_fch) gets the starred picture; the row's left cell uses IC_FL0 + j, never starred (the row adds
+    its own '*'). fl_fch: film on its COLOR now -> fl_live (the row check, moved out of fl_pmod); else its saved
+    changes (EDITS.BIN, valid) differ from the LOOKS.BIN record in bytes 0..52.
+  - Wheel pages (owner: "Color, Color all, Hue, Light"; keep the code): W_FILM / W_EXTRAS 0 in editor.s -> INFO goes
+    Saturation -> (All) -> Hue -> Light -> Saturation; the wheel opens on Saturation. Glow / Clarity and Art Effect read
+    0 where they act (XB_FX 0 in xblock.s: capture, live view, Soft Focus weight, Art Effect flags); the slot and
+    LOOKS.BIN bytes are kept. 1 brings either back.
+  - "HSL" in place of the Color row's "Color / Vivid" cell (82 x 62, list at 0x6154be9c id 11389 -> IC_HSL 0x7f8a;
+    mkicons PICTURES[10], cap 26, the FILM cells' weight).
+  - Emulator: FILM* 2 in the list after a Contrast change and after switching away and back; HSL; INFO axis 0 -> 0 (All)
+    -> 2 -> 1 -> 0; the earlier star / reset / quick-menu checks unchanged.
+- Package film test 7: E1479999.BIN 9c8cdf20…, GUIDES.BIN 14c04fff…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08), three asks: (1) the '*' still wrong ("not always showing right, or
+  showing even after resetting"; photo: FILM 6, "Blk -1*" but no '*' on the film); (2) the number under FILM in the
+  row's left cell is cut off ("6"); (3) rename Color All to Saturation and hide the single-colour page.
+- Film test 8 (emulator only):
+  - (1) Cause found and reproduced in the emulator (old build, a film built with Blacks -1: "Blk -1*", film without
+    '*'): our own rows (Grain, NR, VigFix, Blacks, Whites, A-B, G-M; ids GRB..GMB + k) asked "is at default" through
+    0x611d1ac3 -> fl_isdef -> ed_isdef, i.e. against the factory 0, not the film. fl_isdef now compares those rows'
+    slot bytes with the LOOKS.BIN record (fl_xr, the pf_bt pairs) while COLOR k holds a film. Emulator: film built
+    Blk -1 -> "Blk -1" (no '*'), -2 -> "Blk -2*" + FILM* , OK held -> "Blk -1", no '*' anywhere.
+  - (2) The left cell is the camera's small 82 x 62 cell; it took the 100 x 76 list picture and cut its bottom. Now
+    its own picture (mkicons film_lcell: FILM cap 20 baseline 26, digits cap 22 baseline 55). The cell drawing is one
+    renderer (fl_rc) with three layouts (fl_L0 list, fl_L1 "FILM*", fl_L2 left cell): fl_mk draws the 20 plain list
+    cells at load (TTAB); "FILM*" and left cells are drawn on demand into an 8-slot cache (fl_cget, P+STC 824, 16 KB;
+    8 >= cells on screen at once). Emulator dump: all 20 plain cells, the cached FILM* and left cells byte-identical
+    to mkicons.
+  - (3) W_SALL 1: Saturation always shows all colours. INFO: Saturation (all) -> Hue -> Light -> Saturation (all)
+    (k_sall: after Light the stock INFO handler turns all colours on); left / right (editor records +20 / +24, events
+    0x9008 / 0x900a) do nothing there (ed_l / ed_r), so the single-colour page can't be reached; after OK held on
+    Saturation all colours come back (e_sall). The wheel's "Color" label (descriptor 0xa4cf61f8, 70 x 30) and the
+    "Color Select [INFO]" guide (0xa49edf88, 180 x 50) show our "Saturation" pictures on Saturation and the camera's
+    elsewhere (gd_sel from gd_set; ed_trig passes -1 at the half-press: the camera's own again). Pictures built by
+    card/mklabels.py / card/mkguides.py (mkicons.sat_pictures), copied into the heap by fl_mk (P+SATB 828). The
+    rear-dial label stays the camera's "Vivid All". Not tried: setting all colours before the stock init (the opening
+    INFO then stepped on to Hue in the emulator); the front dial on Saturation (the emulator has no dial key; if it
+    still leaves all colours, it goes through another record).
+  - Package film test 8: E1479999.BIN 4cef0e81…, GUIDES.BIN 015d526f…, LABELS.BIN 903af75b… (unchanged). On the
+    owner's card, checked by checksum. Camera (owner, 2026-11-08): the film numbers look good; two asks: (1) holding OK
+    on a film jumps the list to the COLOR cells and the highlighted film is off screen; (2) the shooting screen still
+    shows "COLOR n", not the film.
+- Film test 9 (emulator only):
+  - (1) The held-OK reset (0x611c3b..) ends by putting the row's cursor place on screen (row +88) = the list index
+    (fine for the camera's 4 COLOR cells); with 24 cells the strip then started at COLOR 1 with FILM 6 off screen
+    (row +86 the index, +88 its place; found by a memory diff and a write watch: 0x611c3cba). .hook_rsp 0x611c3cb5 ->
+    rs_pos: the place is kept when it is not past the index. Emulator: FILM 6 and FILM 2 reset in place, the arrows
+    move on from there.
+  - Also: OK held on the wheel of a COLOR holding a film reset the slot to the factory (Blacks 0), so a film built
+    with Blk -1 showed "Blk ±0*" after its reset. xb_lkh: the wheel reset (0x903e) on a film = the film as built (as
+    OK held on FILM n), then the wheel's values re-read (e_lk) and all colours on Saturation (e_sall). Emulator:
+    "Blk -1", no '*'.
+  - (2) The shooting screen's picture-mode name is a picture, 15706..15709 "COLOR1".."COLOR4" (96 x 44; found by
+    tracing the picture lookup in live view). fl_lvp (ic_get) -> "FILM N" for a COLOR holding a film, drawn by fl_sp
+    (now one renderer with layouts: fl_LS the quick menu's 160 x 48, fl_LVL this one; mkicons lv_parts / lv_film, the
+    label style, cap 24 baseline 33) into a 4-picture block (P+LVB 832, LV_SLOT 2800). Emulator dump: the live-view
+    "FILM11" and the quick menu's byte-identical to mkicons.
+  - Found while doing this: `jmp 0x604be2aa` (g_sf's fallback without the code block) assembled as a relative jump to a
+    wrong address (the same happened to a first `jmp 0x6122471c`); bare numbers in jmp / call are linker symbols now
+    (sf_stock, stock_left, stock_right, rsp_back). Never taken so far (the code block is always loaded).
+  - Not verified: in the emulator the up arrow on the wheel's Saturation page (all colours) still shows one colour
+    (it goes through the Picture Mode screen, not the editor's records). The front dial: no emulator key.
+  - Package film test 9: E1479999.BIN d44c4c76…, GUIDES.BIN b05673ac…, LABELS.BIN 903af75b…. On the owner's card,
+    checked by checksum. Camera result: pending.
+- Film test 10 (emulator only), owner: "the HSL wheels in HSL order, Light renamed Luminance: hue, saturation,
+  luminance". W_HSL 1 in editor.s:
+  - INFO: Hue -> Saturation (all colours) -> Luminance -> Hue (k_step; the old order under W_HSL 0).
+  - Opens on Hue: in the emulator the INFO that opens the wheel reaches ed_info right after the init (that is why the
+    wheel used to open on "all colours"). ei_page now calls ei_open (P+EOPEN 689 = 1, then gd_set); k_open, at
+    ed_info's ALL check, sends that first INFO to Hue (all colours off first when on).
+  - The dial label: "Hue" / "Saturation" / "Luminance" in place of the camera's "Color" on the three pages (gd_sel;
+    mkicons hsl_labels, the SATB block now Saturation label, guide, Hue label, Luminance label). The guide: "Luminance
+    [INFO]" (card/mkguides.py PAGES). GUIDES.BIN would pass the loader's 16 KB (16844 B), so the hidden Film page's
+    guide stream is left out (length 0; mkguides SKIP): 14144 B.
+  - Emulator: opens on Hue, then Saturation All, Luminance, Hue; arrows move the colour on Hue.
+  - Package film test 10: E1479999.BIN 91bd1746…, GUIDES.BIN da1303db…, LABELS.BIN 903af75b…. On the owner's card,
+    checked by checksum. Camera result: pending.
+- OPEN (owner, 2026-11-08, camera): a COLOR still with Shading on comes out monochrome. The stock OM-3 keeps Shading
+  colour (Color Profile Control lists Shading), so it is ours. Analysis only (the emulator cannot capture):
+  - Not the Art Effect converter hook: Shading reaches it as a nonzero Art Effect id (stock ids 8 / 9 "Shade",
+    flags 0x800 / 0x1000), and xb_cap sends any nonzero id straight to the stock code (fx_back). Not the camera grain
+    route either: xb_gt is cleared at every capture and set only with no Art Effect.
+  - Suspect: hl_pp (hook_color 0x60518615) writes Hue / Light into output records at (12,a2)+854 whenever the
+    effective COLOR slot has its H/L bit, whatever the job; if Shading builds the job differently, those writes may
+    land on other fields. Also possible: tone (Blacks / Whites LUT) and wb_get, both slot-dependent.
+  - Asked the owner for two shots: a factory COLOR with only Shading, and a film with Shading. Colour + mono -> the
+    slot-dependent hooks (start with hl_pp); both mono -> a logging build.
+  - Owner found it (camera): mono only with Shading AND Grain; Shading alone stays colour. So the camera grain route
+    (xb_gt -> xb_dev: request key 11 -> 12, the MONO pipeline) plus the camera's Shading = monochrome.
+- Film test 11 (emulator only; capture not emulated):
+  - Grain: xb_cap's plain-COLOR path reads the COLOR's Shading (setting 912 + k, stock getter 0x603f039d = AGET) and,
+    when it is not 0, takes the CPU grain route (Soft Focus passes, flag 0x80) as with an Art Effect (camera-tested
+    with effects in gt3) instead of the camera's MONO grain route. Camera check pending: Shading + Grain in colour.
+  - Wheel (owner): the Saturation page should adjust one colour at a time, not all at once. Film test 8 had it the
+    wrong way round: the owner's "hide the color select wheel" meant the all-colours page, whose guide reads "Color
+    Select [INFO]". W_SONE 1: Saturation shows one colour; INFO from it goes on to Luminance (no all-colours step);
+    entering it turns all colours off when on (k_sall); the reset leaves one colour (e_sall off). Its guide: our
+    "Saturation [INFO]" in the camera's "Color All [INFO]" descriptor (gd_set's stock path -> gd_s0; gd_sel puts the
+    camera's back first so gd_set accepts the descriptor); the all-colours guide swap is off. The Saturation guide is
+    now 175 x 50 (mkicons sat_pictures).
+  - Emulator: Hue -> Saturation (one colour, "Saturation ■", "Saturation INFO") -> right stays one colour ->
+    Luminance -> Hue -> Saturation; OK held on Saturation stays one colour.
+  - Package film test 11: E1479999.BIN 04ad3e83…, GUIDES.BIN 45d40212…, LABELS.BIN 903af75b…. On the owner's card,
+    checked by checksum. Camera result: pending.
+- Film test 11/10 camera (owner, 2026-11-08): the wheel went "sat, hue, sat, lum" and acted oddly. Owner: work with the
+  firmware, not against it; the camera's own order. Film test 12 (emulator only): W_SALL / W_SONE / W_HSL 0 -> the
+  stock order Color (one colour) -> Color All -> Hue -> Luminance, the camera's own labels and guides, our "Luminance
+  [INFO]" guide (renamed from Light) on that page. The film-test 8/10/11 wheel code stays, switched off. The Grain +
+  Shading CPU-route fix of film test 11 stays. Emulator: opens on Color All (the opening INFO, as before), then Hue,
+  Luminance, Color, Color All, Hue.
+- Fast-grain review (2026-11-08, analysis; owner: "as quick as default with every feature"). Read: this notebook's
+  grain sections (g1..gt4, gl1..gl10, gw1), branch experiment/grain-cpu-colour, cakelesscoder/caduceus-ep7
+  docs/GRAIN_PORT.md (incl. their ports of our fast and CPU routes, both no grain on the E-P7 camera, 2026-11-07),
+  BLOOM_HALATION.md, MONO_COLOUR.md, OM3_NOTES.md; firmware work-list table 0x606c957c.
+  - CPU grain cannot reach "no added time": it is memory-bound (gd4: 0.63 ms/row cached, 2.9 s whole image). Every
+    listed speed-up (noise tile ~40 % of the loop, more rows per flush ~0.15-0.3 s, a second CPU ~half) leaves >= ~1 s.
+    So only the image processor can do it.
+  - Shading: dev effect 0x0c00 = combiner 33; with request key 12 its MONO set-up greys the picture (owner camera
+    test). gl6 G1/G2 (combiner 33 handler run with context key 11 on a key-12 request) = colour + full grain,
+    camera-tested. -> lead 1, high confidence, no added time.
+  - Art / Glow / Clarity: the dev pass writes 0x0c02 to memory and a kind-3 0xf005 pass converts to 0x1c02; grain is
+    only seen on a dev pass with direct 0x1c02 output (gl9). gl10 (key 12 + level on that conversion pass) was built
+    but never measured, and its level offset (+1079) was a guess (kind-3 layout differs from kind 0: +1731 -> +1091,
+    +1756 effect -> +1084). -> lead 2: log the conversion pass first, then retry.
+  - The stock grain passes still exist: the MONO work-list handler 0x604b908d sends every MONO still to the default list
+    (its grain-pass branches are dead: both arms jmp 0x604b917f), but Art key 0x01010071's handler 0x604b90ca still
+    appends pass 0x604bbbd0 (the old combiner-grain pass, E-P7 stage 0x0901 style) when job+5356 != 0. If 0x01010071 is
+    the camera's Grainy Film, that hardware pass could follow Glow / Art. Risks: the E-P7's mask route forces mono and
+    its combiner-32 tests on colour showed nothing. -> lead 3, research.
+  - Owner (2026-11-08, camera): the OM-3 has the Grainy Film Art Filter; it saves very quickly, also with Art Effects
+    added on top, and keeps its grain. So the camera has a fast image-processor grain that survives the extra effect
+    passes -> lead 3 moves up: find Grainy Film's work list (which art key; candidates with grain passes: 0x01010071
+    handler 0x604b90ca -> passes 0x604bba9d / 0x604bbbd0 when job+5356 == 0) and whether its grain is colour-safe.
+  - E-P7 ideas not yet tried here: stock additive combiner (E-P7 136, A + B gains 1.0) with a noise layer; needs a
+    full-size noise buffer (CPU-filled: same memory cost) -> not "as quick as default".
+- NEXT (owner, 2026-11-08): grain as fast as the camera's MONO grain AND with Art Effects, Glow, Clarity and Shading.
+  Plan (analysis): project doc claude/fast-grain-plan.md. Order: (1) Shading: run combiner 33 as COLOR (context key 11)
+  on our key-12 stills (gl6 G1/G2 gave colour + full grain); (2) Art / Glow / Clarity: grain on the kind-3 0xf005
+  conversion pass (gl10, never measured), logging build if needed; (3) fallback: faster CPU grain (gs1).
+
+
+## v0.24 withdrawn, v0.24.1 (2026-11-08; camera-tested; branch hotfix/v0.24.1)
+
+- v0.24 (firmware 80570ac6…, GUIDES 4b483bb9…) on the owner's camera: a photo with Film Grain High rebooted the
+  camera. fg1 log (branch experiment/fast-grain-log, details there): the capture was marked COLOR, but no development
+  request followed. Cause (analysis, confirmed by the fix): film test 11's Shading check in `xb_cap` calls the settings
+  getter AGET 0x603f039d during the capture. Fix: `XB_SHG 0` in `firmware/src/xblock.s` (the check left out: v0.22's
+  grain route). GUIDES-only hotfix 4b3bac02… with v0.24 firmware: camera-tested, High no longer reboots.
+- Without that check, Shading + Grain is mono again (combiner 33 MONO set-up). v0.24.1 hides the Shading row
+  (`pm_list` without 5399). Emulator: Picture Mode rows end Noise → Vignette → Grain, no crash. Camera-tested (owner,
+  2026-11-08: "it is working"). Firmware 6fbc80b8…, GUIDES 112e8f93… (7 bytes differ from 4b3bac02: addresses after
+  `pm_list`), LABELS 903af75b….
+- A Shading value already set on a COLOR, or loaded from a film's record +43, still applies (hidden). The Control
+  Panel's "v0.24.1 or later" export writes +43 = 0; the release notes ask owners to set Shading 0 before flashing.
+- `releases/v0.24` removed: the release workflow publishes every folder without a GitHub release, so keeping it would
+  re-create the deleted v0.24 release.

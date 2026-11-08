@@ -1,3 +1,7 @@
+/* v0.24 film test 7 (owner): the Extras page is hidden and its Glow / Clarity and Art Effect read 0 wherever they act
+ * (XB_FX 0); the code stays: set XB_FX 1 to bring them back. */
+ .set XB_FX, 0
+ .set XB_SHG, 0                   /* film test 11's Shading check before the camera grain (1: on; rebooted on the camera) */
 /* Caduceus for OM-3 v0.20 test 5: the Extras code block (appended to GUIDES.BIN, our own code).
  *
  * Runs from its heap buffer (uncached pool, as the camera's malloc returns), relocated in place by entry 0. Linked at
@@ -76,7 +80,11 @@ xb_slot:
 
 /* xb_art: d1 |= the job flags of S's Art Effect (a1 = S). Uses d0, a0; returns through MDR. */
 xb_art:
+ .if XB_FX
  movbu (50,a1),d0
+ .else
+ clr d0
+ .endif
  cmp 6,d0
  bcc 1f
  add d0,d0
@@ -103,15 +111,43 @@ xb_cap:
  cmp 0,a1
  beq 7f
  mov (a2),d1                      /* (data registers only: `movbu (d8,An),Am` misread on the camera) */
+ .if XB_FX
  movbu (49,a1),d0
+ .else
+ clr d0
+ .endif
  cmp 0,d0
  bne 2f                           /* Glow / Clarity: the Soft Focus passes (+ CPU grain if Grain) */
+ .if XB_FX
  movbu (50,a1),d0
+ .else
+ clr d0
+ .endif
  cmp 0,d0
  bne 3f                           /* an Art Effect */
  movbu (53,a1),d0                 /* plain: Grain 0..3 -> the camera's own grain (xb_dev) */
  cmp 0,d0
  beq 1f
+ .if XB_SHG                        /* v0.24 camera (owner): High grain rebooted the camera; the likely cause is the
+                                   * stock settings getter (AGET) called from the capture pipeline here: off */
+ add -12,sp                       /* film test 11 (owner, camera): with Shading on, the camera's grain (its MONO route)
+ mov d1,(4,sp)                     * made the picture monochrome -> then the CPU grain, as with an Art Effect */
+ mov a1,(8,sp)
+ mov 63153,d0                     /* the effective COLOR profile 1..4 (xb_slot found it) */
+ clr d1
+ mov 0,a0
+ call getter,[d2,d3],12
+ extbu d0
+ add 911,d0                       /* its Shading: setting 912 + k */
+ call AGET,[],4
+ mov (4,sp),d1
+ mov (8,sp),a1
+ add 12,sp
+ extb d0
+ cmp 0,d0
+ bne 2f
+ .endif
+ movbu (53,a1),d0
  cmp 3,d0
  bls 4f
  mov 3,d0
@@ -140,7 +176,11 @@ xb_lv:
  cmp 0,a1
  beq 9f
  mov (12,a2),d1
+ .if XB_FX
  movbu (49,a1),d0
+ .else
+ clr d0
+ .endif
  btst 0x80,d0
  beq 1f
  or 128,d1
@@ -160,7 +200,11 @@ xb_wt:
  mov 600,d0
  cmp 0,a1
  beq 8f
+ .if XB_FX
  movbu (49,a1),d1
+ .else
+ clr d1
+ .endif
  extb d1
  cmp 0,d1
  bne 1f
@@ -203,7 +247,8 @@ xb_wt:
 /* property reads (s_nr): the site's `call getter,[d2,d3],12` frame, d0 key, d1, a0 as for the getter. v0.22: key
  * 0x8119 (Sharpness, the capture read): the COLOR slot's Sharp (slot +54, -5..+2) after the real read, -5 sent as -7
  * (fully off for any picture-key class). Key 0x9719
- * (stills Noise Filter; capture and Exif sites): NR 1..3 -> the real read, then d0 = 0 Standard / -1 Low / -2 Off.
+ * (stills Noise Filter; capture and Exif sites): NR 1..4 -> the real read, then d0 = 0 Standard / -1 Low / -2 Off /
+ * +1 High.
  * Key 0x8c21 (Shading Comp., sid 61; capture and lens-request sites, v0.21): VigFix 1 -> the real read, then d0 = 0
  * (Off, a stock value). Otherwise the getter as stock. */
 xb_nr:
@@ -231,9 +276,9 @@ xb_nr:
 4:
  cmp 38681,d1
  bne 5f
- movbu (51,a1),d0                 /* NR 1..3 */
+ movbu (51,a1),d0                 /* NR 1..4 */
  add -1,d0
- cmp 3,d0
+ cmp 4,d0
  bcc 9f
  mov xb_nm,a1
  movbu (d0,a1),d0
@@ -471,6 +516,7 @@ xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  rets
 
  .set P_LIDX, 712
+ .set P_TORG, 820                 /* v0.24: the film block (EDITS.BIN image at +TWO) */
 /* xb_lkh (v0.21): jmp from lk_hold in ed_event's frame (after its movm and add -28: (12,sp) cursor id 2197 + k,
  * (24,sp) the event, a2 = P, a3 = the parent, d2 = 4). OK held on the wheel (0x903e) with a look selected for COLOR k:
  * that look <- COLOR k now (pf_cap), P dirty (written at the next half-press), -> ed_event e_lk (children re-read,
@@ -480,7 +526,70 @@ xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
 xb_lkh:
  movbu (24,sp),d0
  cmp 0x81,d0                      /* 0xf881: OK held on "COLOR n" = the whole-profile reset: also no look selected */
- bne 1f
+ beq 0f
+ cmp 0x3e,d0                      /* film test 9: OK held on the wheel of a COLOR holding a film: the film as built too */
+ bne 1f                           /* (it reset to the factory, so the film showed '*' after its reset) */
+0:
+ mov (12,sp),d3                   /* v0.24: COLOR k holding a film that is there -> the film as built */
+ add -2197,d3
+ mov a2,a0
+ add d3,a0
+ movbu (P_LIDX,a0),d0
+ extb d0
+ cmp 1,d0
+ blt 20f
+ cmp 5,d0
+ bgt 20f
+ mov (P_TORG,a2),d1
+ cmp 0,d1
+ beq 20f
+ mov d3,d1
+ asl2 d1
+ add d3,d1
+ add d0,d1
+ add -1,d1                        /* film j */
+ mov d1,(16,sp)
+ mov d1,d0
+ mov (P_LPTR,a2),a0
+ call FL_HAS,[],0
+ cmp 0,d0
+ beq 20f
+ mov (P_TORG,a2),a0               /* its saved changes dropped, the next capture skipped, look 0 ... */
+ add TWO,a0
+ mov (16,sp),d0
+ mov 1,d1
+ asl d0,d1
+ not d1
+ mov (12,a0),d0
+ and d1,d0
+ mov d0,(12,a0)
+ mov 1,d0
+ movbu d0,(TW_LEN,a0)
+ movbu d0,(TW_LEN + 1,a0)
+ mov a2,a0
+ add d3,a0
+ clr d0
+ movbu d0,(P_LIDX,a0)
+ call FACADE,[],4                 /* ... then SetValue(901, the film): fl_set -> fl_sw loads it as built */
+ mov (a0),a2
+ mov (4,a2),a2
+ mov (16,sp),d0
+ add FV0,d0
+ mov d0,a1
+ clr d1
+ mov 901,d0
+ calls (a2)
+ mov 1,d3
+ movbu (24,sp),d0
+ cmp 0x3e,d0
+ bne 21f
+ jmp E_LK                         /* on the wheel: its values re-read, then all colours on Saturation (e_sall) */
+21:
+ jmp E_RET
+20:
+ movbu (24,sp),d0                 /* no film there: the wheel as before, "COLOR n" the whole-profile reset */
+ cmp 0x3e,d0
+ beq 1f
  mov (12,sp),d0
  add -2197,d0
  mov a2,a0
@@ -1150,7 +1259,7 @@ xb_reloc:                         /* a2 = P (x_load) */
 /* ---- dial labels: OM3MOD/LABELS.BIN v2 = 'OM3V' | u32 total | u32 CRC-32 of bytes 12.. | u32 n (24) | n bitmaps
  * 30 rows x 9 bytes (70 px, MSB first, 1 = letter fill). One heap copy (XL_FILE B) and one 2 KB stream buffer; the
  * label is drawn and encoded (OSD type 11, 70 x 30) only when it changes. */
- .set XL_N, 26
+ .set XL_N, 27
  .set XL_BM, 270
  .set XL_FILE, 16+XL_N*XL_BM
  .set XL_OUT, 2048
@@ -1448,6 +1557,8 @@ xb_vl:
  add d2,a0
  add d2,a0                        /* {byte, mode, first label, max} */
  movbu (a0),d3
+ cmp 0,d3
+ beq 7f                           /* no cell on this slice (v0.23 test 15) */
  add d3,a1
  movbu (a1),d3
  extb d3                          /* the value */
@@ -1517,17 +1628,18 @@ xb_lc:
  .long -1                         /* the label in it */
 xb_ll:
  .long 0                          /* its length */
-xb_vt:                            /* slice 1..10: slot byte, mode, first label, max */
- .byte 51,0,0,3                   /* 1 NR: Camera, Std, Low, Off */
- .byte 49,1,4,0                   /* 2 Glow (-), Clarity (+), Glow/Clar. (0) */
- .byte 26,1,7,0                   /* 3 Blue (-), Amber (+), A-B (0) */
- .byte 27,1,10,0                  /* 4 Magenta (-), Green (+), G-M (0) */
- .byte 50,0,13,5                  /* 5 Art Effect: Off, Star Light, Pin Hole, (Off), White Edge, Frame */
- .byte 47,2,19,0                  /* 6 Blacks */
- .byte 48,2,20,0                  /* 7 Whites */
- .byte 52,0,21,1                  /* 8 VigFix: Camera, Off (v0.21) */
- .byte 53,2,23,0                  /* 9 Grain (the readout shows the level) */
- .byte 54,3,24,0                  /* 10 Sharp (v0.22): Sharp (the readout shows -4..+2), Sharp Off at -5 */
+xb_vt:                            /* slice 1..10: slot byte, mode, first label, max (slot byte 0: no cell, stock picture);
+                                   * v0.23 test 15: Glow/Clarity at 12 o'clock, Art Effect at 6 o'clock (as xt_tab) */
+ .byte 49,1,5,0                   /* 1 Glow (-), Clarity (+), Glow/Clar. (0) */
+ .byte 0,2,0,0                    /* 2 */
+ .byte 0,2,0,0                    /* 3 */
+ .byte 0,2,0,0                    /* 4 */
+ .byte 0,2,0,0                    /* 5 */
+ .byte 0,2,0,0                    /* 6 */
+ .byte 50,0,14,5                  /* 7 Art Effect: Off, Star Light, Pin Hole, (Off), White Edge, Frame */
+ .byte 0,2,0,0                    /* 8 */
+ .byte 0,2,0,0                    /* 9 */
+ .byte 0,2,0,0                    /* 10 */
 xb_lpath:
  .asciz "C:\\OM3MOD\\LABELS.BIN"
  .balign 2
@@ -1560,7 +1672,7 @@ xb_gl:                            /* Glow 1..5 -> w (Caduceus bloom LUT) */
  .hword 942, 881, 819, 748, 666
 xb_cl:                            /* Clarity 1..5 -> w > 1024 on combiner 11 (unsharp mask, Caduceus) */
  .hword 1100, 1180, 1260, 1340, 1420
-xb_nm:                            /* NR 1 Std, 2 Low, 3 Off -> the stills Noise Filter value */
- .byte 0, -1, -2
+xb_nm:                            /* NR 1 Std, 2 Low, 3 Off, 4 High (v0.23) -> the stills Noise Filter value (stock -2..+1) */
+ .byte 0, -1, -2, 1
  .balign 4
 xb_end:

@@ -3,9 +3,56 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.24.1
+v0.24 with the reboot fixed and the Shading row hidden. Camera-tested (2026-11-08). Everything listed under v0.24
+below is in this version, except where this section says otherwise.
+
+- **Fixed:** with **Film Grain High**, taking a picture restarted the camera. The grain code no longer asks the
+  camera's settings for Shading while the photo is being taken (that call is what restarted it).
+- **Shading row hidden** on COLOR 1–4 for now: Shading together with Film Grain turned the photo black and white. A
+  Shading value set before flashing stays in effect, so set it to 0 first. Grain with Shading is therefore not added
+  the slow way any more (as in v0.22).
+- **Control Panel:** Export › Firmware on the camera: **v0.24.1 or later** saves every look with Shading 0; the editor
+  warns when a look has Grain together with Shading, and the slow-grain note is only about v0.20–v0.22.
+- `releases/v0.24` is removed (it rebooted the camera); v0.24.1 replaces it.
+
 ## v0.24 (withdrawn)
 Published and withdrawn on 2026-11-08: on the owner's camera, a photo with Film Grain High rebooted the camera.
-v0.22 is the current release again. The work continues on branch `feature/v0.24-film-list`.
+Replaced by v0.24.1. What it added (all in v0.24.1):
+
+Your films in the camera's Picture Mode list, and the look's settings on the camera's own Picture Mode screen.
+v0.23 was never released on its own: its Picture Mode rows are part of this version.
+
+**Films in the Picture Mode list**
+- After COLOR 1–4 the list shows every film on the card (`LOOKS.BIN`, up to five per COLOR) as **FILM 1, FILM 2, …**,
+  in the same style as the COLOR cells. Choosing one loads it onto the COLOR it belongs to. Its **name** is the big
+  title, and the quick menu (super control panel) and the **shooting screen** show **FILM n**.
+- **Changes are kept:** whatever you change on a film, or on COLOR 1–4 themselves, stays when you switch away and
+  back. The camera keeps them in a new file, `OM3MOD/EDITS.BIN`; the films as built stay untouched in `LOOKS.BIN`.
+- **Hold OK** on a film: back to the film as built (on the HSL wheel too). On COLOR 1–4: back to the factory.
+- **`*` means changed:** COLOR n from the factory, a film from how it was built; also on each changed row (Blacks,
+  Whites, A-B, G-M, Noise Filter … compared with the film).
+- The colour wheel row reads **HSL**. Its pages are the camera's own: Color → Color All → Hue → **Luminance** (was
+  Light).
+
+**Picture Mode rows (was the Extras page)**
+- COLOR 1–4 get the look's settings as rows on the camera's Picture Mode screen: Picture Mode, HSL, Contrast,
+  Highlight & Shadow, **Blacks**, **Whites** (−5..+5), **A-B**, **G-M** (WB shift −7..+7), **Sharpness** (Sharp,
+  −5 Off..+2), **Noise Filter** (Off / Low / Std / **High**, High is new), **Vignette Correction** (lens correction
+  Off / On), Shading and **Film Grain** (Off / Low / Med / High).
+- The Film and Extras pages of the wheel are gone (their jobs moved to the list and the rows).
+
+**Switched off for now**
+- **Glow / Clarity and Art Effects** are off: with them, grain can only be added the slow way. They stay in your looks
+  (and work again on v0.20–v0.22) until fast grain works with them.
+- **Grain with Shading** is added the slow way (about 3 s more per photo, no fast burst): the camera's fast grain
+  turned such photos black and white. Grain with every other setting is as fast as normal. Faster grain with every
+  effect is the next project ([plan](ROADMAP.md)).
+
+**Control Panel**
+- Export › Firmware on the camera: **v0.24 or later** (new default; NR High), v0.22, v0.21, v0.20 or older.
+- A note in the editor that Glow / Clarity and Art Effects are off on v0.24, and the slow-grain note now also covers
+  Shading.
 
 ## v0.22
 Sharpness as part of the look. Camera-tested.
