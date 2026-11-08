@@ -1,19 +1,28 @@
 # Caduceus for OM-3
 
-> [!CAUTION]
-> **Development branch: v0.23-alpha, picture-mode sliders. Test builds only; not a release.**
+> [!WARNING]
+> **Experimental alpha test build: v0.23-alpha, test 15 (frozen snapshot). Not a release; for testers only.**
 >
-> This branch moves the Extras settings onto the camera's own Picture Mode rows (COLOR 1–4). Camera-tested
-> (test 7, 2026-11-08): **Sharp** on the Sharpness slider (−5 to +2), **Grain** on the camera's Film Grain Effect row
-> (Off / Low / Med / High), and two new rows: **Vignette Correction** (lens shading correction Off / On) and **Noise
-> Filter** (Off / Low / Std / High; High is new for looks). Tests 8–11: **Blacks** and **Whites** rows (−5 to +5,
-> stopping at the ends) with our own "Blk" / "Wht" icons next to the camera's value; owner: "this is perfect!".
-> All stay in step with the Extras wheel.
+> A fixed copy of [`feature/v0.23-alpha-profile-sliders`](https://github.com/androidfanman/caduceus-om3/tree/feature/v0.23-alpha-profile-sliders)
+> at test 15, so testers can build exactly what the owner is trying on the camera. Work goes on in the feature branch.
 >
-> **Status:** code in the camera-proven 64 KiB section-6 extension. **A-B** and **G-M** slider rows (−7 to +7)
-> camera-tested (test 14). Test 15 (emulator only): side-bar titles for Noise Filter and Vignette Correction, a new
-> row order (look, tone, white balance, detail, lens, grain), and the Extras wheel down to Glow/Clarity (12 o'clock)
-> and Art Effect (6 o'clock).
+> What's in it: the Extras settings as the camera's own Picture Mode rows (COLOR 1–4), in this order: Picture Mode,
+> Color, Contrast, Highlight & Shadow, **Blacks**, **Whites**, **A-B**, **G-M**, Sharpness, **Noise Filter**,
+> **Vignette Correction**, Shading, Film Grain. The side bar shows short titles ("Noise / Std", "Vignette / On"). The
+> Extras wheel keeps only **Glow/Clarity** (12 o'clock) and **Art Effect** (6 o'clock).
+>
+> | | Status |
+> |---|---|
+> | Sharp, Grain, Vignette Correction, Noise Filter rows | camera-tested (test 7) |
+> | Blacks / Whites rows, their icons, stopping at the ends | camera-tested (tests 9–11) |
+> | A-B / G-M rows (−7 to +7) | camera-tested (test 14) |
+> | Side-bar titles, new row order, smaller Extras wheel | **emulator only** (test 15, camera test pending) |
+>
+> Test 15 build checksums (SHA-256), built from this branch with `firmware/build.py` and the official firmware 1.1:
+> `E1479999.BIN` 77f0aea2…cb64, `GUIDES.BIN` dc6ad9a9…ff59, `LABELS.BIN` 903af75b…fc70. Always use the three files
+> from the same build: the firmware goes in `DCOLYMP/E1479999.BIN` on the card (never the card root), the other two in
+> `OM3MOD/`. No firmware files are kept in this repository. [`docs/USING.md`](docs/USING.md) still describes the
+> older Extras wheel (all 10 slices).
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 
