@@ -962,3 +962,49 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   2. From an "A-B / G-M" row, open the camera's WB screen on WB±, with its A-B / G-M ids answered from the look's
      slot (+26 A-B, +27 G-M) only while opened from our row (needs the screen transition and a context flag).
   3. Two slider rows (as Blacks / Whites) as a fallback.
+
+### Test 8 camera feedback; test 9 (emulator only)
+- Owner on test 8 (camera): (1) the Blacks / Whites left-column words look bad, want stock-looking icons; (2) the
+  arrows run backwards on Blacks / Whites; (3) several left-column cells highlighted at once.
+- (2) Cause: a bar's value list (0x611b2180..) is built top-down only when its setting id is in the camera's table
+  0x6152d6fe (322 u16 ids; 904 Sharpness is in it), else bottom-up, so the arrows flip. rv_chk (hook 0x611b21e8) also
+  sets top-down for our BKB / WHB ids. Emulator: Left -> -1, -2; Right -> +1.
+- (3) Cause: the Picture Mode column pages rows 5 at a time but assumes at most 2 pages (rows 0-4, then 5..n-1):
+  0x611d07a4 (first row / rows shown), 0x611c3709 (cursor -> slot = cursor - 5), 0x611d0bd3.. (scroll arrows). With
+  11 rows page 2 drew 6 rows into 5 slots (10 rows was fine in the emulator; test 7 had 9). pg_fix / pg_mod / pg_arw:
+  pages of 5, as many as needed; the middle page shows both arrows. Emulator: 3 pages, one highlight at a time.
+- (1) open: the type-4 slider cells only have icons 1 S, 2 Contrast, 3 Saturation; stock-looking Blacks / Whites
+  icons need our own pictures (owner's approval first) and a way to draw them in the cell.
+- Package test 9: E1479999.BIN 61288b36…, GUIDES.BIN 2467d8d3…, LABELS.BIN 903af75b…. On the owner's card, checked by
+  checksum. Camera result: works except (below).
+
+### Test 9 camera result; test 10 (emulator only)
+- Owner on test 9 (camera): works well, but Blacks / Whites wrap round (+5 -> -5 and back); the stock sliders stop.
+- Cause: the bar's +116 (0x611b40f0 back / 0x611b4167 on: 0 = wrap round, else stop at the ends) is set by the bar setup
+  (0x611b201b..) only for the ids in the camera's table 0x6152d520 (239 u16 ids, 904 Sharpness in it). Emulator: Sharp
+  bar +116 = 1, Blacks bar 0. st_chk (hook 0x611b201b) also sets 1 for our BKB / WHB ids.
+- Emulator: Blacks -5 stays at -5, +5 at +5; Whites the same; Sharp still stops at -5 / +2. Noise Filter unchanged.
+- Owner chose style B for the Blacks / Whites left cells (one small line, "Blk -2" / "Wht +1", like "S ±0"); needs the
+  picture route (icon id -> picture descriptor lookup, not found yet).
+- Package test 10: E1479999.BIN f50c1f97…, GUIDES.BIN d3e7f818…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
+  checked by checksum. Not flashed (owner waits for the icons, test 11).
+
+### Test 11: Blk / Wht icons in the left column (emulator only)
+- Pictures: id -> slot lookup 0x610f5611 (a0 = (0x60379740) + 4 id; the slot holds the descriptor <6H3I> 14, w, h, 8,
+  0, 0, size, payload, flags). ic_get (hook) answers our ids IC_BK 0x7f80 / IC_WH 0x7f81 with our descriptors.
+- The slider cell (switch 0x6155124c case 0x611d096e, items 7 / 8 / 59): cell type 4, cell +154 = item +26; draw case
+  0x61178939 sets the row slot's picture object to choice +26 - 1 (0x6128abe0 / 0x610dae1e; ignored from the object's
+  +131 count on). The 5 row slots' objects come from layout records 0x614557f8 + 88 n: byte +5 = count (3), then the
+  choice list start / end (stock lists 0x614548b4.. of {0xffff, 7, 7, id}: S 11416, Contrast 11417, Saturation 11418).
+  build.py points all 5 at ic_list (S, C, Sat, S for +26 = 4 (Shading draws its own), Blk, Wht), count 6.
+- Blacks / Whites are slider cells again (item 7's case; +26 = 5 / 6), so the camera draws its own value next to our
+  icon. The word cells (lc_bk / lc_wh, 22 "Bk-5".. strings) are gone.
+- Icons: firmware/mkicons.py (DejaVu Sans Condensed, 46 x 46 as the S icon, cap 20 px, fill 10, soft 11 / 12, 2 px edge
+  7), type-11 streams in ext11 (ic_pbk / ic_pwh, 732 / 900 B). Two emulator finds: (1) the payload must be the uncached
+  address (+0x40000000; 0x6.. | 0x40000000 is a no-op), else DMA_RANGE; (2) a run must not cross a row end (engine
+  BMP_TOKEN; stock streams never do). The GUIDES picture shows BMP_TOKEN in the emulator too (its runs cross rows), but
+  it is camera-tested as working.
+- Emulator: Blk / Wht + the camera's value on page 1, Sharpness / Contrast keep S / half-circle, Shading unchanged;
+  owner-approval screenshot sent.
+- Package test 11 (includes test 10's stop-at-ends): E1479999.BIN f490d866…, GUIDES.BIN 9d8865c5…, LABELS.BIN 903af75b…
+  (unchanged). On the owner's card, checked by checksum. Owner (2026-11-08): "this is perfect!".
