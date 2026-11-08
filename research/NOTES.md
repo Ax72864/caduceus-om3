@@ -928,4 +928,4 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   answers ST_STD 0x7f01 = "Std". Noise Filter lists: Off / Low / Std / High as words.
 - Emulator: strip and left column read Off / Low / Std / High; titles follow ("Noise Filter: Low" ...).
 - Package test 7: E1479999.BIN fda1c7d4…, GUIDES.BIN bb2a30f9…, LABELS.BIN 903af75b… (as test 6). On the owner's card,
-  checked by checksum. Camera result: pending.
+  checked by checksum. **Camera-tested (owner, 2026-11-08 05:18): "perfect".**
