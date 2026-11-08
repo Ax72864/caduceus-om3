@@ -1093,4 +1093,17 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   its own values, the camera's own WB screen unchanged afterwards. No value text (the fine-tune screen's "A3 . G2"
   header is not part of this scene).
 - Package test 13: E1479999.BIN e0efd67c…, GUIDES.BIN 83f72a22…, LABELS.BIN 903af75b… (unchanged). Card not connected
-  at packaging; copied later and checked by checksum. Camera result: pending.
+  at packaging; copied later and checked by checksum. Camera (owner, 2026-11-08): not what they wanted; the grid route
+  is dropped for two sliders (test 14). The grid findings stay here for later.
+
+### Test 14: A-B and G-M as two slider rows (emulator only)
+- Owner: drop the grid, use two sliders. Firmware code back to test 11 (camera-tested), then two rows after Whites
+  built exactly like Blacks / Whites: items AB_IT 5384 "A-B", GM_IT 5383 "G-M" (our strings), bar ids ABB 0x7e50 /
+  GMB 0x7e60 + k, classes 7 / 8, the look's slot +26 / +27, -7..+7 (count 15). A write also sets wb_flags +25 bit0
+  and clears bit7, as the Extras wheel does. Bars: rw_bar ends -7 / +7, sl_dot 44 px a step, top-down (rv_chk) and
+  stop at the ends (st_chk). Readout: our 15-entry sign / digit tables rd15_a / rd15_b fed to the stock search loops
+  (0x611d16ee / 0x611d175f). Left column: item 7's slider cell with +26 = 7 / 8 and our icons "A-B" / "G-M"
+  (firmware/mkicons.py; IC_AB 0x7f82 / IC_GM 0x7f83; ic_list now 8 choices).
+- Emulator: A-B +3, stops at -7 (minus greys out), G-M -2, Shading's bar on the next row; slot values and wb flag set.
+- Package test 14: E1479999.BIN 61fdfcb7…, GUIDES.BIN 8d56b7e9…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
+  checked by checksum. Camera result: pending.

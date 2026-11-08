@@ -10,9 +10,8 @@
 > stopping at the ends) with our own "Blk" / "Wht" icons next to the camera's value; owner: "this is perfect!".
 > All stay in step with the Extras wheel.
 >
-> **Status:** code in the camera-proven 64 KiB section-6 extension. Test 13 (emulator only): A-B / G-M shows the
-> camera's own WB grid on the Picture Mode screen; camera test pending (see `research/NOTES.md`). Glow / Clarity and Art Effect stay on the Extras wheel (owner).
-> Not released. Test builds need their GUIDES.BIN and the new LABELS.BIN.
+> **Status:** code in the camera-proven 64 KiB section-6 extension. Test 14 (emulator only): **A-B** and **G-M**
+> slider rows (−7 to +7) after Whites; the on-screen WB grid was tried and dropped (owner).
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Left-column icons for the Picture Mode rows Blacks / Whites (v0.23): the words "Blk" / "Wht" drawn in the place of
+"""Left-column icons for the Picture Mode rows Blacks / Whites / A-B / G-M (v0.23): the words "Blk" / "Wht" / "A-B" /
+"G-M" drawn in the place of
 the Sharpness row's "S" icon, so the camera draws its own value ("-2") next to them as on the stock slider rows.
 Drawn from scratch (DejaVu Sans Condensed, a free font) to the stock icon's metrics (46 x 46) and the camera's OSD
 text style (palette 0 clear, 7 dark edge 2 px, 10 white fill, 11 / 12 soft fill); no camera graphics are copied.
@@ -13,7 +14,7 @@ from scipy import ndimage
 W, H = 46, 46                      # the stock "S" icon's size (its slot in the left column)
 CAP = 20                           # cap height in px, as the camera's value digits next to the icon
 FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed.ttf'
-ICONS = ['Blk', 'Wht']
+ICONS = ['Blk', 'Wht', 'A-B', 'G-M']
 
 
 def coverage(txt, maxw):
