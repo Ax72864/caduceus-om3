@@ -31,8 +31,9 @@ export const SHARP = { lo: -5, hi: 2 } as const;
 export const sharpLabel = (v: number) => (v <= SHARP.lo ? 'Off' : v > 0 ? `+${v}` : String(v));
 /** Firmware the LOOKS.BIN is for: 23 = v0.23 (NR High), 22 = v0.22 (Sharp), 21 (Grain, VigFix), 20 = v0.20 and older / PROFILES.BIN. */
 export type Fw = 20 | 21 | 22 | 23;
-/** v0.21 Grain: Glow / Clarity or an Art Effect send it the slow way (about 3 s per photo, no fast sequential shooting). */
-export const slowGrain = (l: Look) => !!l.film_grain && (!!l.effect || (l.art_effect !== 'off' && l.art_effect !== 'blur'));
+/** v0.21 Grain: Glow / Clarity or an Art Effect send it the slow way (about 3 s per photo, no fast sequential shooting);
+ * v0.24: Shading too (Glow / Clarity and Art Effects are switched off there). */
+export const slowGrain = (l: Look) => !!l.film_grain && (!!l.vignette || !!l.effect || (l.art_effect !== 'off' && l.art_effect !== 'blur'));
 /** v0.20 Extras: NR byte <-> the Caduceus look's noise reduction (grain field), Art Effects the OM-3 renders. */
 export const OM3_NR: Grain[] = ['off', 'standard', 'fine', 'film', 'high'];  // 0 Camera, 1 Std, 2 Low, 3 Off, 4 High (v0.23)
 export const OM3_ARTS = ['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const;

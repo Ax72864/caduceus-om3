@@ -18,14 +18,9 @@ new features have room; more can be opened up the same way.
 
 ## Next steps
 
-1. **Finish the picture-mode sliders** (branch
-   [`feature/v0.23-alpha-profile-sliders`](../../../tree/feature/v0.23-alpha-profile-sliders)). Camera-tested (test 7):
-   Sharpness, Film Grain, Vignette Correction (Off / On) and Noise Filter (Off / Low / Std / High, High new for looks).
-   Tests 8–11: Blacks and Whites rows (−5 to +5, stop at the ends, our own "Blk" / "Wht" icons; owner: "this is
-   perfect!", camera-tested). Test 12: an "A-B / G-M" row; the owner wants the WB grid drawn right on the
-   Picture Mode screen (like Highlight & Shadow's curve), in progress. Next: A-B / G-M as the camera's own WB grid (research started, see the
-   notebook), then a release. Glow / Clarity and Art Effect stay on the Extras wheel (owner's call: they interact
-   with Grain).
+1. **Fast grain with every effect** (owner's top request after v0.24): grain at no extra time with Shading, Glow,
+   Clarity and Art Effects. Plan: project doc `fast-grain-plan` and `research/NOTES.md` ("Fast-grain review"):
+   Shading first (run combiner 33 in colour), then the Grainy Film Art Filter's grain path.
 2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
    E-P7. (Split toning research done 2026-11-07: see the table; building it can now use the proven 64 KiB.)
 3. **White balance mode and exposure compensation per look:** quick wins that make a look behave like a roll.
@@ -69,6 +64,7 @@ new features have room; more can be opened up the same way.
 
 | Date | Item | What it gives film looks |
 |---|---|---|
+| 2026-11-08 | v0.24 films in the list | Films (FILM n) in the Picture Mode list with their names; changes kept per film; the Extras as Picture Mode rows. Glow / Clarity and Art Effects off for now. |
 | 2026-11-07 | v0.22 Sharp | Sharpening per look, −5 (Off) to +2; film sims set it. |
 | 2026-11-07 | Photo-to-look instructions | A look built from any photo, loaded by a link. |
 | 2026-11-06 | 60 film sims | Our own looks, one per film, in five groups. |

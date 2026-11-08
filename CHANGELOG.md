@@ -3,10 +3,40 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
-## Unreleased: v0.23-alpha (branch `feature/v0.23-alpha-profile-sliders`, untested)
-- **Picture Mode sliders** (in progress): the Extras settings move onto the camera's own slider rows, one at a time.
-  First: **Sharp** on the Sharpness row of COLOR 1–4, −5 to +2 (the bar's dot, ends and readout follow the wider
-  range), the same value as the Extras wheel's Sharp. Emulator-tested; not safe to flash yet (code placement).
+## v0.24
+Your films in the camera's Picture Mode list, and the look's settings on the camera's own Picture Mode screen.
+Camera-tested (2026-11-08). v0.23 was never released on its own: its Picture Mode rows are part of this version.
+
+**Films in the Picture Mode list**
+- After COLOR 1–4 the list shows every film on the card (`LOOKS.BIN`, up to five per COLOR) as **FILM 1, FILM 2, …**,
+  in the same style as the COLOR cells. Choosing one loads it onto the COLOR it belongs to. Its **name** is the big
+  title, and the quick menu (super control panel) and the **shooting screen** show **FILM n**.
+- **Changes are kept:** whatever you change on a film, or on COLOR 1–4 themselves, stays when you switch away and
+  back. The camera keeps them in a new file, `OM3MOD/EDITS.BIN`; the films as built stay untouched in `LOOKS.BIN`.
+- **Hold OK** on a film: back to the film as built (on the HSL wheel too). On COLOR 1–4: back to the factory.
+- **`*` means changed:** COLOR n from the factory, a film from how it was built; also on each changed row (Blacks,
+  Whites, A-B, G-M, Noise Filter … compared with the film).
+- The colour wheel row reads **HSL**. Its pages are the camera's own: Color → Color All → Hue → **Luminance** (was
+  Light).
+
+**Picture Mode rows (was the Extras page)**
+- COLOR 1–4 get the look's settings as rows on the camera's Picture Mode screen: Picture Mode, HSL, Contrast,
+  Highlight & Shadow, **Blacks**, **Whites** (−5..+5), **A-B**, **G-M** (WB shift −7..+7), **Sharpness** (Sharp,
+  −5 Off..+2), **Noise Filter** (Off / Low / Std / **High**, High is new), **Vignette Correction** (lens correction
+  Off / On), Shading and **Film Grain** (Off / Low / Med / High).
+- The Film and Extras pages of the wheel are gone (their jobs moved to the list and the rows).
+
+**Switched off for now**
+- **Glow / Clarity and Art Effects** are off: with them, grain can only be added the slow way. They stay in your looks
+  (and work again on v0.20–v0.22) until fast grain works with them.
+- **Grain with Shading** is added the slow way (about 3 s more per photo, no fast burst): the camera's fast grain
+  turned such photos black and white. Grain with every other setting is as fast as normal. Faster grain with every
+  effect is the next project ([plan](ROADMAP.md)).
+
+**Control Panel**
+- Export › Firmware on the camera: **v0.24 or later** (new default; NR High), v0.22, v0.21, v0.20 or older.
+- A note in the editor that Glow / Clarity and Art Effects are off on v0.24, and the slow-grain note now also covers
+  Shading.
 
 ## v0.22
 Sharpness as part of the look. Camera-tested.

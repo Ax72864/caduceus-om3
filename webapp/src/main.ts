@@ -1404,7 +1404,7 @@ function renderOm3Editor(l: Look) {
   // v0.21: Grain with Glow / Clarity or an Art Effect takes the camera's slow route: say so next to the Grain setting
   const grainWarn = h('p', { class: 'warn', role: 'status' });
   const showWarn = () => {
-    grainWarn.replaceChildren(...(slowGrain(l) ? [h('b', {}, 'Slower saving: '), 'with Glow / Clarity or an Art Effect, the camera adds this grain in a slower way. Each photo takes about 3 seconds longer to save, and fast sequential (burst) shooting isn\'t possible with this look. Grain on its own, or with the other Extras, is as fast as normal.'] : []));
+    grainWarn.replaceChildren(...(slowGrain(l) ? [h('b', {}, 'Slower saving: '), 'with Shading (or, on firmware v0.20–v0.22, Glow / Clarity or an Art Effect), the camera adds this grain in a slower way. Each photo takes about 3 seconds longer to save, and fast sequential (burst) shooting isn\'t possible with this look. Grain on its own, or with the other settings, is as fast as normal.'] : []));
     grainWarn.hidden = !slowGrain(l);
   };
   const fxChanged = () => { changed(); showWarn(); };
@@ -1476,6 +1476,7 @@ function renderOm3Editor(l: Look) {
       return h('div', { class: 'srow plain', title: 'The camera\'s sharpening for photos with this look' }, h('span', { class: 'sname' }, 'Sharp'), inp, out);
     })(),
       h('p', { class: 'help' }, 'The camera\'s sharpening for photos with this look, in its own numbers: 0 is its normal, +1 and +2 crisper, −1 to −4 softer (−3 and −4 go past the camera\'s menu) and Off (−5) no sharpening at all. Extras sector 10 (firmware v0.22, which takes the Sharpness item off the COLOR screen). Shown roughly in the preview.')),
+    h('p', { class: 'warn' }, h('b', {}, 'Firmware v0.24: '), 'Glow / Clarity and Art Effects are switched off on the camera for now (with them, grain saves slowly). They stay in the look and work again on v0.20–v0.22.'),
     effectPanel(l, fxChanged),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
       h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; fxChanged(); } },
@@ -1677,12 +1678,12 @@ function om3ExportDialog() {
   const fname = (O.name || 'om3-looks').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'om3-looks';
   const n = O.bank.flat().filter(Boolean).length;
   const bankJson = () => JSON.stringify({ schema: BANK_SCHEMA, name: O.name, bank: O.bank.map((r) => r.map((l) => (l ? plainLook(l) : null))) }, null, 1) + '\n';
-  let fw: Fw = 22; try { const s = localStorage.getItem('caduceus.om3.fw'); if (s === '20' || s === '21' || s === '23') fw = Number(s) as Fw; } catch { /* storage blocked */ }
+  let fw: Fw = 23; try { const s = localStorage.getItem('caduceus.om3.fw'); if (s === '20' || s === '21' || s === '22' || s === '23') fw = Number(s) as Fw; } catch { /* storage blocked */ }
   const looksBin = () => profilesBin(O.bank, fw);
   const fwSel = h('select', { onchange: (e: Event) => {
     fw = Number((e.target as HTMLSelectElement).value) as Fw;
     try { localStorage.setItem('caduceus.om3.fw', String(fw)); } catch { /* storage blocked */ }
-  } }, h('option', { value: '23', selected: fw === 23 }, 'v0.23 (test builds)'), h('option', { value: '22', selected: fw === 22 }, 'v0.22'), h('option', { value: '21', selected: fw === 21 }, 'v0.21'), h('option', { value: '20', selected: fw === 20 }, 'v0.20 or older'));
+  } }, h('option', { value: '23', selected: fw === 23 }, 'v0.24 or later'), h('option', { value: '22', selected: fw === 22 }, 'v0.22'), h('option', { value: '21', selected: fw === 21 }, 'v0.21'), h('option', { value: '20', selected: fw === 20 }, 'v0.20 or older'));
   const cardFiles = async () => [{ name: 'LOOKS.BIN', data: looksBin() }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
   const busy = async (b: HTMLButtonElement, f: () => Promise<void>) => { b.disabled = true; try { await f(); } catch (e) { toast((e as Error).message, 'err'); } finally { b.disabled = probs.length > 0; } };
   const looks = O.bank.flat().filter(Boolean) as Look[];
