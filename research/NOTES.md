@@ -1485,3 +1485,30 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Next (static + emulator): who fills +780..+812 for Art 0x68 and with what (a stored texture or made per shot), and
   what combiner 1 does with it; then try that extra image on a COLOR development (key 11) for colour grain that
   survives Art / Glow / Clarity passes.
+
+## Grainy Film's grain path in the firmware (2026-11-08; static analysis of OM-3 1.1, matched to the fg3 camera logs)
+
+- **Work list.** The table at 0x606c957c holds (key − 11, handler) pairs, found by hashing (key − 11) & 31 and probing
+  (so 0x0102005d = Grainy Film II 0x01020068, 0x0101005d = GF I 0x01010068, 0x00000001 = MONO 12). GF's handler is
+  **0x604b8ddc**: default list if the request flags (+40) have 0x0100 in 0xf00 or 0x40 in 0xf0; otherwise pass
+  0x604b81ca (job+5385 in 4..8) or 0x604b81ec, pass 0x604bc17e, **config hook 0x604bc0cf** (0x604b8cb5 sets the hook
+  of the last pass), pass 0x604bc1a1, then the common tail 0x604b918c (0x604bc2a1 / hook 0x604bc40e). A list entry is
+  12 B: +0 pass, +4 request-config hook (0x604b8c45 adds a pass).
+- **Hook 0x604bc0cf (a1 = request) attaches the texture:** kind 0 (development): 19 words (76 B, an image
+  descriptor) from (job+8324)+8 to request **+780**, its bus address from the object's +8/+12 with job+8312 & obj+108
+  (0x6004c404) to +780/+784, and request **+12 = 0x0100** (the stage seen in the logs). Kind 3: the same into request
+  +96 (the 0x0101 pass gets the texture as well). This is exactly the extra half-size image the fg3 log showed.
+- **The texture object (job+8324)** is made in the still set-up function (around 0x604b9956, keys GF I / GF II):
+  flags at (4,sp)+40 checked, then 0x604cd921 with a 7-byte parameter block ((4,sp)+40 halfword, +44 byte, (20,sp),
+  0x604b77fb(...), (8,sp)). 0x604cd921 is a **cache of 4 objects** (116 B each at 0xa32e94b8, refcount +112, match
+  0x604ce6f0): a texture with the same parameters is reused, a new one built otherwise. So the grain is a ready-made
+  image blended in development by the image processor: no CPU time per photo.
+- Same set-up code treats MONO (job+5352 = 12) next to GF (0x604b3c66: grain flag job+5356 -> stage bits 0x0100;
+  0x604b8d1b) — the camera's own MONO grain probably used this texture route once (its list's grain branches are dead
+  now, see the fast-grain review).
+- **Open:** whether combiner 1 at stage 0x0100 blends the texture into luma only (colour kept) or needs a mono image;
+  where 0x604cd921 builds a new texture; the parameter values for GF II (log them).
+- **Plan (ft1):** for COLOR stills with Grain, (a) get a texture object (call 0x604cd921 with GF II's parameters at
+  set-up, or log them first), (b) give the COLOR development request the same attach as hook 0x604bc0cf (+780
+  descriptor, +12 = 0x0100) instead of the MONO-key trick. If the blend keeps colour, grain becomes part of the
+  developed image: as fast as default and kept through Art Effect / Glow / Clarity / Shading passes.
