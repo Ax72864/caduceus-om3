@@ -1032,4 +1032,11 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   the camera's own WB grid (from the WB screen) still changes the camera's values, not the look's. The header's WB
   name is the camera's current WB mode. Opening by dial (as the WB screen does) not done; only OK.
 - Package test 12: E1479999.BIN 500f6e0d…, GUIDES.BIN 1e6aeb91…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
-  checked by checksum. Camera result: pending.
+  checked by checksum. Camera (owner, 2026-11-08): the row and its WB± icon show, but
+  OK on it goes back to live view (stock behaviour), so pm_ev did not catch it on the camera although it does in the
+  emulator. Not yet known why: the camera may send OK as another event, or the row / picture-mode check may differ.
+- Owner's choice: the grid should show right on the Picture Mode screen when the row is selected (as Highlight &
+  Shadow's curve, item 5398: its own left cell 0x611d0a9f and object in the bar switch 0x611c2d19 -> 0x611c30bc, kind 7),
+  with the dials moving the dot, not on a separate screen. Next: study how the H&S curve row is built and drawn, and
+  draw a grid there (the WB screen's grid helpers 0x611c7785 / 0x611c782f, tables 0x615513dc.., 0x61551c50, may help).
+  The test 12 route stays in the code for now.
