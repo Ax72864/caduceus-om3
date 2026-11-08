@@ -54,7 +54,8 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_arw': (0x611d0be0, bytes.fromhex('5c148001fa507503')),
          '.hook_rev': (0x611b21e8, bytes.fromhex('5c10f060fac8d501c927')),
          '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60')),
-         '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906')),
+         '.hook_rsp': (0x611c3cb5, bytes.fromhex('5c14f8bc20f87058'))}   # film test 9: the reset keeps the strip's scroll       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
@@ -170,6 +171,12 @@ def build(defaults, testfile, out):
     ldigs = mkicons.film_ldigits()                # film test 8: the row's left cell, 82 x 62
     ldw = ldigs[0].shape[1]
     assert ldigs[0].shape[0] == mkicons.LD == 32 and ldw % 2 == 0 and (mkicons.LCW, mkicons.LT) == (82, 30)
+    lvw, lvwi, lvboxes, lvdw = mkicons.lv_parts()  # film test 9: the shooting screen's "FILM n" (fl_sp, layout fl_LVL)
+    assert lvw.shape[0] == mkicons.LVH == 44 and lvboxes[0].shape[1] % 2 == 0 and mkicons.LVW == 96
+    lvmax = max(len(mkicons.encode11(bytes(mkicons.lv_film(n, (lvw, lvwi, lvboxes, lvdw)).flatten().tolist()), 96, 44))
+                for n in range(1, 21))
+    assert lvmax <= 2800, lvmax                   # LV_SLOT in editor.s
+    assert all(lvwi + mkicons.LV_GAP + lvdw[a] + mkicons.LV_DGAP + lvdw[c] <= 96 for a in range(10) for c in range(10))
     lab, gd = mkicons.sat_pictures()             # film test 8: the wheel's Saturation page (gd_sel swaps them in)
     slab = mkicons.encode11(bytes(lab.flatten().tolist()), 70, 30)
     sgd = mkicons.encode11(bytes(gd.flatten().tolist()), 180, 50)
@@ -188,7 +195,10 @@ def build(defaults, testfile, out):
                                    'fl_sfw:\n' + db(mkicons.pack4(fwp)) + 'fl_sdg:\n' + ''.join(db(mkicons.pack4(x)) for x in boxes) +
                                    'fl_sdw:\n' + db(bytes(dw)) + ' .balign 4\n' +
                                    'fl_slab:\n' + db(slab) + f'.set SLS, {len(slab)}\n .balign 4\n' +
-                                   'fl_sgd:\n' + db(sgd) + f'.set SGS, {len(sgd)}\n .balign 2\n')
+                                   'fl_sgd:\n' + db(sgd) + f'.set SGS, {len(sgd)}\n .balign 4\n' +
+                                   'fl_lvw:\n' + db(mkicons.pack4(lvw)) + 'fl_lvd:\n' + ''.join(db(mkicons.pack4(x)) for x in lvboxes) +
+                                   'fl_lvdw:\n' + db(bytes(lvdw)) + f'.set LVWB, {lvw.shape[1]}\n.set LVWI, {lvwi}\n'
+                                   f'.set LVDB, {lvboxes[0].shape[1]}\n.set LV_GAP, {mkicons.LV_GAP}\n.set LV_DGAP, {mkicons.LV_DGAP}\n .balign 2\n')
     subprocess.run([P.AS, '-I', out, '-o', out / 'p.o', HERE / 'src' / 'editor.s'], check=True)
     subprocess.run([P.LD, '-T', HERE / 'src' / 'editor.ld', '-o', out / 'p.elf', out / 'p.o'], check=True)
     blobs = {}

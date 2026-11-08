@@ -505,7 +505,10 @@ xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
 xb_lkh:
  movbu (24,sp),d0
  cmp 0x81,d0                      /* 0xf881: OK held on "COLOR n" = the whole-profile reset: also no look selected */
- bne 1f
+ beq 0f
+ cmp 0x3e,d0                      /* film test 9: OK held on the wheel of a COLOR holding a film: the film as built too */
+ bne 1f                           /* (it reset to the factory, so the film showed '*' after its reset) */
+0:
  mov (12,sp),d3                   /* v0.24: COLOR k holding a film that is there -> the film as built */
  add -2197,d3
  mov a2,a0
@@ -556,8 +559,16 @@ xb_lkh:
  mov 901,d0
  calls (a2)
  mov 1,d3
+ movbu (24,sp),d0
+ cmp 0x3e,d0
+ bne 21f
+ jmp E_LK                         /* on the wheel: its values re-read, then all colours on Saturation (e_sall) */
+21:
  jmp E_RET
 20:
+ movbu (24,sp),d0                 /* no film there: the wheel as before, "COLOR n" the whole-profile reset */
+ cmp 0x3e,d0
+ beq 1f
  mov (12,sp),d0
  add -2197,d0
  mov a2,a0

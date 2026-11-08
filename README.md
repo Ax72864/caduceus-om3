@@ -16,7 +16,9 @@
 > list for a changed film, smaller numbers, "HSL" for the colour wheel row, and the wheel down to Color / Color All /
 > Hue / Light (the Film and Extras pages hidden, Glow / Clarity and Art Effect off; their code kept). Film test 8
 > (emulator only): the '*' on Blacks / Whites and the other own rows follows the film as built, the left cell has its
-> own smaller FILM n picture, and the wheel's Saturation page always shows all colours, labelled "Saturation". Notes:
+> own smaller FILM n picture, and the wheel's Saturation page always shows all colours, labelled "Saturation". Film
+> test 9 (emulator only): holding OK on a film keeps the list where it was, the wheel's reset on a film goes back to
+> the film as built, and the shooting screen shows FILM n. Notes:
 > `research/NOTES.md` ("v0.24 film list").
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).

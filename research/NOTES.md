@@ -1292,6 +1292,28 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     rear-dial label stays the camera's "Vivid All". Not tried: setting all colours before the stock init (the opening
     INFO then stepped on to Hue in the emulator); the front dial on Saturation (the emulator has no dial key; if it
     still leaves all colours, it goes through another record).
-  - Package film test 8: E1479999.BIN 4cef0e81…, GUIDES.BIN 015d526f…, LABELS.BIN 903af75b… (unchanged). Camera result:
-    pending.
+  - Package film test 8: E1479999.BIN 4cef0e81…, GUIDES.BIN 015d526f…, LABELS.BIN 903af75b… (unchanged). On the
+    owner's card, checked by checksum. Camera (owner, 2026-11-08): the film numbers look good; two asks: (1) holding OK
+    on a film jumps the list to the COLOR cells and the highlighted film is off screen; (2) the shooting screen still
+    shows "COLOR n", not the film.
+- Film test 9 (emulator only):
+  - (1) The held-OK reset (0x611c3b..) ends by putting the row's cursor place on screen (row +88) = the list index
+    (fine for the camera's 4 COLOR cells); with 24 cells the strip then started at COLOR 1 with FILM 6 off screen
+    (row +86 the index, +88 its place; found by a memory diff and a write watch: 0x611c3cba). .hook_rsp 0x611c3cb5 ->
+    rs_pos: the place is kept when it is not past the index. Emulator: FILM 6 and FILM 2 reset in place, the arrows
+    move on from there.
+  - Also: OK held on the wheel of a COLOR holding a film reset the slot to the factory (Blacks 0), so a film built
+    with Blk -1 showed "Blk ±0*" after its reset. xb_lkh: the wheel reset (0x903e) on a film = the film as built (as
+    OK held on FILM n), then the wheel's values re-read (e_lk) and all colours on Saturation (e_sall). Emulator:
+    "Blk -1", no '*'.
+  - (2) The shooting screen's picture-mode name is a picture, 15706..15709 "COLOR1".."COLOR4" (96 x 44; found by
+    tracing the picture lookup in live view). fl_lvp (ic_get) -> "FILM N" for a COLOR holding a film, drawn by fl_sp
+    (now one renderer with layouts: fl_LS the quick menu's 160 x 48, fl_LVL this one; mkicons lv_parts / lv_film, the
+    label style, cap 24 baseline 33) into a 4-picture block (P+LVB 832, LV_SLOT 2800). Emulator dump: the live-view
+    "FILM11" and the quick menu's byte-identical to mkicons.
+  - Found while doing this: `jmp 0x604be2aa` (g_sf's fallback without the code block) assembled as a relative jump to a
+    wrong address (the same happened to a first `jmp 0x6122471c`); bare numbers in jmp / call are linker symbols now
+    (sf_stock, stock_left, stock_right, rsp_back). Never taken so far (the code block is always loaded).
+  - Not verified: in the emulator the up arrow on the wheel's Saturation page (all colours) still shows one colour
+    (it goes through the Picture Mode screen, not the editor's records). The front dial: no emulator key.
 

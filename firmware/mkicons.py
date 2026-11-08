@@ -207,6 +207,70 @@ def sp_film(n, parts=None):
     return px
 
 
+# v0.24 film test 9: the shooting screen's picture-mode name (the camera's "COLOR2", 96 x 44: fill rows 10..33, the
+# label style: white fill, dark edge, grey, faint) -> "FILM" and the number in that style (cap 24, baseline 33,
+# DejaVu Sans Condensed squeezed 0.8; 3 px between the word and the number, digits 1 px overlapped at their rims).
+# The firmware composes it (fl_sp with the fl_LVL layout) from these parts, as sp_film below.
+LVW, LVH, LV_BASE, LV_CAP, LV_SQ, LV_GAP, LV_DGAP = 96, 44, 33, 24, 0.80, 3, -1
+
+
+def _lv_glyph(txt):
+    import sys, pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'card'))
+    import mklabels
+    fs = next(f for f in range(10, 80) if (lambda r: r[1] - r[0] + 1)(mklabels.cap_rows(f)) >= LV_CAP)
+    a = mklabels.raster(txt, fs, LV_SQ)
+    base = mklabels.cap_rows(fs)[1]
+    lay = np.zeros((LVH, a.shape[1] + 8), dtype=np.uint8)
+    fill, soft = a > 128, (a > 60) & (a <= 128)
+    for y in range(a.shape[0]):
+        yy = y + LV_BASE - base
+        if 0 <= yy < LVH:
+            row = lay[yy, 4:4 + a.shape[1]]
+            row[fill[y]] = 10
+            row[soft[y] & (a[y] > 100)] = 11
+            row[soft[y] & (a[y] <= 100)] = 12
+    fm = lay == 10
+    e = ndimage.distance_transform_edt(~fm)
+    out = np.zeros_like(lay)
+    out[(e > 0) & (e <= 1.0)] = 7
+    out[(e > 1.0) & (e <= 2.0)] = 8
+    out[(e > 2.0) & (e <= 2.5)] = 9
+    sm = (lay == 11) | (lay == 12)
+    out[sm] = lay[sm]
+    out[fm] = 10
+    cols = np.nonzero(out.any(axis=0))[0]
+    return out[:, cols[0]:cols[-1] + 1]
+
+
+def lv_parts():
+    """as sp_parts: (word picture even-padded, its ink width, digit boxes, digit ink widths)"""
+    fw = _lv_glyph('FILM')
+    fwp = np.zeros((LVH, fw.shape[1] + fw.shape[1] % 2), dtype=np.uint8)
+    fwp[:, :fw.shape[1]] = fw
+    ds = [_lv_glyph(str(d)) for d in range(10)]
+    wd = max(d.shape[1] for d in ds)
+    wd += wd % 2
+    boxes = []
+    for d in ds:
+        bx = np.zeros((LVH, wd), dtype=np.uint8)
+        bx[:, :d.shape[1]] = d
+        boxes.append(bx)
+    return fwp, fw.shape[1], boxes, [d.shape[1] for d in ds]
+
+
+def lv_film(n, parts=None):
+    fwp, fwi, boxes, dw = lv_parts() if parts is None else parts
+    ds = [int(c) for c in str(n)]
+    tw = fwi + LV_GAP + sum(dw[d] for d in ds) + LV_DGAP * (len(ds) - 1)
+    x = (LVW - tw) // 2
+    px = np.zeros((LVH, LVW), dtype=np.uint8)
+    for a, xx in [(fwp, x)] + [(boxes[d], x + fwi + LV_GAP + sum(dw[e] + LV_DGAP for e in ds[:i])) for i, d in enumerate(ds)]:
+        m = a != 0
+        px[:, xx:xx + a.shape[1]][m[:, :LVW - xx]] = a[:, :LVW - xx][m[:, :LVW - xx]]
+    return px
+
+
 # v0.24 film test 8: the row's left cell (82 x 62, the stock small "COLOR / 1" cell: word fill rows 7..26, digits
 # rows 32..55, 8..14 px wide; the wheel screen's left column draws this size) -> "FILM" cap 20, baseline 26; digits
 # cap 22, baseline 55 (as the list cell's, a little under the stock), drawn by the camera like the list cells.

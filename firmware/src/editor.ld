@@ -5,6 +5,7 @@ SECTIONS {
   .ext4         0x60a8f100 : { *(.ext4) }
   .hook_set     0x60b8798b : { *(.hook_set) }
   .hook_pmod    0x6129ba07 : { *(.hook_pmod) }
+  .hook_rsp     0x611c3cb5 : { *(.hook_rsp) }
   .hook_tone    0x605197d7 : { *(.hook_tone) }
   .hook_fx      0x60555e50 : { *(.hook_fx) }
   .hook_lv      0x6046b8bb : { *(.hook_lv) }
@@ -51,6 +52,8 @@ lch_back      = 0x611d0b72;
 nf_get        = 0x60063380;
 pg_back       = 0x611d07bd;
 pgm_back      = 0x611c3710;
+rsp_back      = 0x611c3cbd;
+sf_stock      = 0x604be2aa;
 arw_back      = 0x611d0be8;
 rv_469        = 0x611b21f2;
 rv_back       = 0x611b2217;
