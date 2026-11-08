@@ -57,7 +57,8 @@ Branches: `main` = released and safe. `feature/...` = work meant to ship (README
   and the GUIDES.BIN code block (16448 B malloc cap). The empty stretches between sections are NOT loaded on the
   camera even though the emulator maps them (a sliders test made this mistake: `research/NOTES.md`). They become
   usable only by moving a section's loaded-end word, and only as far as a camera probe has proven (2026-11-07: section 6
-  +64 KiB, 0x60f49800..0x60f59800, `experiment/firmware-space-probe-64k`; see `research/NOTES.md`).
+  +64 KiB, 0x60f49800..0x60f59800, `experiment/firmware-space-probe-64k`; see `research/NOTES.md`). The sliders
+  branch's code (`.ext11`) already uses it, from 0x60f49800; put new code after it.
 - **Calling convention:** `call f,[regs],N` writes the return address at `(0,sp)` and overwrites MDR (details in
   `research/NOTES.md`, "Picture-mode sliders").
 - **Test order:** build → emulator (`tools/emulator/session_ed1.mjs`) → package for the owner → camera test by the
