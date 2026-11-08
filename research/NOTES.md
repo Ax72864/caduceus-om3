@@ -1424,3 +1424,9 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Emulator: boots, Picture Mode rows and the HSL wheel open, half-press fine. Camera run asked (4 slots, in order):
   COLOR + Film Grain High, ART Grainy Film, Grainy Film + an Art Effect, Grainy Film + another Art Effect; then
   half-press to write GLOG.BIN. Afterwards put the v0.24.1 GUIDES.BIN (112e8f93…) back.
+- fg2 camera run 1 (2026-11-08, owner): 5 photos (PB081430..434, camera clock 00:22:52..00:23:36) after a half-press
+  save at 00:22:40 (BUNDLES.NEW / LOOKS.NEW), but no save after the photos: GLOG.BIN on the card is still the fg1 one
+  (marks 1, records 5, selector calls 372). Likely cause (analysis): the last half-press was in ART mode (Grainy
+  Film); the half-press save (ed_trig -> pf_save -> block +72 xb_lw) runs only from the editor's states, so the log
+  was never written. Also 5 shots > 4 slots (slot = mark & 3: the fifth overwrites the first). Redo: exactly 4
+  photos, then Picture Mode back to a COLOR, half-press, wait, switch off.
