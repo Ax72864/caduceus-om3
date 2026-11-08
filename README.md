@@ -10,7 +10,10 @@
 >
 > Expected package: `DCOLYMP/E1479999.BIN` sha256 `0c936df9ff34d4c423f98bb349b44a94ed3d64455b344ebbabc306203dd23187`,
 > `OM3MOD/GUIDES.BIN` `f7fe50e04bfadd8b7b5042a7aa8fd403d47b3422b00148a37dae7f04650e9b9e` (build with
-> `firmware/build.py`). Emulator: 25 passes, no errors. Not yet run on a camera.
+> `firmware/build.py`). Emulator: 25 passes, no errors.
+>
+> **Camera result (2026-11-07): the loader change works.** `GAPTEST.BIN` was written; 45 passes, the 4 KiB pattern
+> intact, no gap changed. Details: `research/NOTES.md` on `main`. Next: a larger extension.
 >
 > The result decides where new features (such as the picture-mode sliders on
 > [`feature/v0.23-alpha-profile-sliders`](https://github.com/androidfanman/caduceus-om3/tree/feature/v0.23-alpha-profile-sliders)) can put their code.
