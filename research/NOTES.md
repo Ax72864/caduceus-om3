@@ -1472,3 +1472,16 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   - Next: diff this development request against a COLOR development (plain and Grain High) to find what makes the
     grain (request fields vs combiner 1's set-up for context 0x01020068); run: COLOR plain, COLOR + Grain High,
     GF II, each followed by a plain half-press.
+- fg3 run 2 (2026-11-08, owner; PB081447 COLOR, 448 COLOR + Grain High, 449 GF II; a plain half-press after each):
+  all three logged (3 marks). Plain GF II also has the kind-3 stage-0x0101 pass (combiner 0, effect 0).
+  Development requests (copy A), word diff, camera-tested log (meaning = analysis):
+  - +8 key: COLOR 0x000b0000, Grain High 0x000c0000 (+1751 = 3), GF II 0x00680201; +12 stage 0 / 0 / 0x0100.
+  - **GF II only: an extra image at +780..+812:** +780 = 0x4dfd4400 (bus address), +796 = 0x14400c02 (5184,
+    format 0x0c02), +800 / +804 = 0x0f401440 (5184 x 3904), +812 = 0x07a00a20 (2592 x 1952, half size). COLOR and
+    Grain High have it all 0. Guess: a half-size grain texture blended into the development (combiner 1).
+  - COLOR / Grain High only: +872..+888 (0x0080200c, 0x00800080 x2, 0x00400040), and the 2nd output +1112..+1175
+    (1600 x 1200 0x0c02); output +1100 0x1c02 (GF: 0x0c02 to memory for its 0x0101 pass).
+  - +1652..+1852 (tone tables) differ a little in all three (exposure).
+  Next (static + emulator): who fills +780..+812 for Art 0x68 and with what (a stored texture or made per shot), and
+  what combiner 1 does with it; then try that extra image on a COLOR development (key 11) for colour grain that
+  survives Art / Glow / Clarity passes.
