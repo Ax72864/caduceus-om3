@@ -1419,3 +1419,8 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Panel's "v0.24.1 or later" export writes +43 = 0; the release notes ask owners to set Shading 0 before flashing.
 - `releases/v0.24` removed: the release workflow publishes every folder without a GitHub release, so keeping it would
   re-create the deleted v0.24 release.
+- fg2 (2026-11-08; emulator only so far): the fg1b logger rebuilt on v0.24.1 (branch experiment/fast-grain-log, merge
+  of hotfix/v0.24.1). Firmware identical to v0.24.1 (6fbc80b8…), so GUIDES.BIN only: 457043250ec7…, 14948 B.
+  Emulator: boots, Picture Mode rows and the HSL wheel open, half-press fine. Camera run asked (4 slots, in order):
+  COLOR + Film Grain High, ART Grainy Film, Grainy Film + an Art Effect, Grainy Film + another Art Effect; then
+  half-press to write GLOG.BIN. Afterwards put the v0.24.1 GUIDES.BIN (112e8f93…) back.

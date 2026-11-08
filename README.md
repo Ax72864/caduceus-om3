@@ -1,9 +1,10 @@
 # Caduceus for OM-3
 
 > [!CAUTION]
-> **Experiment: fast-grain logging build fg1. Not a release.** A `GUIDES.BIN` for v0.24 that logs how the camera
-> processes Grainy Film photos (with and without Art Effects) into `OM3MOD/GLOG.BIN`, to find a fast grain that works
-> with every effect. Plan: `research/NOTES.md` ("Fast-grain review"). Current release: [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.24).
+> **Experiment: fast-grain logging build fg2. Not a release.** A `GUIDES.BIN` for v0.24.1 (firmware unchanged) that
+> logs how the camera processes Grainy Film photos (with and without Art Effects) into `OM3MOD/GLOG.BIN`, to find a
+> fast grain that works with every effect. Plan: `research/NOTES.md` ("Fast-grain review"). Current release:
+> [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.24.1).
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It puts
