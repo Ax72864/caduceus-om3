@@ -316,7 +316,7 @@ def build(defaults, testfile, out):
         t8 = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 5398 - 6]
         assert len(t8) <= 1, hex(base)
         if base == 0x61536f2c or t8:                                   # no case for 5398: the default, as for it
-            sw_add(base, n, GR_IT, sy['gk_f'] if base == 0x61536f2c else t7[0] if base == 0x615510cc else t8[0])
+            sw_add(base, n, GR_IT, sy['gk_f'] if base == 0x61536f2c else t7[0] if base in (0x615510cc, 0x6155124c) else t8[0])
     assert sy['NR_IT'] == NR_IT if 'NR_IT' in sy else True
     # v0.23 Blacks / Whites icons: the left column's 5 slider-icon slots take ic_list (6 choices) instead of the stock
     # lists of 3 (layout records hold the list's start and end); the pictures from firmware/mkicons.py

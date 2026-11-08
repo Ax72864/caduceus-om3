@@ -65,6 +65,7 @@ el_vis        = 0x6128abbc;
 wb_shift      = 0x611d2941;
 sc_back       = 0x610cdf0b;
 sc_set        = 0x610cdf05;
+sc_ref        = 0x61192d6c;
 pu_back       = 0x611d04f2;
 gx_back       = 0x610f601c;
 str_lang      = 0x610f56bd;

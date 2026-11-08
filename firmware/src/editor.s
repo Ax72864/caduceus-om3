@@ -3004,6 +3004,7 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
 .set ST_BKS, 0x7f02                 /* "Blacks" */
 .set ST_WHS, 0x7f03                 /* "Whites" */
 .set ST_GR, 0x7f04                  /* "A-B / G-M" */
+.set GL, 457                      /* Picture Mode's bottom-bar layer: its holder takes the WB grid (498) on our row */
 .set IC_BK, 0x7f80                /* our picture ids (ic_get answers them; the camera's table has ~20000 slots) */
 .set IC_WH, 0x7f81
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
@@ -3036,8 +3037,9 @@ it_tab:                           /* the stock 17 item entries (filled by build.
  .long VF_IT, vf_title, vf_l0, 2, 0, vf_l1, 2, 0, vf_l2, 2
  .long BK_IT, 0, 0, 0, bk_title, 0, 5 << 16, 0, 0, 0           /* slider entries (as item 7's: +16 title, +26 the */
  .long WH_IT, 0, 0, 0, wh_title, 0, 6 << 16, 0, 0, 0           /* left icon: 5 / 6 = IC_BK / IC_WH in ic_list) */
- .long GR_IT, 0, 0, 0, 0, 0x6154bd18, 27, 0, 0, 0              /* as item 5398's (Highlight & Shadow): the row's object is
-                                                                 * the camera's 2-D control (kind 7), here on WB key 1580 */
+ .long GR_IT, 0, 0, 0, 0, 0x6154bd18, 27 + (7 << 16), 0, 0, 0  /* as item 5398's (Highlight & Shadow): the row's object is
+                                                                 * the camera's 2-D control (kind 7) on WB key 1580; +26 = 7:
+                                                                 * the left column's slider cell shows the WB± picture */
 bk_title:
  .short 4, ST_BKS
  .long 0x6154b480
@@ -3655,6 +3657,7 @@ sl_set:
  and 0x7f,d3
  movbu d3,(57,a3)
  call gr_pub,[d2,d3,a2,a3],16     /* the on-screen grid follows */
+ call gr_ref,[d2,d3,a2,a3],16
  jmp s_dirty
 10:
  cmp 1,a3
@@ -3877,29 +3880,11 @@ gr_blk:                           /* the grid's block (property 256, 18 B, as th
  * start-up holder of scene 485, the camera's WB fine-tune grid. It is one of the GUI's top layers, which every screen
  * empties (-1) when it opens; on our row we load 485 into it again, and empty it when the row or the screen goes. */
 sc_cap:
- cmp 485,d0
+ cmp GL,d0
  bne 1f
  mov gr_cont,a1
  mov a0,(a1)
 1:
- cmp 501,d0                       /* TEST: Picture Mode opening (its layer 501): load the grid there and then */
- bne 2f
- mov gr_cont,a1
- mov (a1),a1
- cmp 0,a1
- beq 2f
- add -24,sp
- mov d0,(8,sp)
- mov d1,(12,sp)
- mov a0,(16,sp)
- mov a1,a0
- mov 485,d0
- call sc_set,[d2,d3,a2,a3],28
- mov (8,sp),d0
- mov (12,sp),d1
- mov (16,sp),a0
- add 24,sp
-2:
  mov d0,a3
  mov a0,d3
  mov 1,d0
@@ -3923,11 +3908,63 @@ gr_upd:
  cmp 0,d0
  beq 8f
  call gr_pub,[d2,d3,a2,a3],16
+ mov gr_cont,a1
+ mov (a1),a0
+ call gr_is,[d2],8                /* d0 = 1: the holder already shows the grid */
+ cmp 1,d0
+ beq 7f
+ mov gr_cont,a1
+ mov (a1),a0
+ mov 498,d0
+ call sc_set,[d2,d3,a2,a3],28     /* the holder takes the WB grid scene */
+7:
+ call gr_ref,[d2,d3,a2,a3],16
  bra 9f
 8:
  clr d0
  mov gr_flag,a1
  movbu d0,(a1)
+ mov gr_cont,a1
+ mov (a1),a0
+ call gr_is,[d2],8
+ cmp 1,d0
+ bne 9f
+ mov gr_cont,a1
+ mov (a1),a0
+ mov GL,d0
+ call sc_set,[d2,d3,a2,a3],28     /* back to its own layer (the bottom bar) */
+9:
+ ret [d2,d3,a2,a3],16
+
+/* gr_is: `call gr_is,[d2],8`, a0 = the holder (or 0) -> d0 = 1 when its scene is the WB grid (element 24813) */
+gr_is:
+ clr d2
+ cmp 0,a0
+ beq 9f
+ mov (776,a0),a0
+ cmp 0,a0
+ beq 9f
+ movhu (4,a0),d0
+ cmp 24813,d0
+ bne 9f
+ mov 1,d2
+9:
+ mov d2,d0
+ ret [d2],8
+
+/* gr_ref: `call gr_ref,[d2,d3,a2,a3],16`: the grid scene (the holder's +776) re-reads property 256 (its method
+ * 0x61192d6c, as on a property change). */
+gr_ref:
+ mov gr_cont,a1
+ mov (a1),a0
+ call gr_is,[d2],8
+ cmp 1,d0
+ bne 9f
+ mov gr_cont,a1
+ mov (a1),a0
+ mov (776,a0),a0
+ mov sc_ref,a1
+ calls (a1)
 9:
  ret [d2,d3,a2,a3],16
 
@@ -4043,15 +4080,17 @@ gx_map:
  bne 9f
  clr d1
  movbu d1,(a1)
- mov (gr_cont),a0                 /* and hide the grid */
+ mov (gr_cont),a0                 /* and give the holder its own layer back */
  cmp 0,a0
  beq 9f
- mov (776,a0),d1
- cmp 0,d1
- beq 9f
  mov d0,(gx_d0)
- mov -1,d0
+ call gr_is,[d2],8
+ cmp 1,d0
+ bne 8f
+ mov (gr_cont),a0
+ mov GL,d0
  call sc_set,[d2,d3,a2,a3],28
+8:
  mov (gx_d0),d0
 9:
  mov d0,d3
