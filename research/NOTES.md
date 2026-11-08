@@ -987,4 +987,24 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Owner chose style B for the Blacks / Whites left cells (one small line, "Blk -2" / "Wht +1", like "S ±0"); needs the
   picture route (icon id -> picture descriptor lookup, not found yet).
 - Package test 10: E1479999.BIN f50c1f97…, GUIDES.BIN d3e7f818…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
-  checked by checksum. Camera result: pending.
+  checked by checksum. Not flashed (owner waits for the icons, test 11).
+
+### Test 11: Blk / Wht icons in the left column (emulator only)
+- Pictures: id -> slot lookup 0x610f5611 (a0 = (0x60379740) + 4 id; the slot holds the descriptor <6H3I> 14, w, h, 8,
+  0, 0, size, payload, flags). ic_get (hook) answers our ids IC_BK 0x7f80 / IC_WH 0x7f81 with our descriptors.
+- The slider cell (switch 0x6155124c case 0x611d096e, items 7 / 8 / 59): cell type 4, cell +154 = item +26; draw case
+  0x61178939 sets the row slot's picture object to choice +26 - 1 (0x6128abe0 / 0x610dae1e; ignored from the object's
+  +131 count on). The 5 row slots' objects come from layout records 0x614557f8 + 88 n: byte +5 = count (3), then the
+  choice list start / end (stock lists 0x614548b4.. of {0xffff, 7, 7, id}: S 11416, Contrast 11417, Saturation 11418).
+  build.py points all 5 at ic_list (S, C, Sat, S for +26 = 4 (Shading draws its own), Blk, Wht), count 6.
+- Blacks / Whites are slider cells again (item 7's case; +26 = 5 / 6), so the camera draws its own value next to our
+  icon. The word cells (lc_bk / lc_wh, 22 "Bk-5".. strings) are gone.
+- Icons: firmware/mkicons.py (DejaVu Sans Condensed, 46 x 46 as the S icon, cap 20 px, fill 10, soft 11 / 12, 2 px edge
+  7), type-11 streams in ext11 (ic_pbk / ic_pwh, 732 / 900 B). Two emulator finds: (1) the payload must be the uncached
+  address (+0x40000000; 0x6.. | 0x40000000 is a no-op), else DMA_RANGE; (2) a run must not cross a row end (engine
+  BMP_TOKEN; stock streams never do). The GUIDES picture shows BMP_TOKEN in the emulator too (its runs cross rows), but
+  it is camera-tested as working.
+- Emulator: Blk / Wht + the camera's value on page 1, Sharpness / Contrast keep S / half-circle, Shading unchanged;
+  owner-approval screenshot sent.
+- Package test 11 (includes test 10's stop-at-ends): E1479999.BIN f490d866…, GUIDES.BIN 9d8865c5…, LABELS.BIN 903af75b…
+  (unchanged). On the owner's card, checked by checksum. Camera result: pending.

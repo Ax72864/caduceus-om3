@@ -48,6 +48,10 @@
 .section .hook_rev,"ax"
  jmp rv_chk                       /* v0.23 stock 0x611b21e8 (a bar's value list top-down if its id is in 0x6152d6fe) */
  .byte 0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_ic,"ax"
+ jmp ic_get                       /* v0.23 stock 0x610f5611 (picture id -> its slot in the picture table): mov d0,d1;
+                                   * exthu d1; cmp 0,d1; bne 0x610f561b */
+ .byte 0xcb
 .section .hook_stp,"ax"
  jmp st_chk                       /* v0.23 stock 0x611b201b (a bar stops at its ends if its id is in 0x6152d520):
                                    * clr d0; mov 116,a0; add a3,a0; mov d0,(a0) */
@@ -2968,7 +2972,7 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
  *                   camera's Noise Filter values -2 Off, -1 Low, 0 Standard, +1 High; Camera shows the camera's own
  *   class 4 VigFix: new choice row VF_IT "Vignette Correction", slot +52 (0 Camera, 1 Off) as 0 Off, 1 On (= Camera)
  *   class 5 Blacks, class 6 Whites: new slider rows BK_IT / WH_IT, slot +47 / +48, -5..+5 (bar like Shading's; the
- *                   left column a short word with the value, "Bk+2" / "Wh-1", from our strings)
+ *                   left column our icons "Blk" / "Wht" (IC_BK / IC_WH) and the camera's own value, as the stock slider rows)
  * Ids: our setting ids GRB/NRB/VFB + k for the rows' bars (only our facade handlers take them), and the rows' own
  * left-column ids 7, 998 (Film Grain's), NR_IT, VF_IT, answered by picture mode (54/55/56/64 = COLOR 1-4).
  * The new rows are choice rows like Film Grain Effect: item table entries (it_tab, 21 entries, build.py copies the
@@ -2987,7 +2991,8 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
 .set ST_STD, 0x7f01
 .set ST_BKS, 0x7f02                 /* "Blacks" */
 .set ST_WHS, 0x7f03                 /* "Whites" */
-.set ST_LC, 0x7f10                  /* 22 left-column words: Blk -5..+5, Wht -5..+5 */
+.set IC_BK, 0x7f80                /* our picture ids (ic_get answers them; the camera's table has ~20000 slots) */
+.set IC_WH, 0x7f81
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
 .set VF_I1, 480                   /* the camera's "On" icon */
 .set VF_J0, 358
@@ -3014,8 +3019,8 @@ it_tab:                           /* the stock 17 item entries (filled by build.
  .space 17 * 40
  .long NR_IT, nr_title, nr_l0, 4, 0, nr_l1, 4, 0, nr_l2, 4    /* title, labels, two icon lists (as 5400's) */
  .long VF_IT, vf_title, vf_l0, 2, 0, vf_l1, 2, 0, vf_l2, 2
- .long BK_IT, 0, 0, 0, bk_title, bk_lc, 11, 0, 0, 0             /* slider entries (as item 7's: +16 title), +20 the */
- .long WH_IT, 0, 0, 0, wh_title, wh_lc, 11, 0, 0, 0             /* left column's word list (lc_bk / lc_wh read it) */
+ .long BK_IT, 0, 0, 0, bk_title, 0, 5 << 16, 0, 0, 0           /* slider entries (as item 7's: +16 title, +26 the */
+ .long WH_IT, 0, 0, 0, wh_title, 0, 6 << 16, 0, 0, 0           /* left icon: 5 / 6 = IC_BK / IC_WH in ic_list) */
 bk_title:
  .short 4, ST_BKS
  .long 0x6154b480
@@ -3060,30 +3065,6 @@ vf_l1:
 vf_l2:
  OPT 0, 3, VF_J0
  OPT 1, 3, VF_J1
-bk_lc:
- OPT -5, 4, ST_LC + 0
- OPT -4, 4, ST_LC + 1
- OPT -3, 4, ST_LC + 2
- OPT -2, 4, ST_LC + 3
- OPT -1, 4, ST_LC + 4
- OPT 0, 4, ST_LC + 5
- OPT 1, 4, ST_LC + 6
- OPT 2, 4, ST_LC + 7
- OPT 3, 4, ST_LC + 8
- OPT 4, 4, ST_LC + 9
- OPT 5, 4, ST_LC + 10
-wh_lc:
- OPT -5, 4, ST_LC + 11
- OPT -4, 4, ST_LC + 12
- OPT -3, 4, ST_LC + 13
- OPT -2, 4, ST_LC + 14
- OPT -1, 4, ST_LC + 15
- OPT 0, 4, ST_LC + 16
- OPT 1, 4, ST_LC + 17
- OPT 2, 4, ST_LC + 18
- OPT 3, 4, ST_LC + 19
- OPT 4, 4, ST_LC + 20
- OPT 5, 4, ST_LC + 21
 nr_s2v:                           /* NR slot value 1..4 (index 0..3) -> Noise Filter value; 0 Camera: the camera's own */
  .byte 0, -1, -2, 1
 nr_v2s:                           /* Noise Filter value -2..+1 (index + 2) -> slot value */
@@ -3147,15 +3128,6 @@ st_get:
  ret [d2],8
 4:
  mov d0,d2
- add -ST_LC,d2
- cmp 22,d2
- bcc 5f
- asl 4,d2                         /* 16 B a word */
- mov lc_strs,a0
- add d2,a0
- ret [d2],8
-5:
- mov d0,d2
  call str_lang,[],0
  jmp str_back
 .balign 2
@@ -3163,51 +3135,6 @@ bks_str:
  .short 66, 108, 97, 99, 107, 115, 0
 whs_str:
  .short 87, 104, 105, 116, 101, 115, 0
-.balign 16
-lc_strs:                          /* ST_LC + i: "Bk-5".."Bk+5" (0..10), "Wh-5".."Wh+5" (11..21); "Blk"/"Wht" were too wide */
- .short 66, 107, 45, 53, 0
- .balign 16
- .short 66, 107, 45, 52, 0
- .balign 16
- .short 66, 107, 45, 51, 0
- .balign 16
- .short 66, 107, 45, 50, 0
- .balign 16
- .short 66, 107, 45, 49, 0
- .balign 16
- .short 66, 107, 32, 48, 0
- .balign 16
- .short 66, 107, 43, 49, 0
- .balign 16
- .short 66, 107, 43, 50, 0
- .balign 16
- .short 66, 107, 43, 51, 0
- .balign 16
- .short 66, 107, 43, 52, 0
- .balign 16
- .short 66, 107, 43, 53, 0
- .balign 16
- .short 87, 104, 45, 53, 0
- .balign 16
- .short 87, 104, 45, 52, 0
- .balign 16
- .short 87, 104, 45, 51, 0
- .balign 16
- .short 87, 104, 45, 50, 0
- .balign 16
- .short 87, 104, 45, 49, 0
- .balign 16
- .short 87, 104, 32, 48, 0
- .balign 16
- .short 87, 104, 43, 49, 0
- .balign 16
- .short 87, 104, 43, 50, 0
- .balign 16
- .short 87, 104, 43, 51, 0
- .balign 16
- .short 87, 104, 43, 52, 0
- .balign 16
- .short 87, 104, 43, 53, 0
  .balign 16
 std_str:                          /* "Std" */
  .short 83, 116, 100, 0
@@ -3261,12 +3188,6 @@ ch_id:
 
 /* lc_nr / lc_vf <- row switch 0x6155124c (the left column's cell): as Film Grain's case 0x611d0b57 (cell type 1, the
  * icon of the value from the item's list) but GetValue of our row's own id instead of 998 -> 0x611d0b72. */
-lc_bk:                            /* Blacks / Whites: the same choice-type cell, a word per value (bk_lc / wh_lc) */
- mov BK_IT,d2
- bra 1f
-lc_wh:
- mov WH_IT,d2
- bra 1f
 lc_nr:
  mov NR_IT,d2
  bra 1f
@@ -3781,6 +3702,65 @@ rv_chk:
  jmp rv_469
 3:
  jmp rv_back
+
+/* ic_get <- jmp from the picture lookup 0x610f5611 (`call ..,[],0`, d0 picture id -> a0 = its slot: a word holding
+ * the picture's descriptor; 0 for id 0): our IC_BK / IC_WH -> ic_ebk / ic_ewh, else as stock ((0x60379740) + 4 id). */
+ic_get:
+ mov d0,d1
+ exthu d1
+ cmp IC_BK,d1
+ beq 2f
+ cmp IC_WH,d1
+ beq 3f
+ cmp 0,d1
+ bne 1f
+ mov 0,a0
+ retf [],0
+1:
+ mov (0x60379740),a0
+ exthu d0
+ asl2 d0
+ add d0,a0
+ retf [],0
+2:
+ mov ic_ebk,a0
+ retf [],0
+3:
+ mov ic_ewh,a0
+ retf [],0
+
+/* The left column's slider icon (the "S" of Sharpness): each of the column's 5 row slots has a picture object whose
+ * choices are a list of {0xffff, 7, 7, picture id} (16 B), and a slider row's item +26 picks choice +26 - 1 (cell
+ * case 0x611d096e -> 0x61178939; 0x6128abe0 / 0x610dae2a ignore an index from the object's +131 on (the choice
+ * count, from the layout record's byte before the list pointers). Stock lists 0x614548b4.. (5 slots): S, Contrast,
+ * Saturation (count 3). build.py points the 5 slots' layout records (start, end, count 6) at ic_list: the stock three, S again
+ * for 4 (item 5399's +26, Shading, which draws its own picture), then Blk 5, Wht 6. */
+.balign 4
+ic_list:
+ .long 0xffff, 7, 7, 11416
+ .long 0xffff, 7, 7, 11417
+ .long 0xffff, 7, 7, 11418
+ .long 0xffff, 7, 7, 11416
+ .long 0xffff, 7, 7, IC_BK
+ .long 0xffff, 7, 7, IC_WH
+ic_lend:
+ic_ebk:
+ .long ic_dbk
+ic_ewh:
+ .long ic_dwh
+/* descriptors <6H3I> as the stock pictures': format 14, 46 x 46, 8, 0, 0, size, payload, flags; build.py fills size
+ * and payload (the stream from firmware/mkicons.py into ic_pbk / ic_pwh, by its uncached address 0xa...) */
+ic_dbk:
+ .short 14, 46, 46, 8, 0, 0
+ .long 0, 0, 0
+ic_dwh:
+ .short 14, 46, 46, 8, 0, 0
+ .long 0, 0, 0
+.balign 8
+ic_pbk:
+ .space 1024
+ic_pwh:
+ .space 1024
 
 /* st_chk <- jmp from 0x611b201b (bar setup, a3 = the bar, (16,sp) -> its id): the bar's +116 says whether the arrows
  * stop at the ends (1) or wrap around (0); the camera sets 1 for the ids in its table 0x6152d520 (239 u16 ids, 904

@@ -53,7 +53,8 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_pg2': (0x611c3709, bytes.fromhex('af04c3052bfb8c')),
          '.hook_arw': (0x611d0be0, bytes.fromhex('5c148001fa507503')),
          '.hook_rev': (0x611b21e8, bytes.fromhex('5c10f060fac8d501c927')),
-         '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60')),
+         '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
@@ -306,9 +307,26 @@ def build(defaults, testfile, out):
         t7 = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 1]
         assert len(t7) == 1, hex(base)
         for item, pre in ((BK_IT, 'bk'), (WH_IT, 'wh')):
-            t = sy[pre + '_f'] if base == 0x61536f2c else sy['lc_' + pre] if base == 0x6155124c else t7[0]
+            t = sy[pre + '_f'] if base == 0x61536f2c else t7[0]     # left column: item 7's slider cell
             sw_add(base, n, item, t)
     assert sy['NR_IT'] == NR_IT if 'NR_IT' in sy else True
+    # v0.23 Blacks / Whites icons: the left column's 5 slider-icon slots take ic_list (6 choices) instead of the stock
+    # lists of 3 (layout records hold the list's start and end); the pictures from firmware/mkicons.py
+    for L in (0x614548b4, 0x614548ec, 0x61454924, 0x6145495c, 0x61454994):
+        assert struct.unpack_from('<4I', m, o(L)) == (0xffff, 7, 7, 11416), hex(L)
+        pat = struct.pack('<II', L, L + 48)
+        at = [i for i in range(o(0x61455000), o(0x61456000), 4) if bytes(m[i:i + 8]) == pat]
+        assert len(at) == 1, hex(L)
+        struct.pack_into('<II', m, at[0], sy['ic_list'], sy['ic_lend'])
+        assert m[at[0] - 3] == 3, hex(L)          # the record's choice count (object +131): 3 -> 6
+        m[at[0] - 3] = 6
+    sys.path.insert(0, str(ROOT / 'firmware'))
+    import mkicons
+    for st, d, p in zip(mkicons.streams(), ('ic_dbk', 'ic_dwh'), ('ic_pbk', 'ic_pwh')):
+        assert len(st) <= 1024 and sy[p] % 8 == 0
+        m[o(sy[p]):o(sy[p]) + len(st)] = st
+        assert struct.unpack_from('<6H', m, o(sy[d])) == (14, mkicons.W, mkicons.H, 8, 0, 0)
+        struct.pack_into('<II', m, o(sy[d]) + 12, len(st), sy[p] + 0x40000000)   # 0x6.. -> uncached 0xa..
     for a, (stock, name) in READOUT.items():
         assert m[o(a):o(a) + 2] == b'\xfc\xdc' and struct.unpack_from('<I', m, o(a) + 2)[0] == stock, hex(a)
         assert m[o(a) + 6:o(a) + 8] == b'\x8f\x0b', hex(a)

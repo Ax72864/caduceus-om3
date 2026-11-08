@@ -22,6 +22,7 @@ SECTIONS {
   .hook_arw     0x611d0be0 : { *(.hook_arw) }
   .hook_rev     0x611b21e8 : { *(.hook_rev) }
   .hook_stp     0x611b201b : { *(.hook_stp) }
+  .hook_ic      0x610f5611 : { *(.hook_ic) }
   .hook_bar     0x611d1035 : { *(.hook_bar) }
   .hook_rda     0x611d16b4 : { *(.hook_rda) }
   .hook_rdb     0x611d1725 : { *(.hook_rdb) }
