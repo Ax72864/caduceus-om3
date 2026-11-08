@@ -64,6 +64,8 @@ WORDS = {0x60e57480: (0x60b86de7, 'sl_get'), 0x60e57490: (0x60b86e09, 'sl_cnt'),
          **{a + 4: (0x6122393a, 'ed_init') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
          **{a + 44: (0x6122661b, 'ed_info') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
          **{a + 36: (0x61225d52, 'ed_event') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},
+         **{a + 20: (0x6122471c, 'ed_l') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},   # film test 8:
+         **{a + 24: (0x61224c1c, 'ed_r') for a in (0x615adcc4, 0x615adcfc, 0x615add34, 0x615add6c)},   # all colours stay
          # v0.22: the Picture Mode column for COLOR1-4 (modes 54/55/56/64 + 1 in the builder's switch table) -> pm_color
          **{a: (0x611bd8fd, 'pm_color') for a in (0x615335e4, 0x615335ec, 0x61533614, 0x61533574)}}
 # bytes, stock -> new (v0.22 used one for the column list; v0.23 builds the list in pm_list instead).
@@ -165,17 +167,28 @@ def build(defaults, testfile, out):
     fdw = digs[0].shape[1]
     assert digs[0].shape[0] == mkicons.FD == 36 and fdw % 2 == 0 and mkicons.FT == 40 and (mkicons.FCW, mkicons.FCH) == (100, 76)
     fx1, fx2 = (100 - fdw) // 2, (100 - (2 * fdw - 2)) // 2      # as mkicons.film_cell places one / two digits
+    ldigs = mkicons.film_ldigits()                # film test 8: the row's left cell, 82 x 62
+    ldw = ldigs[0].shape[1]
+    assert ldigs[0].shape[0] == mkicons.LD == 32 and ldw % 2 == 0 and (mkicons.LCW, mkicons.LT) == (82, 30)
+    lab, gd = mkicons.sat_pictures()             # film test 8: the wheel's Saturation page (gd_sel swaps them in)
+    slab = mkicons.encode11(bytes(lab.flatten().tolist()), 70, 30)
+    sgd = mkicons.encode11(bytes(gd.flatten().tolist()), 180, 50)
     fwp, fwi, boxes, dw = mkicons.sp_parts()     # the quick menu's "FILM n" (fl_sp draws it)
     assert fwp.shape[0] == mkicons.SPH == 48 and boxes[0].shape[1] % 2 == 0
     (out / 'films.inc').write_text('.balign 4\nfl_top:\n' + db(mkicons.pack4(mkicons.film_top())) + 'fl_tops:\n' +
                                    db(mkicons.pack4(mkicons.film_top(True))) + 'fl_dig:\n' +
                                    ''.join(db(mkicons.pack4(d)) for d in digs) +
                                    f'.set FDB, {fdw // 2}\n.set FDS, {fdw * mkicons.FD // 2}\n.set FX1, {fx1}\n.set FX2, {fx2}\n'
-                                   f'.set FX2B, {fx2 + fdw - 2}\n' +
+                                   f'.set FX2B, {fx2 + fdw - 2}\n' + 'fl_ltop:\n' + db(mkicons.pack4(mkicons.film_ltop())) +
+                                   'fl_ldig:\n' + ''.join(db(mkicons.pack4(d)) for d in ldigs) +
+                                   f'.set LDB, {ldw // 2}\n.set LDS, {ldw * mkicons.LD // 2}\n.set LX1, {(82 - ldw) // 2}\n'
+                                   f'.set LX2, {(82 - (2 * ldw - 2)) // 2}\n.set LX2B, {(82 - (2 * ldw - 2)) // 2 + ldw - 2}\n' +
                                    f'.set SFW, {fwp.shape[1]}\n.set SFWI, {fwi}\n.set SDB, {boxes[0].shape[1]}\n.set SPH, 48\n'
                                    f'.set SP_GAP, {mkicons.SP_GAP}\n.set SP_DGAP, {mkicons.SP_DGAP}\n'
                                    'fl_sfw:\n' + db(mkicons.pack4(fwp)) + 'fl_sdg:\n' + ''.join(db(mkicons.pack4(x)) for x in boxes) +
-                                   'fl_sdw:\n' + db(bytes(dw)) + ' .balign 2\n')
+                                   'fl_sdw:\n' + db(bytes(dw)) + ' .balign 4\n' +
+                                   'fl_slab:\n' + db(slab) + f'.set SLS, {len(slab)}\n .balign 4\n' +
+                                   'fl_sgd:\n' + db(sgd) + f'.set SGS, {len(sgd)}\n .balign 2\n')
     subprocess.run([P.AS, '-I', out, '-o', out / 'p.o', HERE / 'src' / 'editor.s'], check=True)
     subprocess.run([P.LD, '-T', HERE / 'src' / 'editor.ld', '-o', out / 'p.elf', out / 'p.o'], check=True)
     blobs = {}

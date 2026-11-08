@@ -1,6 +1,7 @@
 /* v0.24 film test 7 (owner): the wheel's Film and Extras pages are hidden (their code stays; 1 brings them back) */
  .set W_FILM, 0
  .set W_EXTRAS, 0
+ .set W_SALL, 1                   /* film test 8 (owner): Saturation always shows all colours (no single-colour page) */
 /* OM-3 1.1 editor test 1 (= probe 2 + on-camera Hue/Light pages + card save).
  * Probe 2 part: looks in a heap block, loaded from C:\OM3MOD\BUNDLES.BIN when valid.
  * Adapted from Caduceus SD loader v3 (cakelesscoder/caduceus-ep7, Apache-2.0): same state encoding,
@@ -312,7 +313,8 @@ ed_trig:
  bne 1f
  clr d0
  movbu d0,(AXIS,a2)               /* leaving for the shutter: other screens read Saturation again */
- call gd_set,[d2,a2],8            /* d0 = 0: stock guide picture */
+ mov -1,d0                        /* film test 8: -1 = the stock pictures (gd_sel puts "Color" back too) */
+ call gd_set,[d2,a2],8
 1:
  movbu (DIRTY,a2),d0
  cmp 1,d0
@@ -1146,8 +1148,7 @@ k_step:
  mov (12,sp),d0
  calls (a2)
 10:
- mov 1,d0
- ret [d2,d3,a2,a3],40
+ jmp k_sall                       /* film test 8: on Saturation, all colours */
 /* k_ad: `call k_ad,[a2],8` from ed_info's frame (as k_cur): (24,sp) <- the ALL state. The code block reads the stock
  * INFO handler's setting 2201 + k (0x615ac0b4) and, when that is not 255, the cursor 2197 + k (the camera shows ALL in
  * either, depending on the slice it was entered from). Without a code block: k_cur (2197 + k only). */
@@ -1368,6 +1369,7 @@ gd_check:
 /* gd_set: `call gd_set,[d2,a2],8`, a2 = P, d0 = page (2 Hue, 1 Light, else stock). Uses d1, a0, a1.
  * Only when the descriptor is the stock 14/175x50/8 one and its payload is the stock stream or one of ours. */
 gd_set:
+ call gd_sel,[d2,d3,a2,a3],24     /* film test 8: the Saturation page's label and guide */
  mov GDESC,a0
  movhu (a0),d1
  cmp 14,d1
@@ -1566,6 +1568,7 @@ e_lk:
  mov (12,sp),d0
  calls (a2)
 4:
+ jmp e_sall                       /* film test 8: after a reset on Saturation, all colours again */
 e_ret:
  mov d3,d0
  ret [d2,d3,a2,a3],44
@@ -2058,6 +2061,8 @@ pf_load:
  clr d0
  mov d0,(TTAB,a2)                 /* v0.24: no film cell pictures until fl_mk publishes them */
  mov d0,(TORG,a2)
+ mov d0,(STC,a2)
+ mov d0,(SATB,a2)
  mov PF_LEN + FL_SB,d0            /* v0.24: the file, then the film-name strings (fl_str) */
  call malloc,[],4
  cmp 0,a0
@@ -2116,7 +2121,7 @@ pf_load:
 6:
  mov (8,sp),d0
  mov d0,(LPTR,a2)                 /* published last */
- call fl_mk,[d2,d3,a2,a3],200     /* v0.24: the film list's cell pictures */
+ call fl_mk,[d2,d3,a2,a3],80      /* v0.24: the film list's cell pictures */
  bra 9f
 7:
  mov (8,sp),a0
@@ -3042,13 +3047,24 @@ pm_list:                          /* item ids, in the order the owner reads them
                                    * "FILM*" when film j is changed from how it was built) */
 .set IC_FL0, 0x7fb0               /* IC_FL0 + j: the same for the row's left cell, never starred (the row adds its own) */
 .set FL_BLK, 14336                /* fl_mk heap blocks (up to 3) */
-.set ROW, 80                      /* fl_mk's row buffer (100 B) in its frame */
+.set ROW, 80                      /* fl_rc's row buffer (100 B) in its frame */
 .set SROW, 64                     /* fl_sp's row buffer (160 B) in its frame */
 .set SP_SLOT, 2600                /* fl_scp: one quick-menu picture */
 .set TWO, 16 + 4 * 24 + 16 + 4 * SP_SLOT   /* the EDITS.BIN image in the P+TORG block */
 .set TW_LEN, 16 + 24 * 68         /* EDITS.BIN: 'OM3T' | total | crc | valid mask | 24 x {record 64, check 4} */
 .set TWMAGIC, 0x54334d4f
-.set SP_BLK, TWO + TW_LEN + 4     /* + 2 flag bytes: EDITS.BIN to save, skip one capture (film reset) */
+.set SP_BLK, TWO + TW_LEN + 4
+.set STC, 824                     /* P+STC: the cell cache block (fl_cget) */
+.set SATB, 828                    /* P+SATB: the Saturation page's pictures (fl_mk copies them, gd_sel shows them) */
+.set SAT_LEN, 8 + ((SLS + 3) & ~3) + SGS
+.set LDESC, 0xa4cf61f8            /* the wheel's "Color" dial label, 70 x 30 */
+.set LSTOCK_P, 0xa4cf5c70
+.set LSTOCK_S, 1415
+.set SDESC, 0xa49edf88            /* the "Color Select [INFO]" guide (shown with all colours), 180 x 50 */
+.set SSTOCK_P, 0xa49ece10
+.set SSTOCK_S, 4471
+.set CC_SLOT, 2000
+.set CC_BLK, 264 + 8 * CC_SLOT     /* + 2 flag bytes: EDITS.BIN to save, skip one capture (film reset) */
 .set ST_N0, 0x7f30                /* ST_N0 + j: film j's cell label "FILM" over its number in the list (1, 2, ...) */
 .set FL_SB, NF * 68               /* strings after the LOOKS.BIN copy: 20 names, then 20 cell labels (UTF-16, 17 shorts) */
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
@@ -4638,22 +4654,25 @@ fl_emit:
  mov d1,(32,sp)
  ret [],0
 
-/* fl_dg: `call fl_dg,[],0` from fl_mk (its frame: (28) row y 40..75, the row at (ROW,sp)), d0 digit, d1 x: the
- * digit's row onto the row; a digit pixel replaces a clear or edge pixel. Uses d0..d3, a0, a1. */
-fl_dg:
- mov FDS,d2
- mul d0,d2                        /* FDS d */
+/* fl_dg2: `call fl_dg2,[],0` from fl_rc (its frame: (4) the layout, (28) row y), d0 digit, d1 x: the digit's row
+ * (y - top rows) onto the row; a digit pixel replaces a clear or edge pixel. Uses d0..d3, a0, a1. */
+fl_dg2:
+ mov (4,sp),a0
+ mov (28,a0),d2                   /* bytes a digit */
+ mul d0,d2
  mov (28,sp),d0
- add -40,d0
- mov FDB,d3
- mul d0,d3                        /* FDB (y - 40) */
+ mov (8,a0),d3                    /* top rows */
+ sub d3,d0
+ mov (24,a0),d3                   /* bytes a digit row */
+ mul d0,d3
  add d3,d2
- mov fl_dig,a0
- add d2,a0
+ mov (20,a0),d0                   /* the digits */
+ add d2,d0
+ mov (24,a0),d3
+ mov d0,a0
  mov sp,a1
  add ROW,a1
  add d1,a1
- mov FDB,d3
 1:
  movbu (a0),d2
  mov d2,d0
@@ -4685,101 +4704,50 @@ fl_dg:
  bne 1b
  ret [],0
 
-/* fl_mk: `call fl_mk,[d2,d3,a2,a3],200` from pf_load, a2 = P. Frame: (0) call slot, (4) block cursor, (8) block end,
- * (12) blocks, (16) n 1..20, (20) the slot words (block 0), (24) out, (28) y, (32) / (36) / (40) the token word,
- * (48) picture start, (52) P, (56) units digit, (ROW) the row. Stores: the heap blocks, P+TTAB, own frame. */
-fl_mk:
- mov a2,(52,sp)
- mov FL_BLK,d0
- call malloc,[],4
- cmp 0,a0
- bne 1f
- jmp 99f
-1:
- mov a0,(20,sp)
- mov a0,d0
- add FL_BLK,d0
- mov d0,(8,sp)
- mov 1,d0
- mov d0,(12,sp)
- mov 40,d1
- clr d0
-2:
- mov d0,(a0)                      /* slot words 0 */
- add 4,a0
- add -1,d1
- bne 2b
- mov (20,sp),a0
- add 40 * 4 + 40 * 24,a0
+/* film cell layouts (film test 8): {width, height, top rows, stream header, top picture, digit pictures, bytes a digit
+ * row, bytes a digit, x of one digit, x of the first / second of two}; firmware/mkicons.py film_cell / film_lcell */
+.balign 4
+fl_L0:                            /* the list cell, 100 x 76 */
+ .long 100, 76, 40, 0x0b06304b, fl_top, fl_dig, FDB, FDS, FX1, FX2, FX2B
+fl_L1:                            /* the list cell of a changed film: "FILM*" */
+ .long 100, 76, 40, 0x0b06304b, fl_tops, fl_dig, FDB, FDS, FX1, FX2, FX2B
+fl_L2:                            /* the row's left cell, 82 x 62 */
+ .long 82, 62, 30, 0x0b05103d, fl_ltop, fl_ldig, LDB, LDS, LX1, LX2, LX2B
+
+/* fl_rc: `call fl_rc,[d2,d3,a2,a3],200`, a0 = a layout, d0 = the number 1..20, a1 = out -> d0 = the bytes written:
+ * the cell as OSD type 11 (each row from the top picture or the digits, then runs of up to 16 pixels, not past the
+ * row's end, five tokens to a 64-bit word: fl_emit). Frame: (0) call slot, (4) layout, (8) number, (12) units digit,
+ * (24) out, (28) y, (32) / (36) / (40) the token word, (44) start, (52) width, (ROW) the row. */
+fl_rc:
  mov a0,(4,sp)
- mov 1,d0
- mov d0,(16,sp)
-10:                               /* picture n */
- mov (8,sp),d0
- mov (4,sp),d1
- sub d1,d0
- cmp 2400,d0
- bge 11f
- mov (12,sp),d0
- cmp 6,d0
- bcs 12f
- jmp 90f
-12:
- mov FL_BLK,d0
- call malloc,[],4
- cmp 0,a0
- bne 13f
- jmp 90f
-13:
- mov a0,(4,sp)
- mov a0,d0
- add FL_BLK,d0
  mov d0,(8,sp)
- mov (12,sp),d0
- inc d0
- mov d0,(12,sp)
-11:
- mov (16,sp),d0                   /* picture p 1..40: number (p - 1) % 20 + 1, "FILM*" from 21 */
- clr d1
- cmp 21,d0
- bcs 14f
- add -20,d0
- mov 1,d1
-14:
- mov d0,(72,sp)
- mov d1,(68,sp)
- mov (4,sp),a0
- mov a0,(48,sp)
- mov 0x0b06304b,d0                /* header: h - 1 = 75, w - 1 = 99, type 11 */
- mov d0,(a0)
- add 4,a0
- mov a0,(24,sp)
+ mov a1,(44,sp)
+ mov (a0),d0
+ mov d0,(52,sp)
+ mov (12,a0),d0                   /* the header */
+ mov d0,(a1)
+ add 4,a1
+ mov a1,(24,sp)
  clr d0
  mov d0,(32,sp)
  mov d0,(36,sp)
  mov d0,(40,sp)
  mov d0,(28,sp)
-20:                               /* row y */
+10:                               /* row y */
+ mov (4,sp),a0
  mov (28,sp),d0
- cmp 40,d0
+ mov (8,a0),d1
+ cmp d1,d0
  bcc 25f
- mov d0,d1                        /* the "FILM" line: fl_top + 50 y */
- asl 5,d1
- mov d0,d2
- asl 4,d2
- add d2,d1
- add d0,d1
- add d0,d1
- mov fl_top,a0
- mov (68,sp),d0
- cmp 0,d0
- beq 22f
- mov fl_tops,a0                   /* "FILM*" */
-22:
- add d1,a0
+ mov (52,sp),d2                   /* the top: its row y, two pixels a byte */
+ lsr 1,d2
+ mov d2,d1
+ mul d0,d1
+ mov (16,a0),d3
+ add d1,d3
+ mov d3,a0
  mov sp,a1
  add ROW,a1
- mov 50,d2
 21:
  movbu (a0),d0
  mov d0,d1
@@ -4793,20 +4761,21 @@ fl_mk:
  bne 21b
  bra 30f
 25:                               /* the number */
+ mov (52,sp),d2
  mov sp,a1
  add ROW,a1
- mov 100,d2
  clr d1
 26:
  movbu d1,(a1)
  inc a1
  add -1,d2
  bne 26b
- mov (72,sp),d0                   /* the number */
+ mov (8,sp),d0
  cmp 10,d0
  bcc 27f
- mov FX1,d1
- call fl_dg,[],0
+ mov (4,sp),a0
+ mov (32,a0),d1
+ call fl_dg2,[],0
  bra 30f
 27:
  clr d1
@@ -4817,52 +4786,56 @@ fl_mk:
  inc d1
  bra 28b
 29:
- mov d0,(56,sp)
+ mov d0,(12,sp)
  mov d1,d0
- mov FX2,d1
- call fl_dg,[],0
- mov (56,sp),d0
- mov FX2B,d1
- call fl_dg,[],0
-30:                               /* the row as runs */
- clr d2
-31:
- cmp 100,d2
- bcc 39f
+ mov (4,sp),a0
+ mov (36,a0),d1
+ call fl_dg2,[],0
+ mov (12,sp),d0
+ mov (4,sp),a0
+ mov (40,a0),d1
+ call fl_dg2,[],0
+30:                               /* the row as runs: a1 the pixel, a2 the row's end */
  mov sp,a1
  add ROW,a1
- add d2,a1
+ mov a1,a2
+ mov (52,sp),d0
+ add d0,a2
+31:
+ cmp a2,a1
+ bcc 39f
  movbu (a1),d3
  mov 1,d1
+ mov a1,a0
+ inc a0
 32:
  cmp 16,d1
  bcc 33f
- mov d2,d0
- add d1,d0
- cmp 100,d0
+ cmp a2,a0
  bcc 33f
- mov a1,a0
- add d1,a0
  movbu (a0),d0
  cmp d3,d0
  bne 33f
  inc d1
+ inc a0
  bra 32b
 33:
- add d1,d2
+ add d1,a1
  mov d3,d0
  asl 4,d0
  add d1,d0
  add -1,d0
- call fl_emit,[],0
+ call fl_emit,[],0                /* keeps d3, a1, a2 */
  bra 31b
 39:
  mov (28,sp),d0
  inc d0
  mov d0,(28,sp)
- cmp 76,d0
+ mov (4,sp),a0
+ mov (4,a0),d1
+ cmp d1,d0
  bcc 40f
- jmp 20b
+ jmp 10b
 40:
  mov (32,sp),d0                   /* the last word */
  cmp 0,d0
@@ -4875,20 +4848,21 @@ fl_mk:
  add 8,a0
  mov a0,(24,sp)
 41:
- mov (16,sp),d0                   /* descriptor n - 1 */
- add -1,d0
- mov d0,d1
- asl 4,d1
- asl 3,d0
- add d0,d1
- mov (20,sp),a1
- add 160,a1
- add d1,a1
+ mov (24,sp),d0
+ mov (44,sp),d1
+ sub d1,d0
+ ret [d2,d3,a2,a3],200
+
+/* fl_desc: `call fl_desc,[],0`, a1 = descriptor, a0 = layout, d0 = bytes, d1 = payload: the descriptor <6H3I> 14,
+ * width, height, 8, 0, 0, size, payload, 0. Uses d0, d1. */
+fl_desc:
+ mov d0,(12,a1)
+ mov d1,(16,a1)
  mov 14,d0
  movhu d0,(a1)
- mov 100,d0
+ mov (a0),d0
  movhu d0,(2,a1)
- mov 76,d0
+ mov (4,a0),d0
  movhu d0,(4,a1)
  mov 8,d0
  movhu d0,(6,a1)
@@ -4896,37 +4870,148 @@ fl_mk:
  movhu d0,(8,a1)
  movhu d0,(10,a1)
  mov d0,(20,a1)
- mov (24,sp),d0
- mov (48,sp),d1
+ ret [],0
+
+/* fl_mk: `call fl_mk,[d2,d3,a2,a3],80` from pf_load, a2 = P: the 20 list cells (fl_rc, layout fl_L0) into heap blocks
+ * of FL_BLK (block 0 starts with 20 slot words and 20 descriptors), P+TTAB; the cell cache (fl_cget) block, P+STC; the
+ * quick menu block with the EDITS.BIN image, P+TORG. Frame: (0) call slot, (4) block cursor, (8) block end, (12)
+ * blocks, (16) n, (20) block 0, (52) P, (56) / (60) / (64) EDITS.BIN load. Stores: the heap blocks, P+TTAB / STC /
+ * TORG, own frame. */
+fl_mk:
+ mov a2,(52,sp)
+ mov FL_BLK,d0
+ call malloc,[],4
+ cmp 0,a0
+ bne 1f
+ jmp 90f
+1:
+ mov a0,(20,sp)
+ mov a0,d0
+ add FL_BLK,d0
+ mov d0,(8,sp)
+ mov 1,d0
+ mov d0,(12,sp)
+ mov 20,d1
+ clr d0
+2:
+ mov d0,(a0)                      /* slot words 0 */
+ add 4,a0
+ add -1,d1
+ bne 2b
+ mov (20,sp),a0
+ add 20 * 4 + 20 * 24,a0
+ mov a0,(4,sp)
+ mov 1,d0
+ mov d0,(16,sp)
+10:                               /* cell n */
+ mov (8,sp),d0
+ mov (4,sp),d1
  sub d1,d0
- mov d0,(12,a1)                   /* size */
- mov d1,(16,a1)                   /* payload (the heap's uncached address) */
+ cmp 2400,d0
+ bge 11f
+ mov (12,sp),d0
+ cmp 3,d0
+ bcs 12f
+ jmp 20f
+12:
+ mov FL_BLK,d0
+ call malloc,[],4
+ cmp 0,a0
+ bne 13f
+ jmp 20f
+13:
+ mov a0,(4,sp)
+ mov a0,d0
+ add FL_BLK,d0
+ mov d0,(8,sp)
+ mov (12,sp),d0
+ inc d0
+ mov d0,(12,sp)
+11:
+ mov fl_L0,a0
+ mov (16,sp),d0
+ mov (4,sp),a1
+ call fl_rc,[d2,d3,a2,a3],200
+ mov d0,d2                        /* bytes */
+ mov (16,sp),d1
+ add -1,d1
+ mov d1,d3
+ asl 4,d1
+ asl 3,d3
+ add d3,d1                        /* 24 (n - 1) */
+ mov (20,sp),a1
+ add 80,a1
+ add d1,a1
+ mov fl_L0,a0
+ mov d2,d0
+ mov (4,sp),d1
+ call fl_desc,[],0
  mov (16,sp),d0
  add -1,d0
  asl2 d0
  mov (20,sp),a0
  add d0,a0
  mov a1,(a0)                      /* slot word -> descriptor */
- mov (24,sp),d0
+ mov (4,sp),d0
+ add d2,d0
  add 7,d0
  and 0xfffffff8,d0
  mov d0,(4,sp)
  mov (16,sp),d0
  inc d0
  mov d0,(16,sp)
- cmp 41,d0
- bcc 90f
+ cmp 21,d0
+ bcc 20f
  jmp 10b
-90:
+20:
  mov (52,sp),a2
  mov (20,sp),d0
- mov d0,(TTAB,a2)                 /* published last */
- mov SP_BLK,d0                    /* the quick menu's pictures (fl_scp draws them when asked) */
+ mov d0,(TTAB,a2)                 /* published */
+ mov CC_BLK,d0                    /* the cell cache */
  call malloc,[],4
  cmp 0,a0
- beq 99f
+ beq 90f
+ clr d0
+ mov d0,(a0)                      /* next victim */
  mov a0,a1
- mov 8,d1                         /* slot words and drawn numbers 0 */
+ add 228,a1
+ mov 8,d1
+21:
+ mov d0,(a1)                      /* keys: empty */
+ add 4,a1
+ add -1,d1
+ bne 21b
+ mov (52,sp),a2
+ mov a0,(STC,a2)
+ mov SAT_LEN,d0                   /* film test 8: the Saturation page's pictures, into the heap (gd_sel) */
+ call malloc,[],4
+ cmp 0,a0
+ beq 90f
+ mov SLS,d0
+ mov d0,(a0)
+ mov SGS,d0
+ mov d0,(4,a0)
+ mov a0,a1
+ add 8,a1
+ mov fl_slab,a2
+ mov SAT_LEN - 8,d1
+22:
+ movbu (a2),d0
+ movbu d0,(a1)
+ inc a1
+ inc a2
+ add -1,d1
+ bne 22b
+ mov (52,sp),a2
+ mov a0,(SATB,a2)
+90:
+ mov SP_BLK,d0                    /* the quick menu's pictures (fl_scp) and the EDITS.BIN image */
+ call malloc,[],4
+ cmp 0,a0
+ bne 91f
+ jmp 99f
+91:
+ mov a0,a1
  clr d0
  mov d0,(a1)
  mov d0,(4,a1)
@@ -4985,7 +5070,84 @@ fl_mk:
  mov a0,(TORG,a2)
 99:
  mov (52,sp),a2
- ret [d2,d3,a2,a3],200
+ ret [d2,d3,a2,a3],80
+
+/* fl_cget: `call fl_cget,[d2,d3,a2,a3],40`, a2 = P, d0 = key (kind << 8 | n: kind 1 "FILM*" list cell, 2 left cell)
+ * -> a0 = its slot word (0: none). P+STC block: (0) next victim, (4) 8 slot words, (36) 8 descriptors, (228) 8 keys,
+ * (264) 8 pictures of CC_SLOT; a miss draws into the next slot round robin (8 >= the cells on screen at once).
+ * Locals (4) key, (8) the picture, (12) layout. */
+fl_cget:
+ mov d0,(4,sp)
+ mov (STC,a2),a3
+ cmp 0,a3
+ beq 9f
+ clr d2
+1:
+ mov d2,d1
+ asl2 d1
+ mov a3,a0
+ add 228,a0
+ add d1,a0
+ mov (a0),d1
+ mov (4,sp),d0
+ cmp d0,d1
+ beq 5f
+ inc d2
+ cmp 8,d2
+ bcs 1b
+ mov (a3),d2                      /* miss: the next slot */
+ mov d2,d0
+ inc d0
+ and 7,d0
+ mov d0,(a3)
+ mov CC_SLOT,d1
+ mul d2,d1
+ mov a3,a1
+ add 264,a1
+ add d1,a1
+ mov a1,(8,sp)
+ mov (4,sp),d0
+ lsr 8,d0
+ mov fl_L1,a0
+ cmp 1,d0
+ beq 2f
+ mov fl_L2,a0
+2:
+ mov a0,(12,sp)
+ mov (4,sp),d0
+ and 0xff,d0
+ call fl_rc,[d2,d3,a2,a3],200     /* keeps d2, a3 */
+ mov d2,d1
+ asl 3,d1
+ mov a3,a1
+ add 36,a1
+ add d1,a1
+ add d1,a1
+ add d1,a1
+ mov (12,sp),a0
+ mov (8,sp),d1
+ call fl_desc,[],0
+ mov d2,d1
+ asl2 d1
+ mov a3,a0
+ add 4,a0
+ add d1,a0
+ mov a1,(a0)
+ mov a3,a0
+ add 228,a0
+ add d1,a0
+ mov (4,sp),d0
+ mov d0,(a0)
+5:
+ mov d2,d1
+ asl2 d1
+ mov a3,a0
+ add 4,a0
+ add d1,a0
+ ret [d2,d3,a2,a3],40
+9:
+ mov 0,a0
+ ret [d2,d3,a2,a3],40
 
 /* fl_ic <- ic_get (d0 / d1 = IC_FM0 + j, the list cell, or IC_FL0 + j, the row's left cell; returns as ic_get: a0 =
  * the slot word, or 0): film j's number among the films there picks its picture; a list cell of a film changed from
@@ -5032,18 +5194,24 @@ fl_ic:
 4:                                /* d3 = n - 1 */
  mov (12,sp),d0
  cmp 0,d0
- beq 6f
+ bne 41f
+ mov d3,d0                        /* the row's left cell: the small cell (cache kind 2) */
+ inc d0
+ add 0x200,d0
+ call fl_cget,[d2,d3,a2,a3],40
+ cmp 0,a0
+ bne 9f
+ bra 8f
+41:
  mov d2,d0
  call fl_fch,[d2,d3,a2,a3],28
  cmp 0,d0
  beq 6f
- mov d3,d0
- add 20,d0
- asl2 d0
- mov a3,a0
- add d0,a0
- mov (a0),d0
- cmp 0,d0
+ mov d3,d0                        /* a changed film: "FILM*" (cache kind 1) */
+ inc d0
+ add 0x100,d0
+ call fl_cget,[d2,d3,a2,a3],40
+ cmp 0,a0
  bne 9f
 6:
  asl2 d3
@@ -5716,6 +5884,190 @@ fl_pmod:
  movbu (a0),d0
  jmp ed_pmod
 
+/* film test 8 (owner): "rename Color All to Saturation and hide the color select wheel". The Saturation page always
+ * shows all colours: INFO goes Saturation (all) -> Hue -> Light -> Saturation (all) (k_sall; the INFO that opens the
+ * wheel turns all colours on, as stock: in the emulator, setting it before the stock init made that INFO step on to Hue);
+ * its pictures there say Saturation: the "Color" dial label and the "Color Select [INFO]" guide (gd_sel). */
+
+/* k_sall <- jmp from k_step's end (ed_info's frame: (4) / (8) its d1 / a1, (16) value, (20) P, a3 the editor): on
+ * Saturation with one colour, the stock INFO handler turns all colours on (as from the single page). -> d0 1. */
+k_sall:
+ .if W_SALL
+ mov (20,sp),a2
+ movbu (AXIS,a2),d0
+ cmp 0,d0
+ bne 9f
+ call k_ad,[a2],8
+ cmp 0,d0
+ bne 9f                           /* no value: leave it */
+ mov (16,sp),d0
+ cmp 255,d0
+ beq 9f
+ mov a3,a0
+ mov 0x9014,d0
+ mov (4,sp),d1
+ mov (8,sp),a1
+ calls stock_info                 /* keeps d2/d3/a2/a3 */
+ .endif
+9:
+ mov 1,d0
+ ret [d2,d3,a2,a3],40
+
+/* e_sall <- jmp from ed_event's end (its frame: (4) d1, (8) a1, (12) 2197 + k, (16) value, (20) P, (24) event; d3 its
+ * result, a3 the editor): the held-OK reset on Saturation left one colour (the reset sets the cursor) -> the stock INFO
+ * handler turns all colours on again. -> d0 = the result. */
+e_sall:
+ .if W_SALL
+ mov (24,sp),d0
+ cmp 0x903e,d0
+ bne 9f
+ mov (20,sp),a2
+ movbu (AXIS,a2),d0
+ cmp 0,d0
+ bne 9f
+ call k_ad,[a2],8
+ cmp 0,d0
+ bne 9f
+ mov (16,sp),d0
+ cmp 255,d0
+ beq 9f
+ mov a3,a0
+ mov 0x9014,d0
+ mov (4,sp),d1
+ mov (8,sp),a1
+ calls stock_info                 /* keeps d2/d3/a2/a3 */
+ .endif
+9:
+ mov d3,d0
+ ret [d2,d3,a2,a3],44
+
+/* ed_l / ed_r <- COLOR1-4 editor records +20 / +24 (stock 0x6122471c / 0x61224c1c: left / right, events 0x9008 /
+ * 0x900a, which move the colour cursor; CALLS, d0 event, d1 arg, a0 parent): on Saturation with all colours, nothing
+ * (that would leave all colours for the hidden single-colour page) -> d0 1. Anything else: registers as at entry, jmp
+ * stock. Frame as ed_info: (4) d1, (8) a1, (12) 2197 + k, (16) value, (20) d0, (24) a0. */
+ .macro EDLR stock
+ movm [d2,d3,a2,a3],(sp)
+ add -28,sp
+ mov d1,(4,sp)
+ mov a1,(8,sp)
+ mov d0,(20,sp)
+ mov a0,(24,sp)
+ .if W_SALL
+ cmp 0,a0
+ beq 8f
+ movhu (96,a0),d2                 /* editor key 0x1540..0x1543 = COLOR1..4 */
+ add -0x1540,d2
+ cmp 4,d2
+ bcc 8f
+ add 2197,d2
+ mov d2,(12,sp)
+ PVAL 8f
+ movbu (AXIS,a2),d0
+ cmp 0,d0
+ bne 8f
+ call k_ad,[a2],8
+ cmp 0,d0
+ bne 8f
+ mov (16,sp),d0
+ cmp 255,d0
+ bne 8f
+ mov 1,d0
+ ret [d2,d3,a2,a3],44
+ .endif
+8:
+ mov (4,sp),d1
+ mov (8,sp),a1
+ mov (20,sp),d0
+ mov (24,sp),a0
+ add 28,sp
+ movm (sp),[d2,d3,a2,a3]
+ jmp \stock
+ .endm
+ed_l:
+ EDLR stock_left
+ed_r:
+ EDLR stock_right
+
+/* gd_sel: `call gd_sel,[d2,d3,a2,a3],24` from gd_set, a2 = P, d0 = page (0 Saturation, -1 the stock pictures): our
+ * "Saturation" label / guide (P+SATB: (0) label size, (4) guide size, (8) label, then the guide 4-aligned) into the
+ * camera's "Color" label and "Color Select [INFO]" descriptors on Saturation, the camera's own on any other page; only
+ * while a descriptor holds the camera's picture or ours. d0 kept; uses d1, a0, a1. Local (4) page. */
+gd_sel:
+ mov d0,(4,sp)
+ .if W_SALL
+ mov (SATB,a2),a3
+ cmp 0,a3
+ beq 9f
+ mov LDESC,a0                     /* the "Color" label */
+ movhu (a0),d1
+ cmp 14,d1
+ bne 5f
+ movhu (2,a0),d1
+ cmp 70,d1
+ bne 5f
+ movhu (4,a0),d1
+ cmp 30,d1
+ bne 5f
+ mov a3,d2
+ add 8,d2                         /* ours */
+ mov (16,a0),d1
+ cmp d2,d1
+ beq 1f
+ cmp LSTOCK_P,d1
+ bne 5f                           /* someone else's: leave it */
+1:
+ mov (4,sp),d0
+ cmp 0,d0
+ bne 2f
+ mov (a3),d1
+ mov d1,(12,a0)
+ mov d2,(16,a0)
+ bra 5f
+2:
+ mov LSTOCK_S,d1
+ mov d1,(12,a0)
+ mov LSTOCK_P,d1
+ mov d1,(16,a0)
+5:
+ mov SDESC,a0                     /* the "Color Select [INFO]" guide */
+ movhu (a0),d1
+ cmp 14,d1
+ bne 9f
+ movhu (2,a0),d1
+ cmp 180,d1
+ bne 9f
+ movhu (4,a0),d1
+ cmp 50,d1
+ bne 9f
+ mov (a3),d2
+ add 3,d2
+ and -4,d2
+ add 8,d2
+ mov a3,d1
+ add d1,d2                        /* ours */
+ mov (16,a0),d1
+ cmp d2,d1
+ beq 6f
+ cmp SSTOCK_P,d1
+ bne 9f
+6:
+ mov (4,sp),d0
+ cmp 0,d0
+ bne 7f
+ mov (4,a3),d1
+ mov d1,(12,a0)
+ mov d2,(16,a0)
+ bra 9f
+7:
+ mov SSTOCK_S,d1
+ mov d1,(12,a0)
+ mov SSTOCK_P,d1
+ mov d1,(16,a0)
+ .endif
+9:
+ mov (4,sp),d0
+ ret [d2,d3,a2,a3],24
+
 /* fl_isdef <- the seven calls of stock "is at default" (call [d2,d3,a2],24; d0 id -> d0 1 default, 0 changed; build.py
  * ISDEF_SITES): one of COLOR k's 18 settings (pf_ids: base + step x k, record offset) while COLOR k holds a film that
  * is there -> "default" when it equals the film as built (LOOKS.BIN record j; a Saturation sector also needs its Hue
@@ -5811,9 +6163,59 @@ fl_isdef:
  inc d2
  cmp 18,d2
  bcs 1b
+ mov (4,sp),d0                    /* film test 8: our rows (Grain, NR, VigFix, Blacks, Whites, A-B, G-M: base + k) */
+ exthu d0
+ add -GRB,d0
+ blt 90f
+ cmp 0x70,d0
+ bcc 90f
+ mov d0,d2
+ and 15,d2                        /* k */
+ cmp 4,d2
+ bcc 90f
+ lsr 4,d0                         /* the row */
+ mov fl_xr,a0
+ add d0,a0
+ add d0,a0
+ movbu (1,a0),d1                  /* record offset | slot offset << 8 (bytes: the table is not aligned) */
+ asl 8,d1
+ movbu (a0),d0
+ or d1,d0
+ mov d0,(8,sp)
+ call fl_film,[],0
+ cmp 0,d0
+ blt 90f
+ mov d0,d3                        /* j */
+ mov (LPTR,a2),a0
+ call fl_has,[],0
+ cmp 0,d0
+ beq 90f
+ mov (LPTR,a2),a0
+ mov d3,d1
+ asl 6,d1
+ add d1,a0
+ add 32,a0
+ mov (8,sp),d1
+ and 0xff,d1
+ add d1,a0
+ movbu (a0),d0                    /* as built */
+ mov a2,a1
+ mov d2,d1
+ asl 6,d1
+ add d1,a1
+ add 32,a1
+ mov (8,sp),d1
+ lsr 8,d1
+ add d1,a1
+ movbu (a1),d1                    /* now */
+ cmp d1,d0
+ bne 7b
+ jmp 8b
 90:
  mov (4,sp),d0
  jmp ed_isdef
+fl_xr:                            /* {record offset, slot offset} of the rows GRB, NRB, VFB, BKB, WHB, ABB, GMB (pf_bt) */
+ .byte 51,53, 49,51, 50,52, 39,47, 40,48, 37,26, 38,27
 
 /* fl_live: `call fl_live,[d2,d3,a2,a3],24`, a2 = P, d2 = COLOR k holding film j -> d0 1 when COLOR k now differs from
  * film j as built: its 18 settings (fl_isdef) or the slot's WB shift, Blacks / Whites, Extras (pf_bt). */

@@ -207,6 +207,64 @@ def sp_film(n, parts=None):
     return px
 
 
+# v0.24 film test 8: the row's left cell (82 x 62, the stock small "COLOR / 1" cell: word fill rows 7..26, digits
+# rows 32..55, 8..14 px wide; the wheel screen's left column draws this size) -> "FILM" cap 20, baseline 26; digits
+# cap 22, baseline 55 (as the list cell's, a little under the stock), drawn by the camera like the list cells.
+LCW, LCH, LT = 82, 62, 30
+LD = LCH - LT
+
+
+def film_ltop():
+    return picture([('FILM', 20, 26)], LCW, LT, 0.88, (0.20, 0.40, 0.60))
+
+
+def film_ldigits():
+    small = [word(str(d), 22, 99, 0.92) for d in range(10)]
+    fw = max(a.shape[1] for a, _ in small) + 4
+    fw += fw % 2
+    out = []
+    for a, b in small:
+        cov = np.zeros((LD, fw))
+        y0, x0 = int(round(55 - LT - b)), (fw - a.shape[1]) // 2
+        cov[y0:y0 + a.shape[0], x0:x0 + a.shape[1]] = a
+        out.append(quant(cov))
+    return out
+
+
+def film_lcell(n, top=None, digs=None):
+    top = film_ltop() if top is None else top
+    digs = film_ldigits() if digs is None else digs
+    fw = digs[0].shape[1]
+    px = np.zeros((LCH, LCW), dtype=np.uint8)
+    px[:LT] = top
+    ds = [int(c) for c in str(n)]
+    tw = len(ds) * fw - 2 * (len(ds) - 1)
+    x = (LCW - tw) // 2
+    for d in ds:
+        g = digs[d]
+        for yy in range(LD):
+            for xx in range(fw):
+                v, c = g[yy, xx], px[LT + yy, x + xx]
+                if v and (c == 0 or c == 7):
+                    px[LT + yy, x + xx] = v
+        x += fw - 2
+    return px
+
+
+def sat_pictures():
+    """Film test 8 (owner): the wheel's Saturation page always shows all colours, so its pictures say "Saturation":
+    the dial label (70 x 30, in place of the camera's "Color" there; card/mklabels.py, the Extras labels' style) and
+    the guide (180 x 50, in place of "Color Select [INFO]"; card/mkguides.py with 5 clear columns on the left, so the
+    INFO key sits where the camera's does). Returns two palette arrays."""
+    import sys, pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'card'))
+    import mklabels, mkguides
+    lab = np.asarray(mklabels.build('Saturation'), dtype=np.uint8)
+    gd = np.hstack([np.zeros((50, 5), dtype=np.uint8), np.asarray(mkguides.build('Saturation'), dtype=np.uint8)])
+    assert lab.shape == (30, 70) and gd.shape == (50, 180)
+    return lab, gd
+
+
 def pack4(a):
     """palette rows, two pixels a byte (low nibble first)"""
     f = a.flatten().tolist()
