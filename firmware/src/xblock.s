@@ -1449,6 +1449,8 @@ xb_vl:
  add d2,a0
  add d2,a0                        /* {byte, mode, first label, max} */
  movbu (a0),d3
+ cmp 0,d3
+ beq 7f                           /* no cell on this slice (v0.23 test 15) */
  add d3,a1
  movbu (a1),d3
  extb d3                          /* the value */
@@ -1518,17 +1520,18 @@ xb_lc:
  .long -1                         /* the label in it */
 xb_ll:
  .long 0                          /* its length */
-xb_vt:                            /* slice 1..10: slot byte, mode, first label, max */
- .byte 51,0,0,4                   /* 1 NR: Camera, Std, Low, Off, High (v0.23) */
- .byte 49,1,5,0                   /* 2 Glow (-), Clarity (+), Glow/Clar. (0) */
- .byte 26,1,8,0                   /* 3 Blue (-), Amber (+), A-B (0) */
- .byte 27,1,11,0                  /* 4 Magenta (-), Green (+), G-M (0) */
- .byte 50,0,14,5                  /* 5 Art Effect: Off, Star Light, Pin Hole, (Off), White Edge, Frame */
- .byte 47,2,20,0                  /* 6 Blacks */
- .byte 48,2,21,0                  /* 7 Whites */
- .byte 52,0,22,1                  /* 8 VigFix: Camera, Off (v0.21) */
- .byte 53,2,24,0                  /* 9 Grain (the readout shows the level) */
- .byte 54,3,25,0                  /* 10 Sharp (v0.22): Sharp (the readout shows -4..+2), Sharp Off at -5 */
+xb_vt:                            /* slice 1..10: slot byte, mode, first label, max (slot byte 0: no cell, stock picture);
+                                   * v0.23 test 15: Glow/Clarity at 12 o'clock, Art Effect at 6 o'clock (as xt_tab) */
+ .byte 49,1,5,0                   /* 1 Glow (-), Clarity (+), Glow/Clar. (0) */
+ .byte 0,2,0,0                    /* 2 */
+ .byte 0,2,0,0                    /* 3 */
+ .byte 0,2,0,0                    /* 4 */
+ .byte 0,2,0,0                    /* 5 */
+ .byte 0,2,0,0                    /* 6 */
+ .byte 50,0,14,5                  /* 7 Art Effect: Off, Star Light, Pin Hole, (Off), White Edge, Frame */
+ .byte 0,2,0,0                    /* 8 */
+ .byte 0,2,0,0                    /* 9 */
+ .byte 0,2,0,0                    /* 10 */
 xb_lpath:
  .asciz "C:\\OM3MOD\\LABELS.BIN"
  .balign 2

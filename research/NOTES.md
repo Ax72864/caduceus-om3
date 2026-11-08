@@ -944,7 +944,28 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   0x611d1a5f, end bound 0x611d060a / 0x611d1a74). Both switches do nothing for an unknown item.
 - Emulator: Blacks 0 -> -5, Whites +5 -> +2, bar ends and dots right, left column follows; other rows unchanged.
 - Package test 8: E1479999.BIN 21eb72c2…, GUIDES.BIN 6d109d75…, LABELS.BIN 903af75b… (as test 6). On the owner's card,
-  checked by checksum. Camera result: pending.
+  checked by checksum. Camera (owner, 2026-11-08): works ("this is truly amazing") -> A-B / G-M rows camera-tested.
+
+### Test 15: side-bar titles, row order, a smaller Extras wheel (emulator only)
+- Owner asks: (1) the side bar showed only "Off" / "On" / "Std" for Noise Filter and Vignette Correction: give them a
+  short title; (2) a better row order; (3) take NR, A-B, G-M, Blacks, Whites, VigFix, Grain and Sharp off the Extras
+  wheel (they are Picture Mode rows now): Glow/Clarity at 12 o'clock, Art Effect at 6 o'clock. Owner is thinking of
+  dropping Glow/Art until they run faster with grain (undecided).
+- (1) firmware/mkicons.py now draws 10 pictures: the four 46 x 46 slider icons and six 100 x 76 two-line pictures
+  ("Vignette" over Off / On, "Noise" over Off / Low / Std / High), our ids IC_BK 0x7f80 .. 0x7f89. ic_get answers the
+  range from a table ic_ent; descriptors ic_d0..9 (build.py fills w, h, size, payload), streams packed into ic_pay
+  (16 KiB, 14128 B used). Finding: in a choice row's item entry the FIRST icon list (nr_l1 / vf_l1) is the left column
+  and the SECOND (nr_l2 / vf_l2) is the strip under the title (the old comments had them the other way round; both
+  lists held the same words, so it never showed). Strip keeps the camera's words / Off-On icons.
+- (2) pm_list: Picture Mode, Color (wheel), Contrast, Highlight & Shadow, Blacks, Whites, A-B, G-M, Sharpness, Noise
+  Filter, Vignette Correction, Shading, Film Grain (look -> tone -> white balance -> detail -> lens -> finish).
+- (3) xt_tab / xb_vt: sector 0 (12 o'clock) Glow/Clarity +49, sector 6 (6 o'clock) Art +50, all others slot byte 0
+  (no cell). xb_vl: slot byte 0 -> the stock readout picture. LABELS.BIN unchanged (label numbers kept).
+- Emulator: rows in the new order; side bar "Noise / Std", "Vignette / On"/"Off" follow the value; strips unchanged.
+  Wheel (sub dial = slice, main = value): 12 o'clock main+2 -> +49 = 2; the other sectors refuse; 6 o'clock -> +50
+  steps; "Color All" (stock all-cells mode) steps both. The emulator does not draw the wheel itself.
+- Package test 15: E1479999.BIN 77f0aea2…, GUIDES.BIN dc6ad9a9…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
+  checked by checksum. Camera result: pending. docs/USING.md (main) still describes the old wheel: update at release.
 
 ### A-B / G-M: the camera's WB grid (research started 2026-11-08; analysis + emulator observation)
 - Owner wants A-B / G-M on COLOR 1-4 as the camera's own WB fine-tune grid, not sliders ("research the grid first").

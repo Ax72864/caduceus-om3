@@ -2790,17 +2790,19 @@ vl_s:
  * for Frame, in the Art Effect -> flag converter 0x60555e47 (test 2 showed both render on COLOR stills).
  * Stores: the slot bytes (editor), the job flag word in the converter's params block (as stock), own stack. */
 .section .ext9,"ax"
-xt_tab:                           /* Extras slices 1..9: slot byte, min, max (0 = no cell) */
- .byte 51,0,4                     /* 1 NR: 0 Camera, 1 Std, 2 Low, 3 Off, 4 High (v0.23) */
- .byte 49,-5,5                    /* 2 Glow (-) / Clarity (+) */
- .byte 26,-5,5                    /* 3 WB A-B */
- .byte 27,-5,5                    /* 4 WB G-M */
- .byte 50,0,5                     /* 5 Art Effect: 0 Off, 1 Star Light, 2 Pin Hole, 3 -, 4 White Edge, 5 Frame (Caduceus ids) */
- .byte 47,-5,5                    /* 6 Blacks */
- .byte 48,-5,5                    /* 7 Whites */
- .byte 52,0,1                     /* 8 VigFix: 0 Camera (Shading Comp. as set), 1 Off (v0.21) */
- .byte 53,0,3                     /* 9 Grain: 0 off, 1 Low, 2 Medium, 3 High (v0.21) */
- .byte 54,-5,2                    /* 10 Sharp: the camera's sharpness, -5 (Off) .. +2; 0 = the camera's normal (v0.22) */
+xt_tab:                           /* Extras slices 1..10 clockwise from 12 o'clock: slot byte, min, max (0 = no cell).
+                                   * v0.23 test 15: only Glow/Clarity (12 o'clock) and Art Effect (6 o'clock) stay on the
+                                   * wheel; NR, A-B, G-M, Blacks, Whites, VigFix, Grain and Sharp are Picture Mode rows */
+ .byte 49,-5,5                    /* 1 (12 o'clock) Glow (-) / Clarity (+) */
+ .byte 0,0,0                      /* 2 */
+ .byte 0,0,0                      /* 3 */
+ .byte 0,0,0                      /* 4 */
+ .byte 0,0,0                      /* 5 */
+ .byte 0,0,0                      /* 6 */
+ .byte 50,0,5                     /* 7 (6 o'clock) Art Effect: 0 Off, 1 Star Light, 2 Pin Hole, 3 -, 4 White Edge, 5 Frame */
+ .byte 0,0,0                      /* 8 */
+ .byte 0,0,0                      /* 9 */
+ .byte 0,0,0                      /* 10 */
 
 /* ------------------------------------------------------------------ v0.20 test 5: code block from the card
  * The Extras effects run from a code block at the end of GUIDES.BIN (built with this firmware; tag XTAG), loaded
@@ -2959,10 +2961,11 @@ pm_color:
  mov PM_N,d0
  jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
 .balign 4
-pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Blacks, Whites, Shading,
-                                   * Vignette Correction (= VigFix), Sharpness (= Sharp), Contrast, Noise Filter (= NR),
-                                   * Film Grain Effect (= Grain) */
- .long 111, 5397, 5398, BK_IT, WH_IT, AB_IT, GM_IT, 5399, VF_IT, 7, 8, NR_IT, 5400
+pm_list:                          /* item ids, in the order the owner reads them (v0.23 test 15): the look (Picture Mode,
+                                   * the colour wheel), tone (Contrast, Highlight & Shadow, Blacks, Whites), white balance
+                                   * (A-B, G-M), detail (Sharpness, Noise Filter = NR), lens (Vignette Correction =
+                                   * VigFix, Shading), finish (Film Grain Effect = Grain) */
+ .long 111, 5397, 8, 5398, BK_IT, WH_IT, AB_IT, GM_IT, 7, NR_IT, VF_IT, 5399, 5400
 .set PM_N, (. - pm_list) / 4
 
 /* Picture Mode rows of COLOR 1-4 that are Extras settings of the selected look (slot k = P + 32 + 64k):
@@ -3001,10 +3004,15 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
 .set IC_WH, 0x7f81
 .set IC_AB, 0x7f82
 .set IC_GM, 0x7f83
+.set IC_V0, 0x7f84                /* "Vignette / Off", "Vignette / On" (left column, 100 x 76) */
+.set IC_V1, 0x7f85
+.set IC_N0, 0x7f86                /* "Noise / Off", "/ Low", "/ Std", "/ High" */
+.set IC_N1, 0x7f87
+.set IC_N2, 0x7f88
+.set IC_N3, 0x7f89
+.set IC_END, 0x7f8a
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
 .set VF_I1, 480                   /* the camera's "On" icon */
-.set VF_J0, 358
-.set VF_J1, 480
 
 .balign 4
 gr_tab:                           /* Film Grain Effect: picture mode -> setting id (stock MONO four first) */
@@ -3066,25 +3074,26 @@ nr_l0:
  OPT -1, 4, 1848                  /* "Noise Filter: Low" */
  OPT 0, 4, 1846                   /* "Noise Filter: Standard" */
  OPT 1, 4, 1847                   /* "Noise Filter: High" */
-nr_l1:                            /* the strip: words in the camera's font (type 4 draws a string) */
+nr_l1:                            /* the left column (emulator test 15: l1 is the column, l2 the strip under the title):
+                                   * our two-line pictures "Noise" over the value (owner: "Off" alone was unclear) */
+ OPT -2, 3, IC_N0
+ OPT -1, 3, IC_N1
+ OPT 0, 3, IC_N2
+ OPT 1, 3, IC_N3
+nr_l2:                            /* the strip: words in the camera's font (type 4 draws a string) */
  OPT -2, 4, 1460                  /* "Off" */
  OPT -1, 4, 284                   /* "Low" */
  OPT 0, 4, ST_STD                 /* "Std" (ours: the camera's "Standard" is too wide for a cell) */
  OPT 1, 4, 267                    /* "High" */
-nr_l2:                            /* the left column: the same words */
- OPT -2, 4, 1460
- OPT -1, 4, 284
- OPT 0, 4, ST_STD
- OPT 1, 4, 267
 vf_l0:
  OPT 0, 4, ST_VIG                 /* the title stays "Vignette Correction" */
  OPT 1, 4, ST_VIG
-vf_l1:
+vf_l1:                            /* the left column: "Vignette" over Off / On */
+ OPT 0, 3, IC_V0
+ OPT 1, 3, IC_V1
+vf_l2:                            /* the strip: the camera's Off / On icons */
  OPT 0, 3, VF_I0
  OPT 1, 3, VF_I1
-vf_l2:
- OPT 0, 3, VF_J0
- OPT 1, 3, VF_J1
 nr_s2v:                           /* NR slot value 1..4 (index 0..3) -> Noise Filter value; 0 Camera: the camera's own */
  .byte 0, -1, -2, 1
 nr_v2s:                           /* Noise Filter value -2..+1 (index + 2) -> slot value */
@@ -3844,39 +3853,31 @@ rv_chk:
  jmp rv_back
 
 /* ic_get <- jmp from the picture lookup 0x610f5611 (`call ..,[],0`, d0 picture id -> a0 = its slot: a word holding
- * the picture's descriptor; 0 for id 0): our IC_BK / IC_WH -> ic_ebk / ic_ewh, else as stock ((0x60379740) + 4 id). */
+ * the picture's descriptor; 0 for id 0): our ids IC_BK .. IC_END - 1 -> their word in ic_ent, else as stock
+ * ((0x60379740) + 4 id). */
 ic_get:
  mov d0,d1
  exthu d1
- cmp IC_BK,d1
- beq 2f
- cmp IC_WH,d1
- beq 3f
- cmp IC_AB,d1
- beq 4f
- cmp IC_GM,d1
- beq 5f
  cmp 0,d1
  bne 1f
  mov 0,a0
  retf [],0
 1:
+ cmp IC_BK,d1
+ bcs 2f
+ cmp IC_END,d1
+ bcs 3f
+2:
  mov (0x60379740),a0
  exthu d0
  asl2 d0
  add d0,a0
  retf [],0
-2:
- mov ic_ebk,a0
- retf [],0
 3:
- mov ic_ewh,a0
- retf [],0
-4:
- mov ic_eab,a0
- retf [],0
-5:
- mov ic_egm,a0
+ add -IC_BK,d1
+ asl2 d1
+ mov ic_ent,a0
+ add d1,a0
  retf [],0
 
 /* The left column's slider icon (the "S" of Sharpness): each of the column's 5 row slots has a picture object whose
@@ -3896,37 +3897,29 @@ ic_list:
  .long 0xffff, 7, 7, IC_AB
  .long 0xffff, 7, 7, IC_GM
 ic_lend:
-ic_ebk:
- .long ic_dbk
-ic_ewh:
- .long ic_dwh
-ic_eab:
- .long ic_dab
-ic_egm:
- .long ic_dgm
-/* descriptors <6H3I> as the stock pictures': format 14, 46 x 46, 8, 0, 0, size, payload, flags; build.py fills size
- * and payload (the stream from firmware/mkicons.py into ic_pbk / ic_pwh, by its uncached address 0xa...) */
-ic_dbk:
- .short 14, 46, 46, 8, 0, 0
+ic_ent:                           /* the slot word of each of our pictures, in firmware/mkicons.py PICTURES order */
+ .long ic_d0, ic_d1, ic_d2, ic_d3, ic_d4, ic_d5, ic_d6, ic_d7, ic_d8, ic_d9
+/* descriptors <6H3I> as the stock pictures': format 14, w, h, 8, 0, 0, size, payload, flags; build.py fills w, h,
+ * size and payload (the streams from firmware/mkicons.py, packed into ic_pay, by their uncached address 0xa...) */
+ .macro ICD n
+ic_d\n:
+ .short 14, 0, 0, 8, 0, 0
  .long 0, 0, 0
-ic_dwh:
- .short 14, 46, 46, 8, 0, 0
- .long 0, 0, 0
-ic_dab:
- .short 14, 46, 46, 8, 0, 0
- .long 0, 0, 0
-ic_dgm:
- .short 14, 46, 46, 8, 0, 0
- .long 0, 0, 0
+ .endm
+ ICD 0
+ ICD 1
+ ICD 2
+ ICD 3
+ ICD 4
+ ICD 5
+ ICD 6
+ ICD 7
+ ICD 8
+ ICD 9
 .balign 8
-ic_pbk:
- .space 1024
-ic_pwh:
- .space 1024
-ic_pab:
- .space 1024
-ic_pgm:
- .space 1024
+ic_pay:
+ .space 16384
+ic_pend:
 
 /* st_chk <- jmp from 0x611b201b (bar setup, a3 = the bar, (16,sp) -> its id): the bar's +116 says whether the arrows
  * stop at the ends (1) or wrap around (0); the camera sets 1 for the ids in its table 0x6152d520 (239 u16 ids, 904

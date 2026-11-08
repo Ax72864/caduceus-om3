@@ -10,8 +10,10 @@
 > stopping at the ends) with our own "Blk" / "Wht" icons next to the camera's value; owner: "this is perfect!".
 > All stay in step with the Extras wheel.
 >
-> **Status:** code in the camera-proven 64 KiB section-6 extension. Test 14 (emulator only): **A-B** and **G-M**
-> slider rows (−7 to +7) after Whites; the on-screen WB grid was tried and dropped (owner).
+> **Status:** code in the camera-proven 64 KiB section-6 extension. **A-B** and **G-M** slider rows (−7 to +7)
+> camera-tested (test 14). Test 15 (emulator only): side-bar titles for Noise Filter and Vignette Correction, a new
+> row order (look, tone, white balance, detail, lens, grain), and the Extras wheel down to Glow/Clarity (12 o'clock)
+> and Art Effect (6 o'clock).
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 

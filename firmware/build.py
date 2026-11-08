@@ -322,11 +322,17 @@ def build(defaults, testfile, out):
         m[at[0] - 3] = 8
     sys.path.insert(0, str(ROOT / 'firmware'))
     import mkicons
-    for st, d, p in zip(mkicons.streams(), ('ic_dbk', 'ic_dwh', 'ic_dab', 'ic_dgm'), ('ic_pbk', 'ic_pwh', 'ic_pab', 'ic_pgm')):
-        assert len(st) <= 1024 and sy[p] % 8 == 0
-        m[o(sy[p]):o(sy[p]) + len(st)] = st
-        assert struct.unpack_from('<6H', m, o(sy[d])) == (14, mkicons.W, mkicons.H, 8, 0, 0)
-        struct.pack_into('<II', m, o(sy[d]) + 12, len(st), sy[p] + 0x40000000)   # 0x6.. -> uncached 0xa..
+    pics = mkicons.streams()
+    assert len(pics) == 10 and sy['IC_END'] - sy['IC_BK'] == 10 and sy['ic_pay'] % 8 == 0
+    at = sy['ic_pay']
+    for k, (w, h, st) in enumerate(pics):
+        assert at + len(st) <= sy['ic_pend']
+        m[o(at):o(at) + len(st)] = st
+        d = sy['ic_d%d' % k]
+        assert struct.unpack_from('<6H', m, o(d)) == (14, 0, 0, 8, 0, 0)
+        struct.pack_into('<6H', m, o(d), 14, w, h, 8, 0, 0)
+        struct.pack_into('<II', m, o(d) + 12, len(st), at + 0x40000000)   # 0x6.. -> uncached 0xa..
+        at = (at + len(st) + 7) & ~7
     for a, (stock, name) in READOUT.items():
         assert m[o(a):o(a) + 2] == b'\xfc\xdc' and struct.unpack_from('<I', m, o(a) + 2)[0] == stock, hex(a)
         assert m[o(a) + 6:o(a) + 8] == b'\x8f\x0b', hex(a)
