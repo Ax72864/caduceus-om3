@@ -1,16 +1,17 @@
 # Caduceus for OM-3
 
 > [!CAUTION]
-> **Development branch: v0.23-alpha, picture-mode sliders. In camera testing. Do not flash builds from this branch.**
+> **Development branch: v0.23-alpha, picture-mode sliders. Test builds only; not a release.**
 >
 > This branch moves the Extras settings onto the camera's own Picture Mode rows, one setting at a time. So far:
 > **Sharp** on the restored Sharpness slider (−5 to +2; camera-tested in test 2) and **Grain** on the camera's own
-> Film Grain Effect row from the monochrome modes (Off / Low / Medium / High; emulator only, test 4). Both stay in
+> Film Grain Effect row from the monochrome modes (Off / Low / Medium / High). Test 4 camera-tested: works. Both stay in
 > step with the Extras wheel.
 >
 > **Status:** the slider code now sits in the 64 KiB section-6 extension that the camera proved loads (GX2 probe,
 > [`experiment/firmware-space-probe-64k`](https://github.com/androidfanman/caduceus-om3/tree/experiment/firmware-space-probe-64k)).
-> Test 4 (Sharpness bar fix + Grain row) is with the owner for a camera test.
+> Test 4 (Sharpness bar fix + Grain row) works on the owner's camera. Not released yet: the remaining Extras
+> settings come next.
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 
