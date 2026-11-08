@@ -1,3 +1,6 @@
+/* v0.24 film test 7 (owner): the wheel's Film and Extras pages are hidden (their code stays; 1 brings them back) */
+ .set W_FILM, 0
+ .set W_EXTRAS, 0
 /* OM-3 1.1 editor test 1 (= probe 2 + on-camera Hue/Light pages + card save).
  * Probe 2 part: looks in a heap block, loaded from C:\OM3MOD\BUNDLES.BIN when valid.
  * Adapted from Caduceus SD loader v3 (cakelesscoder/caduceus-ep7, Apache-2.0): same state encoding,
@@ -1093,14 +1096,19 @@ k_all:
  ret [d2,d3,a2,a3],40
 k_step:
  mov (20,sp),a2
- movbu (AXIS,a2),d0               /* S -> H -> L -> Extras -> (Film, when LOOKS.BIN loaded) -> S */
+ movbu (AXIS,a2),d0               /* S -> H -> L -> Extras -> (Film, when LOOKS.BIN loaded) -> S; v0.24 film test 7
+                                   * (owner): Extras and Film hidden (W_EXTRAS / W_FILM 0): S -> H -> L -> S */
  mov 2,d1
  cmp 0,d0
  beq 8f
  mov 1,d1
  cmp 2,d0
  beq 8f
+ .if W_EXTRAS
  mov 3,d1
+ .else
+ clr d1
+ .endif
  cmp 1,d0
  beq 8f
  clr d1
@@ -1109,7 +1117,11 @@ k_step:
  mov (LPTR,a2),d1
  cmp 0,d1
  beq 8f
+ .if W_FILM
  mov 4,d1
+ .else
+ clr d1
+ .endif
 8:
  movbu d1,(AXIS,a2)
  mov d1,d0
@@ -2756,7 +2768,11 @@ ei_page:
  mov (LPTR,a2),d3
  cmp 0,d3
  beq 3f
+ .if W_FILM                       /* film test 7: the wheel opens on Saturation (the films are in the Picture Mode list) */
  mov 4,d3
+ .else
+ clr d3
+ .endif
 3:
  movbu d3,(AXIS,a2)
  mov d3,d0
@@ -3016,12 +3032,15 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set IC_N1, 0x7f87
 .set IC_N2, 0x7f88
 .set IC_N3, 0x7f89
-.set IC_END, 0x7f8a
+.set IC_HSL, 0x7f8a               /* "HSL": the Color row's cell (film test 7, in place of the stock "Color / Vivid") */
+.set IC_END, 0x7f8b
 .set FV0, 100                     /* v0.24 film list: picture-mode values FV0 + j for film j (COLOR k = j / 5, look j % 5 + 1) */
 .set NF, 20
 .set FLB, 0x7e70                  /* FLB + j: "is film j there?" (the list's per-entry availability id) */
 .set ST_F0, 0x7f10                /* ST_F0 + j: film j's name (the big title) */
-.set IC_FM0, 0x7f90               /* IC_FM0 + j: film j's list cell picture "FILM" over its number (fl_mk draws them) */
+.set IC_FM0, 0x7f90               /* IC_FM0 + j: film j's list cell picture "FILM" over its number (fl_mk draws them;
+                                   * "FILM*" when film j is changed from how it was built) */
+.set IC_FL0, 0x7fb0               /* IC_FL0 + j: the same for the row's left cell, never starred (the row adds its own) */
 .set FL_BLK, 14336                /* fl_mk heap blocks (up to 3) */
 .set ROW, 80                      /* fl_mk's row buffer (100 B) in its frame */
 .set SROW, 64                     /* fl_sp's row buffer (160 B) in its frame */
@@ -3919,7 +3938,7 @@ ic_get:
 1:
  cmp IC_FM0,d1
  bcs 11f
- cmp IC_FM0 + NF,d1
+ cmp IC_FL0 + NF,d1
  bcc 11f
  jmp fl_ic
 11:
@@ -3964,7 +3983,7 @@ ic_list:
  .long 0xffff, 7, 7, IC_GM
 ic_lend:
 ic_ent:                           /* the slot word of each of our pictures, in firmware/mkicons.py PICTURES order */
- .long ic_d0, ic_d1, ic_d2, ic_d3, ic_d4, ic_d5, ic_d6, ic_d7, ic_d8, ic_d9
+ .long ic_d0, ic_d1, ic_d2, ic_d3, ic_d4, ic_d5, ic_d6, ic_d7, ic_d8, ic_d9, ic_d10
 /* descriptors <6H3I> as the stock pictures': format 14, w, h, 8, 0, 0, size, payload, flags; build.py fills w, h,
  * size and payload (the streams from firmware/mkicons.py, packed into ic_pay, by their uncached address 0xa...) */
  .macro ICD n
@@ -3982,6 +4001,7 @@ ic_d\n:
  ICD 7
  ICD 8
  ICD 9
+ ICD 10
 .balign 8
 ic_pay:
  .space 16384
@@ -4127,7 +4147,7 @@ fl_l1:                            /* the left column */
  .space 48 * 12
  .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
  .long FV0 + \j
- .short 3, IC_FM0 + \j
+ .short 3, IC_FL0 + \j
  .long 0x6154b480
  .endr
 fl_l2:                            /* the strip */
@@ -4621,29 +4641,19 @@ fl_emit:
 /* fl_dg: `call fl_dg,[],0` from fl_mk (its frame: (28) row y 40..75, the row at (ROW,sp)), d0 digit, d1 x: the
  * digit's row onto the row; a digit pixel replaces a clear or edge pixel. Uses d0..d3, a0, a1. */
 fl_dg:
- mov d0,d2
- asl 8,d2
- mov d0,d3
- asl 6,d3
- add d3,d2
- mov d0,d3
- asl 5,d3
- add d3,d2
- asl 3,d0
- add d0,d2                        /* 360 d */
+ mov FDS,d2
+ mul d0,d2                        /* FDS d */
  mov (28,sp),d0
  add -40,d0
- mov d0,d3
- asl 3,d3
- add d0,d3
- add d0,d3                        /* 10 (y - 40) */
+ mov FDB,d3
+ mul d0,d3                        /* FDB (y - 40) */
  add d3,d2
  mov fl_dig,a0
  add d2,a0
  mov sp,a1
  add ROW,a1
  add d1,a1
- mov 10,d3
+ mov FDB,d3
 1:
  movbu (a0),d2
  mov d2,d0
@@ -4692,7 +4702,7 @@ fl_mk:
  mov d0,(8,sp)
  mov 1,d0
  mov d0,(12,sp)
- mov 20,d1
+ mov 40,d1
  clr d0
 2:
  mov d0,(a0)                      /* slot words 0 */
@@ -4700,7 +4710,7 @@ fl_mk:
  add -1,d1
  bne 2b
  mov (20,sp),a0
- add 20 * 4 + 20 * 24,a0
+ add 40 * 4 + 40 * 24,a0
  mov a0,(4,sp)
  mov 1,d0
  mov d0,(16,sp)
@@ -4711,7 +4721,7 @@ fl_mk:
  cmp 2400,d0
  bge 11f
  mov (12,sp),d0
- cmp 3,d0
+ cmp 6,d0
  bcs 12f
  jmp 90f
 12:
@@ -4729,6 +4739,15 @@ fl_mk:
  inc d0
  mov d0,(12,sp)
 11:
+ mov (16,sp),d0                   /* picture p 1..40: number (p - 1) % 20 + 1, "FILM*" from 21 */
+ clr d1
+ cmp 21,d0
+ bcs 14f
+ add -20,d0
+ mov 1,d1
+14:
+ mov d0,(72,sp)
+ mov d1,(68,sp)
  mov (4,sp),a0
  mov a0,(48,sp)
  mov 0x0b06304b,d0                /* header: h - 1 = 75, w - 1 = 99, type 11 */
@@ -4752,6 +4771,11 @@ fl_mk:
  add d0,d1
  add d0,d1
  mov fl_top,a0
+ mov (68,sp),d0
+ cmp 0,d0
+ beq 22f
+ mov fl_tops,a0                   /* "FILM*" */
+22:
  add d1,a0
  mov sp,a1
  add ROW,a1
@@ -4778,10 +4802,10 @@ fl_mk:
  inc a1
  add -1,d2
  bne 26b
- mov (16,sp),d0
+ mov (72,sp),d0                   /* the number */
  cmp 10,d0
  bcc 27f
- mov 40,d1
+ mov FX1,d1
  call fl_dg,[],0
  bra 30f
 27:
@@ -4795,10 +4819,10 @@ fl_mk:
 29:
  mov d0,(56,sp)
  mov d1,d0
- mov 31,d1
+ mov FX2,d1
  call fl_dg,[],0
  mov (56,sp),d0
- mov 49,d1
+ mov FX2B,d1
  call fl_dg,[],0
 30:                               /* the row as runs */
  clr d2
@@ -4858,7 +4882,7 @@ fl_mk:
  asl 3,d0
  add d0,d1
  mov (20,sp),a1
- add 80,a1
+ add 160,a1
  add d1,a1
  mov 14,d0
  movhu d0,(a1)
@@ -4890,7 +4914,7 @@ fl_mk:
  mov (16,sp),d0
  inc d0
  mov d0,(16,sp)
- cmp 21,d0
+ cmp 41,d0
  bcc 90f
  jmp 10b
 90:
@@ -4963,15 +4987,27 @@ fl_mk:
  mov (52,sp),a2
  ret [d2,d3,a2,a3],200
 
-/* fl_ic <- ic_get (d0 / d1 = IC_FM0 + j; returns as ic_get: a0 = the slot word, or 0): film j's number among the
- * films there picks its cell picture. */
+/* fl_ic <- ic_get (d0 / d1 = IC_FM0 + j, the list cell, or IC_FL0 + j, the row's left cell; returns as ic_get: a0 =
+ * the slot word, or 0): film j's number among the films there picks its picture; a list cell of a film changed from
+ * how it was built (fl_fch) gets the "FILM*" one (slot 20 + n - 1) when it was drawn. Saves mdr (retf). */
 fl_ic:
  movm [d2,d3,a2,a3],(sp)
- add -12,sp                       /* (0) call slot, (4) i, (8) the return address (retf returns through mdr) */
+ add -16,sp                       /* (0) call slot, (4) i, (8) the return address, (12) star allowed */
  mov mdr,d0
  mov d0,(8,sp)
  mov d1,d2
+ clr d0
+ cmp IC_FL0,d2
+ bcs 1f
+ add -(IC_FL0 - IC_FM0),d2
+ bra 2f
+1:
+ mov 1,d0
+2:
+ mov d0,(12,sp)
  add -IC_FM0,d2                   /* j */
+ cmp NF,d2
+ bcc 8f
  PVAL 8f
  mov (LPTR,a2),d0
  cmp 0,d0
@@ -4979,22 +5015,37 @@ fl_ic:
  mov (TTAB,a2),a3
  cmp 0,a3
  beq 8f
- mov d0,a2
  clr d3
  clr d0
  mov d0,(4,sp)
-1:
+3:
  mov (4,sp),d0
  cmp d2,d0
- bcc 2f
- mov a2,a0
+ bcc 4f
+ mov (LPTR,a2),a0
  call fl_has,[],0
  add d0,d3
  mov (4,sp),d0
  inc d0
  mov d0,(4,sp)
- bra 1b
-2:
+ bra 3b
+4:                                /* d3 = n - 1 */
+ mov (12,sp),d0
+ cmp 0,d0
+ beq 6f
+ mov d2,d0
+ call fl_fch,[d2,d3,a2,a3],28
+ cmp 0,d0
+ beq 6f
+ mov d3,d0
+ add 20,d0
+ asl2 d0
+ mov a3,a0
+ add d0,a0
+ mov (a0),d0
+ cmp 0,d0
+ bne 9f
+6:
  asl2 d3
  mov a3,a0
  add d3,a0
@@ -5006,7 +5057,7 @@ fl_ic:
 9:
  mov (8,sp),d0
  mov d0,mdr
- add 12,sp
+ add 16,sp
  movm (sp),[d2,d3,a2,a3]
  retf [],0
 
@@ -5655,51 +5706,8 @@ fl_pmod:
 8:
  clr d0
  ret [d2,d3,a2],16
-20:                               /* the row: the film changed from as built? its 18 settings (fl_isdef) ... */
- clr d3
-21:
- mov pf_ids,a0
- mov d3,d1
- asl2 d1
- add d1,a0
- movbu (2,a0),d1
- mul d2,d1
- movhu (a0),d0
- add d1,d0
- call fl_isdef,[d2,d3,a2],24
- cmp 0,d0
- beq 28f
- inc d3
- cmp 18,d3
- bcs 21b
- call fl_film,[],0                /* ... and the slot's WB shift, Blacks / Whites, Extras (pf_bt) */
- mov (LPTR,a2),a0
- asl 6,d0
- add d0,a0
- add 32,a0
- mov a2,a1
- mov d2,d0
- asl 6,d0
- add d0,a1
- add 56,a1                        /* slot + 24 */
- clr d3
-22:
- mov pf_bt,a2
- add d3,a2
- add d3,a2
- movbu (a2),d0
- movbu (1,a2),d1
- movbu (d0,a0),d0
- movbu (d1,a1),d1
- cmp d1,d0
- bne 28f
- inc d3
- cmp 11,d3
- bcs 22b
- clr d0
- ret [d2,d3,a2],16
-28:
- mov 1,d0
+20:                               /* the row: the film changed from how it was built? */
+ call fl_live,[d2,d3,a2,a3],24
  ret [d2,d3,a2],16
 9:
  and 0xff,d2
@@ -5806,4 +5814,116 @@ fl_isdef:
 90:
  mov (4,sp),d0
  jmp ed_isdef
+
+/* fl_live: `call fl_live,[d2,d3,a2,a3],24`, a2 = P, d2 = COLOR k holding film j -> d0 1 when COLOR k now differs from
+ * film j as built: its 18 settings (fl_isdef) or the slot's WB shift, Blacks / Whites, Extras (pf_bt). */
+fl_live:
+ clr d3
+21:
+ mov pf_ids,a0
+ mov d3,d1
+ asl2 d1
+ add d1,a0
+ movbu (2,a0),d1
+ mul d2,d1
+ movhu (a0),d0
+ add d1,d0
+ call fl_isdef,[d2,d3,a2],24
+ cmp 0,d0
+ beq 28f
+ inc d3
+ cmp 18,d3
+ bcs 21b
+ call fl_film,[],0
+ mov (LPTR,a2),a0
+ asl 6,d0
+ add d0,a0
+ add 32,a0
+ mov a2,a1
+ mov d2,d0
+ asl 6,d0
+ add d0,a1
+ add 56,a1                        /* slot + 24 */
+ clr d3
+22:
+ mov pf_bt,a2
+ add d3,a2
+ add d3,a2
+ movbu (a2),d0
+ movbu (1,a2),d1
+ movbu (d0,a0),d0
+ movbu (d1,a1),d1
+ cmp d1,d0
+ bne 28f
+ inc d3
+ cmp 11,d3
+ bcs 22b
+ clr d0
+ ret [d2,d3,a2,a3],24
+28:
+ mov 1,d0
+ ret [d2,d3,a2,a3],24
+
+/* fl_fch: `call fl_fch,[d2,d3,a2,a3],28`, a2 = P, d0 = film j -> d0 1 when it is changed from how it was built: on
+ * its COLOR now (look number = its) -> fl_live; else its saved changes (EDITS.BIN record j, valid) differ from the
+ * LOOKS.BIN record in bytes 0..52. Locals (4) j. */
+fl_fch:
+ mov d0,(4,sp)
+ clr d2
+ mov d0,d1
+1:
+ cmp 5,d1
+ bcs 2f
+ add -5,d1
+ inc d2
+ bra 1b
+2:
+ inc d1                           /* n; d2 = k */
+ mov a2,a0
+ add d2,a0
+ movbu (LIDX,a0),d0
+ extb d0
+ cmp d1,d0
+ bne 5f
+ call fl_live,[d2,d3,a2,a3],24
+ ret [d2,d3,a2,a3],28
+5:
+ mov (TORG,a2),a1
+ cmp 0,a1
+ beq 8f
+ add TWO,a1
+ mov (4,sp),d0
+ mov 1,d1
+ asl d0,d1
+ mov (12,a1),d3
+ and d1,d3
+ beq 8f
+ mov (4,sp),d0
+ mov d0,d1
+ asl 6,d1
+ asl2 d0
+ add d0,d1
+ add 16,d1
+ add d1,a1                        /* its saved changes */
+ mov (4,sp),d0
+ asl 6,d0
+ mov (LPTR,a2),a0
+ add d0,a0
+ add 32,a0                        /* as built */
+ mov 53,d3
+6:
+ movbu (a0),d0
+ movbu (a1),d1
+ cmp d1,d0
+ bne 7f
+ inc a0
+ inc a1
+ add -1,d3
+ bne 6b
+8:
+ clr d0
+ ret [d2,d3,a2,a3],28
+7:
+ mov 1,d0
+ ret [d2,d3,a2,a3],28
 

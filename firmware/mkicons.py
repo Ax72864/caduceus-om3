@@ -22,7 +22,9 @@ PICTURES = [
     ([('Vignette', 15, 30), ('Off', 18, 60)], CW, CH), ([('Vignette', 15, 30), ('On', 18, 60)], CW, CH),
     ([('Noise', 15, 30), ('Off', 18, 60)], CW, CH), ([('Noise', 15, 30), ('Low', 18, 60)], CW, CH),
     ([('Noise', 15, 30), ('Std', 18, 60)], CW, CH), ([('Noise', 15, 30), ('High', 18, 60)], CW, CH),
+    ([('HSL', 26, 44)], 82, 62),   # v0.24 film test 7 (owner): the Color row's cell, stock "Color / Vivid" (82 x 62)
 ]
+STYLE = {10: (0.88, (0.20, 0.40, 0.60))}   # width, coverage thresholds (as the FILM cells, matched to the stock lettering)
 
 
 def word(txt, cap, maxw, sx=1.0):
@@ -71,7 +73,8 @@ def quant(cov, th=(0.30, 0.50, 0.70)):
 # v0.24 film cells (100 x 76, the stock "COLOR / 1" strip cell's size): "FILM" over the film's number, matched to the
 # stock cells' measured metrics (owner: "the same style and size as COLOR 1-4"): word fill rows 16..36 and 73 px for
 # "COLOR" -> cap 20, baseline 36, 0.88 width, coverage thresholds 0.2 / 0.4 / 0.6 in our font; digits fill rows
-# 43..68, 9..16 px wide -> cap 26, baseline 69, 0.95 width. The camera
+# 43..68, 9..16 px wide -> cap 26, baseline 69, 0.95 width (film test 7, owner: a little smaller: cap 24, baseline 68,
+# 0.92 width). The camera
 # draws them itself when the films load (firmware fl_mk): the "FILM" line (rows 0..FT-1) as it is, then each digit's
 # picture (FD rows, FW wide) under it, centred; two digits overlap by 2 px (their dark edges), a digit pixel replacing
 # only clear or edge pixels. film_cell() is the same rule, for the preview and the checks.
@@ -79,25 +82,44 @@ FCW, FCH, FT = 100, 76, 40
 FD = FCH - FT
 
 
-def film_top():
-    return picture([('FILM', 20, 36)], FCW, FT, 0.88, (0.20, 0.40, 0.60))
+def film_top(star=False):
+    """the "FILM" line; star: with a '*' over its top-right corner as the stock "COLOR*" (star fill ~16 x 18 px,
+    rows ~4..21, its left edge ~6 px inside the word's end; our font's asterisk, the same 2 px dark edge)"""
+    if not star:
+        return picture([('FILM', 20, 36)], FCW, FT, 0.88, (0.20, 0.40, 0.60))
+    cov = np.zeros((FT, FCW))
+    small, b = word('FILM', 20, FCW - 6, 0.88)
+    y0, x0 = int(round(36 - b)), (FCW - small.shape[1]) // 2
+    cov[y0:y0 + small.shape[0], x0:x0 + small.shape[1]] = small
+    word_px = quant(cov, (0.20, 0.40, 0.60))
+    right = np.nonzero(np.isin(word_px, (10, 11, 12)).any(axis=0))[0][-1]
+    st, _ = word('*', 34, 99, 1.0)
+    cs = np.zeros((FT, FCW))
+    sy, sx = 4, right - 2
+    h, w = min(st.shape[0], FT - sy), min(st.shape[1], FCW - sx)
+    cs[sy:sy + h, sx:sx + w] = st[:h, :w]
+    star_px = quant(cs, (0.20, 0.40, 0.60))
+    out = word_px.copy()
+    m = star_px != 0
+    out[m] = star_px[m]
+    return out
 
 
 def film_digits():
     """10 arrays FD x FW: the digits 0..9, cap 24, baseline 68 - FT, centred in a common width."""
-    small = [word(str(d), 26, 99, 0.95) for d in range(10)]
+    small = [word(str(d), 24, 99, 0.92) for d in range(10)]   # film test 7: owner: a little smaller (was 26, 0.95)
     fw = max(a.shape[1] for a, _ in small) + 4
     out = []
     for a, b in small:
         cov = np.zeros((FD, fw))
-        y0, x0 = int(round(69 - FT - b)), (fw - a.shape[1]) // 2
+        y0, x0 = int(round(68 - FT - b)), (fw - a.shape[1]) // 2
         cov[y0:y0 + a.shape[0], x0:x0 + a.shape[1]] = a
         out.append(quant(cov))
     return out
 
 
-def film_cell(n, top=None, digs=None):
-    top = film_top() if top is None else top
+def film_cell(n, top=None, digs=None, star=False):
+    top = film_top(star) if top is None else top
     digs = film_digits() if digs is None else digs
     fw = digs[0].shape[1]
     px = np.zeros((FCH, FCW), dtype=np.uint8)
@@ -209,7 +231,7 @@ def encode11(px, w, h):
 
 def streams():
     """[(w, h, stream)] in PICTURES order."""
-    return [(w, h, encode11(bytes(picture(l, w, h).flatten()), w, h)) for l, w, h in PICTURES]
+    return [(w, h, encode11(bytes(picture(l, w, h, *STYLE.get(k, ())).flatten()), w, h)) for k, (l, w, h) in enumerate(PICTURES)]
 
 
 if __name__ == '__main__':

@@ -162,11 +162,16 @@ def build(defaults, testfile, out):
     sys.path.insert(0, str(ROOT / 'firmware'))
     import mkicons
     digs = mkicons.film_digits()                 # v0.24 film cells: the "FILM" line and the digits (fl_mk draws the cells)
-    assert digs[0].shape == (mkicons.FD, 20) and mkicons.FT == 40 and (mkicons.FCW, mkicons.FCH) == (100, 76)
+    fdw = digs[0].shape[1]
+    assert digs[0].shape[0] == mkicons.FD == 36 and fdw % 2 == 0 and mkicons.FT == 40 and (mkicons.FCW, mkicons.FCH) == (100, 76)
+    fx1, fx2 = (100 - fdw) // 2, (100 - (2 * fdw - 2)) // 2      # as mkicons.film_cell places one / two digits
     fwp, fwi, boxes, dw = mkicons.sp_parts()     # the quick menu's "FILM n" (fl_sp draws it)
     assert fwp.shape[0] == mkicons.SPH == 48 and boxes[0].shape[1] % 2 == 0
-    (out / 'films.inc').write_text('.balign 4\nfl_top:\n' + db(mkicons.pack4(mkicons.film_top())) + 'fl_dig:\n' +
+    (out / 'films.inc').write_text('.balign 4\nfl_top:\n' + db(mkicons.pack4(mkicons.film_top())) + 'fl_tops:\n' +
+                                   db(mkicons.pack4(mkicons.film_top(True))) + 'fl_dig:\n' +
                                    ''.join(db(mkicons.pack4(d)) for d in digs) +
+                                   f'.set FDB, {fdw // 2}\n.set FDS, {fdw * mkicons.FD // 2}\n.set FX1, {fx1}\n.set FX2, {fx2}\n'
+                                   f'.set FX2B, {fx2 + fdw - 2}\n' +
                                    f'.set SFW, {fwp.shape[1]}\n.set SFWI, {fwi}\n.set SDB, {boxes[0].shape[1]}\n.set SPH, 48\n'
                                    f'.set SP_GAP, {mkicons.SP_GAP}\n.set SP_DGAP, {mkicons.SP_DGAP}\n'
                                    'fl_sfw:\n' + db(mkicons.pack4(fwp)) + 'fl_sdg:\n' + ''.join(db(mkicons.pack4(x)) for x in boxes) +
@@ -354,7 +359,11 @@ def build(defaults, testfile, out):
     sys.path.insert(0, str(ROOT / 'firmware'))
     import mkicons
     pics = mkicons.streams()
-    assert len(pics) == 10 and sy['IC_END'] - sy['IC_BK'] == 10 and sy['ic_pay'] % 8 == 0
+    assert len(pics) == 11 and sy['IC_END'] - sy['IC_BK'] == 11 and sy['ic_pay'] % 8 == 0
+    # film test 7: the Color row (item 5397) cell picture list {u16 type 3, u16 id, ptr} at 0x6154be9c: "Color / Vivid"
+    # 11389 -> our "HSL"
+    assert struct.unpack_from('<HH', m, o(0x6154be9c)) == (3, 11389)
+    struct.pack_into('<H', m, o(0x6154be9c) + 2, sy['IC_HSL'])
     at = sy['ic_pay']
     for k, (w, h, st) in enumerate(pics):
         assert at + len(st) <= sy['ic_pend']

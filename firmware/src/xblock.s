@@ -1,3 +1,6 @@
+/* v0.24 film test 7 (owner): the Extras page is hidden and its Glow / Clarity and Art Effect read 0 wherever they act
+ * (XB_FX 0); the code stays: set XB_FX 1 to bring them back. */
+ .set XB_FX, 0
 /* Caduceus for OM-3 v0.20 test 5: the Extras code block (appended to GUIDES.BIN, our own code).
  *
  * Runs from its heap buffer (uncached pool, as the camera's malloc returns), relocated in place by entry 0. Linked at
@@ -76,7 +79,11 @@ xb_slot:
 
 /* xb_art: d1 |= the job flags of S's Art Effect (a1 = S). Uses d0, a0; returns through MDR. */
 xb_art:
+ .if XB_FX
  movbu (50,a1),d0
+ .else
+ clr d0
+ .endif
  cmp 6,d0
  bcc 1f
  add d0,d0
@@ -103,10 +110,18 @@ xb_cap:
  cmp 0,a1
  beq 7f
  mov (a2),d1                      /* (data registers only: `movbu (d8,An),Am` misread on the camera) */
+ .if XB_FX
  movbu (49,a1),d0
+ .else
+ clr d0
+ .endif
  cmp 0,d0
  bne 2f                           /* Glow / Clarity: the Soft Focus passes (+ CPU grain if Grain) */
+ .if XB_FX
  movbu (50,a1),d0
+ .else
+ clr d0
+ .endif
  cmp 0,d0
  bne 3f                           /* an Art Effect */
  movbu (53,a1),d0                 /* plain: Grain 0..3 -> the camera's own grain (xb_dev) */
@@ -140,7 +155,11 @@ xb_lv:
  cmp 0,a1
  beq 9f
  mov (12,a2),d1
+ .if XB_FX
  movbu (49,a1),d0
+ .else
+ clr d0
+ .endif
  btst 0x80,d0
  beq 1f
  or 128,d1
@@ -160,7 +179,11 @@ xb_wt:
  mov 600,d0
  cmp 0,a1
  beq 8f
+ .if XB_FX
  movbu (49,a1),d1
+ .else
+ clr d1
+ .endif
  extb d1
  cmp 0,d1
  bne 1f

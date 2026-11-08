@@ -1248,5 +1248,24 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     clear; after cycling all films COLOR 2-4 have no '*', COLOR 1* (changed itself) keeps it. (The row's return address
     was first taken as 0x611d1835: the call is 7 bytes.)
 - Package film test 6: E1479999.BIN f70024c2…, GUIDES.BIN 3e240b4b…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08): "so so close": FILM n in the left cell works; two asks: the
+  numbers a little smaller; a changed film shows no '*' in the list.
+- Film test 7 (emulator only), with three more owner asks:
+  - Digits: cap 24, baseline 68, 0.92 width (box 18 px; firmware constants FDB / FDS / FX1 / FX2 / FX2B from build.py).
+  - "FILM*": a second "FILM" line with our font's asterisk over its top-right corner (as the stock "COLOR*": star
+    rows ~4..21, just past the word's end). fl_mk draws 40 pictures (20 plain + 20 starred; slot / descriptor 20 + n - 1;
+    up to 6 heap blocks of 14 KB; if they run out, the plain ones are used). fl_ic: a list cell (IC_FM0 + j) of a
+    changed film (fl_fch) gets the starred picture; the row's left cell uses IC_FL0 + j, never starred (the row adds
+    its own '*'). fl_fch: film on its COLOR now -> fl_live (the row check, moved out of fl_pmod); else its saved
+    changes (EDITS.BIN, valid) differ from the LOOKS.BIN record in bytes 0..52.
+  - Wheel pages (owner: "Color, Color all, Hue, Light"; keep the code): W_FILM / W_EXTRAS 0 in editor.s -> INFO goes
+    Saturation -> (All) -> Hue -> Light -> Saturation; the wheel opens on Saturation. Glow / Clarity and Art Effect read
+    0 where they act (XB_FX 0 in xblock.s: capture, live view, Soft Focus weight, Art Effect flags); the slot and
+    LOOKS.BIN bytes are kept. 1 brings either back.
+  - "HSL" in place of the Color row's "Color / Vivid" cell (82 x 62, list at 0x6154be9c id 11389 -> IC_HSL 0x7f8a;
+    mkicons PICTURES[10], cap 26, the FILM cells' weight).
+  - Emulator: FILM* 2 in the list after a Contrast change and after switching away and back; HSL; INFO axis 0 -> 0 (All)
+    -> 2 -> 1 -> 0; the earlier star / reset / quick-menu checks unchanged.
+- Package film test 7: E1479999.BIN 9c8cdf20…, GUIDES.BIN 14c04fff…, LABELS.BIN 903af75b…. On the owner's card,
   checked by checksum. Camera result: pending.
 
