@@ -17,6 +17,9 @@ SECTIONS {
   .hook_dot     0x611d10fb : { *(.hook_dot) }
   .hook_lc      0x611d1982 : { *(.hook_lc) }
   .hook_str     0x610f56a6 : { *(.hook_str) }
+  .hook_bar     0x611d1035 : { *(.hook_bar) }
+  .hook_rda     0x611d16b4 : { *(.hook_rda) }
+  .hook_rdb     0x611d1725 : { *(.hook_rdb) }
   .ext2         0x607187a8 : { *(.ext2) }
   .ext7         0x6164afd0 : { *(.ext7) }
   .ext3         0x6081fe10 : { *(.ext3) }

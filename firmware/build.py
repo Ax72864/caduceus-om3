@@ -45,7 +45,10 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_rng': (0x611d1041, bytes.fromhex('dd29599bff0004' '8007' 'ca16')),   # v0.23: the Sharpness slider bar's ends
          '.hook_dot': (0x611d10fb, bytes.fromhex('5c08' 'f1d9' 'fb019b00')),
          '.hook_lc': (0x611d1982, bytes.fromhex('fac81815' 'c826' 'ca2c')),
-         '.hook_str': (0x610f56a6, bytes.fromhex('82' 'cd16000000'))}          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_str': (0x610f56a6, bytes.fromhex('82' 'cd16000000')),
+         '.hook_bar': (0x611d1035, bytes.fromhex('a03b' 'c820' 'fac81715' 'c837' 'ca53')),      # v0.23: Blacks / Whites bar ends
+         '.hook_rda': (0x611d16b4, bytes.fromhex('fac8f303' 'c82e' 'fac81515' 'c828' 'ca2e')),  # v0.23: their readouts
+         '.hook_rdb': (0x611d1725, bytes.fromhex('fac8f303' 'c82e' 'fac81515' 'c828' 'ca2e'))}          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
@@ -249,14 +252,14 @@ def build(defaults, testfile, out):
     struct.pack_into('<I', m, o(0x60045e9c), EXT11[1])
     m[o(EXT11[0]):o(EXT11[0]) + len(blobs['.ext11'])] = blobs['.ext11']
     # v0.23 new Picture Mode choice rows (Noise Filter, Shading Comp.): the item table (17 x 40 B at 0x6154c2a8) -> it_tab
-    # (the stock 17, then ours), at both lookups (mov table,a0 ... cmp 17,d1); the rows join the column's 9 row switches
+    # (the stock 17, then our 4), at both lookups (mov table,a0 ... cmp 17,d1); the rows join the column's 9 row switches
     IT = 0x6154c2a8
     m[o(sy['it_tab']):o(sy['it_tab']) + 17 * 40] = m[o(IT):o(IT) + 17 * 40]
     for a, c in ((0x611d040d, 0x611d0422), (0x611d0846, 0x611d0859)):
         assert bytes(m[o(a):o(a) + 6]) == b'\xfc\xdc' + struct.pack('<I', IT) and bytes(m[o(c):o(c) + 2]) == b'\xa5\x11', hex(a)
         struct.pack_into('<I', m, o(a) + 2, sy['it_tab'])
-        m[o(c) + 1] = 19
-    NR_IT, VF_IT = 5394, 5389
+        m[o(c) + 1] = 21
+    NR_IT, VF_IT, BK_IT, WH_IT = 5394, 5389, 5386, 5385
     def sw_add(base, n, item, target):
         key = item - 6
         ents = [struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)]
@@ -270,12 +273,35 @@ def build(defaults, testfile, out):
         assert sum(1 for i in range(n) if struct.unpack_from('<I', m, o(base) + 8 * i)[0] == 0) >= 1
     # as Film Grain Effect's case (key 5394) in each switch; where that case asks the Film Grain id, our stub
     OWN = {0x61536a2c: 'a', 0x61536b2c: 'b', 0x61536c2c: 'c', 0x61536d2c: 'd', 0x61536f2c: 'f'}
+    # the two 16-entry switches have no room for 4 rows: re-hash them into 32-entry copies (sw11_tab / sw13_tab) and
+    # point their code there (table base, mask 15 -> 31, end bound; the same constants elsewhere are other tables' ends)
+    for old, new, (ab, am, ae) in ((0x615511cc, sy['sw11_tab'], (0x611d05eb, 0x611d05f1, 0x611d060a)),
+                                   (0x6155134c, sy['sw13_tab'], (0x611d1a59, 0x611d1a5f, 0x611d1a74))):
+        ents = [struct.unpack_from('<II', m, o(old) + 8 * i) for i in range(16)]
+        dft0 = [t for k, t in ents if k == 0][0]
+        for i in range(32):
+            struct.pack_into('<II', m, o(new) + 8 * i, 0, dft0)
+        for k, t in ents:
+            if k:
+                sw_add(new, 32, k + 6, t)
+        assert bytes(m[o(ab):o(ab) + 6]) == b'\xfc\xdd' + struct.pack('<I', old), hex(ab)
+        struct.pack_into('<I', m, o(ab) + 2, new)
+        assert bytes(m[o(am):o(am) + 2]) == b'\x80\x0f', hex(am)
+        m[o(am) + 1] = 0x1f
+        assert bytes(m[o(ae):o(ae) + 2]) == b'\xfc\xd8' and struct.unpack_from('<I', m, o(ae) + 2)[0] == old + 128, hex(ae)
+        struct.pack_into('<I', m, o(ae) + 2, new + 256)
     for base, n in ((0x61536a2c, 32), (0x61536b2c, 32), (0x61536c2c, 32), (0x61536d2c, 32), (0x61536f2c, 32),
-                    (0x615510cc, 32), (0x615511cc, 16), (0x6155124c, 32), (0x6155134c, 16)):
+                    (0x615510cc, 32), (sy['sw11_tab'], 32), (0x6155124c, 32), (sy['sw13_tab'], 32)):
         tg = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 5394]
         assert len(tg) == 1, hex(base)
         for item, pre in ((NR_IT, 'nr'), (VF_IT, 'vf')):
             t = sy[pre + '_' + OWN[base]] if base in OWN else sy['lc_' + pre] if base == 0x6155124c else tg[0]
+            sw_add(base, n, item, t)
+        # Blacks / Whites: slider rows, as item 7's case (key 1) except the bar object's id (f2c) and the left column
+        t7 = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 1]
+        assert len(t7) == 1, hex(base)
+        for item, pre in ((BK_IT, 'bk'), (WH_IT, 'wh')):
+            t = sy[pre + '_f'] if base == 0x61536f2c else sy['lc_' + pre] if base == 0x6155124c else t7[0]
             sw_add(base, n, item, t)
     assert sy['NR_IT'] == NR_IT if 'NR_IT' in sy else True
     for a, (stock, name) in READOUT.items():

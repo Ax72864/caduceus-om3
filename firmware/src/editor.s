@@ -27,6 +27,15 @@
 .section .hook_dot,"ax"
  jmp sl_dot                       /* v0.23 stock 0x611d10fb: mov (8,sp),a0; mov a2,d1; mul 155,d1 */
  .byte 0xcb,0xcb,0xcb
+.section .hook_bar,"ax"
+ jmp rw_bar                       /* v0.23 stock 0x611d1035 (bar setup): cmp 59,d0; beq; cmp 5399,d0; beq; bra 0x611d1092 */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_rda,"ax"
+ jmp rd_a                         /* v0.23 stock 0x611d16b4 (readout sign): cmp 1011; beq; cmp 5397; beq; bra */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_rdb,"ax"
+ jmp rd_b                         /* v0.23 stock 0x611d1725 (readout digit): the same */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
 .section .hook_str,"ax"
  jmp st_get                       /* v0.23 stock 0x610f56a6 (string getter, d0 id): mov d0,d2; call 0x610f56bd,[],0 */
  .byte 0xcb
@@ -2930,9 +2939,10 @@ pm_color:
  mov PM_N,d0
  jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
 .balign 4
-pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Shading, Shading Comp. (= VigFix),
-                                   * Sharpness (= Sharp), Contrast, Noise Filter (= NR), Film Grain Effect (= Grain) */
- .long 111, 5397, 5398, 5399, VF_IT, 7, 8, NR_IT, 5400
+pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Blacks, Whites, Shading,
+                                   * Vignette Correction (= VigFix), Sharpness (= Sharp), Contrast, Noise Filter (= NR),
+                                   * Film Grain Effect (= Grain) */
+ .long 111, 5397, 5398, BK_IT, WH_IT, 5399, VF_IT, 7, 8, NR_IT, 5400
 .set PM_N, (. - pm_list) / 4
 
 /* Picture Mode rows of COLOR 1-4 that are Extras settings of the selected look (slot k = P + 32 + 64k):
@@ -2940,19 +2950,28 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
  *   class 2 Grain:  the camera's Film Grain Effect row (item 5400, MONO 1-4's), slot +53, 0..3 (Off/Low/Med/High)
  *   class 3 NR:     new choice row NR_IT "Noise Filter", slot +51 (0 Camera, 1 Std, 2 Low, 3 Off, 4 High) as the
  *                   camera's Noise Filter values -2 Off, -1 Low, 0 Standard, +1 High; Camera shows the camera's own
- *   class 4 VigFix: new choice row VF_IT "Shading Comp.", slot +52 (0 Camera, 1 Off) as 0 Off, 1 On (= Camera)
+ *   class 4 VigFix: new choice row VF_IT "Vignette Correction", slot +52 (0 Camera, 1 Off) as 0 Off, 1 On (= Camera)
+ *   class 5 Blacks, class 6 Whites: new slider rows BK_IT / WH_IT, slot +47 / +48, -5..+5 (bar like Shading's; the
+ *                   left column a short word with the value, "Bk+2" / "Wh-1", from our strings)
  * Ids: our setting ids GRB/NRB/VFB + k for the rows' bars (only our facade handlers take them), and the rows' own
  * left-column ids 7, 998 (Film Grain's), NR_IT, VF_IT, answered by picture mode (54/55/56/64 = COLOR 1-4).
- * The new rows are choice rows like Film Grain Effect: item table entries (it_tab, 19 entries, build.py copies the
+ * The new rows are choice rows like Film Grain Effect: item table entries (it_tab, 21 entries, build.py copies the
  * stock 17) with their option lists, and entries in the column's 9 row switches (build.py: as item 5400's, except
  * where its case asks the Film Grain id: our stubs ch_* below). */
 .set GRB, 0x7e00
 .set NRB, 0x7e10
 .set VFB, 0x7e20
+.set BKB, 0x7e30
+.set WHB, 0x7e40
 .set NR_IT, 5394
 .set VF_IT, 5389
+.set BK_IT, 5386
+.set WH_IT, 5385
 .set ST_VIG, 0x7f00               /* our string ids (st_get answers them; the camera's table has ~6000) */
 .set ST_STD, 0x7f01
+.set ST_BKS, 0x7f02                 /* "Blacks" */
+.set ST_WHS, 0x7f03                 /* "Whites" */
+.set ST_LC, 0x7f10                  /* 22 left-column words: Blk -5..+5, Wht -5..+5 */
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
 .set VF_I1, 480                   /* the camera's "On" icon */
 .set VF_J0, 358
@@ -2966,10 +2985,27 @@ nr_tab:
  .long 54, NRB, 55, NRB + 1, 56, NRB + 2, 64, NRB + 3
 vf_tab:
  .long 54, VFB, 55, VFB + 1, 56, VFB + 2, 64, VFB + 3
+bk_tab:
+ .long 54, BKB, 55, BKB + 1, 56, BKB + 2, 64, BKB + 3
+wh_tab:
+ .long 54, WHB, 55, WHB + 1, 56, WHB + 2, 64, WHB + 3
+.balign 8
+sw11_tab:                         /* the row switches 0x615511cc and 0x6155134c (16 entries, full with our rows) */
+ .space 32 * 8                    /* re-hashed by build.py into 32 entries */
+sw13_tab:
+ .space 32 * 8
 it_tab:                           /* the stock 17 item entries (filled by build.py), then ours (40 B each) */
  .space 17 * 40
  .long NR_IT, nr_title, nr_l0, 4, 0, nr_l1, 4, 0, nr_l2, 4    /* title, labels, two icon lists (as 5400's) */
  .long VF_IT, vf_title, vf_l0, 2, 0, vf_l1, 2, 0, vf_l2, 2
+ .long BK_IT, 0, 0, 0, bk_title, bk_lc, 11, 0, 0, 0             /* slider entries (as item 7's: +16 title), +20 the */
+ .long WH_IT, 0, 0, 0, wh_title, wh_lc, 11, 0, 0, 0             /* left column's word list (lc_bk / lc_wh read it) */
+bk_title:
+ .short 4, ST_BKS
+ .long 0x6154b480
+wh_title:
+ .short 4, ST_WHS
+ .long 0x6154b480
 nr_title:
  .short 4, 188                    /* string 188 "Noise Filter" */
  .long 0x6154b480
@@ -3008,6 +3044,30 @@ vf_l1:
 vf_l2:
  OPT 0, 3, VF_J0
  OPT 1, 3, VF_J1
+bk_lc:
+ OPT -5, 4, ST_LC + 0
+ OPT -4, 4, ST_LC + 1
+ OPT -3, 4, ST_LC + 2
+ OPT -2, 4, ST_LC + 3
+ OPT -1, 4, ST_LC + 4
+ OPT 0, 4, ST_LC + 5
+ OPT 1, 4, ST_LC + 6
+ OPT 2, 4, ST_LC + 7
+ OPT 3, 4, ST_LC + 8
+ OPT 4, 4, ST_LC + 9
+ OPT 5, 4, ST_LC + 10
+wh_lc:
+ OPT -5, 4, ST_LC + 11
+ OPT -4, 4, ST_LC + 12
+ OPT -3, 4, ST_LC + 13
+ OPT -2, 4, ST_LC + 14
+ OPT -1, 4, ST_LC + 15
+ OPT 0, 4, ST_LC + 16
+ OPT 1, 4, ST_LC + 17
+ OPT 2, 4, ST_LC + 18
+ OPT 3, 4, ST_LC + 19
+ OPT 4, 4, ST_LC + 20
+ OPT 5, 4, ST_LC + 21
 nr_s2v:                           /* NR slot value 1..4 (index 0..3) -> Noise Filter value; 0 Camera: the camera's own */
  .byte 0, -1, -2, 1
 nr_v2s:                           /* Noise Filter value -2..+1 (index + 2) -> slot value */
@@ -3029,8 +3089,20 @@ gr_lc:
  bra 9f
 2:
  cmp VF_IT,d0
- bne 9f
+ bne 3f
  mov vf_tab,a3
+ mov 4,d2
+ bra 9f
+3:
+ cmp BK_IT,d0
+ bne 4f
+ mov bk_tab,a3
+ mov 4,d2
+ bra 9f
+4:
+ cmp WH_IT,d0
+ bne 9f
+ mov wh_tab,a3
  mov 4,d2
 9:
  jmp lc_back                      /* 0x611d19b4: cmp 0,a3 */
@@ -3048,10 +3120,79 @@ st_get:
  mov std_str,a0
  ret [d2],8
 2:
+ cmp ST_BKS,d0
+ bne 3f
+ mov bks_str,a0
+ ret [d2],8
+3:
+ cmp ST_WHS,d0
+ bne 4f
+ mov whs_str,a0
+ ret [d2],8
+4:
+ mov d0,d2
+ add -ST_LC,d2
+ cmp 22,d2
+ bcc 5f
+ asl 4,d2                         /* 16 B a word */
+ mov lc_strs,a0
+ add d2,a0
+ ret [d2],8
+5:
  mov d0,d2
  call str_lang,[],0
  jmp str_back
 .balign 2
+bks_str:
+ .short 66, 108, 97, 99, 107, 115, 0
+whs_str:
+ .short 87, 104, 105, 116, 101, 115, 0
+.balign 16
+lc_strs:                          /* ST_LC + i: "Bk-5".."Bk+5" (0..10), "Wh-5".."Wh+5" (11..21); "Blk"/"Wht" were too wide */
+ .short 66, 107, 45, 53, 0
+ .balign 16
+ .short 66, 107, 45, 52, 0
+ .balign 16
+ .short 66, 107, 45, 51, 0
+ .balign 16
+ .short 66, 107, 45, 50, 0
+ .balign 16
+ .short 66, 107, 45, 49, 0
+ .balign 16
+ .short 66, 107, 32, 48, 0
+ .balign 16
+ .short 66, 107, 43, 49, 0
+ .balign 16
+ .short 66, 107, 43, 50, 0
+ .balign 16
+ .short 66, 107, 43, 51, 0
+ .balign 16
+ .short 66, 107, 43, 52, 0
+ .balign 16
+ .short 66, 107, 43, 53, 0
+ .balign 16
+ .short 87, 104, 45, 53, 0
+ .balign 16
+ .short 87, 104, 45, 52, 0
+ .balign 16
+ .short 87, 104, 45, 51, 0
+ .balign 16
+ .short 87, 104, 45, 50, 0
+ .balign 16
+ .short 87, 104, 45, 49, 0
+ .balign 16
+ .short 87, 104, 32, 48, 0
+ .balign 16
+ .short 87, 104, 43, 49, 0
+ .balign 16
+ .short 87, 104, 43, 50, 0
+ .balign 16
+ .short 87, 104, 43, 51, 0
+ .balign 16
+ .short 87, 104, 43, 52, 0
+ .balign 16
+ .short 87, 104, 43, 53, 0
+ .balign 16
 std_str:                          /* "Std" */
  .short 83, 116, 100, 0
 vig_str:                          /* "Vignette Correction", UTF-16 */
@@ -3099,9 +3240,17 @@ ch_id:
  CHC vf_c, VFB, chc_back
  CHC vf_d, VFB, chd_back
  CHC vf_f, VFB, chf_back
+ CHC bk_f, BKB, f2c_obj           /* slider rows: as item 7's case (0x611c2ce8: the bar object with this id) */
+ CHC wh_f, WHB, f2c_obj
 
 /* lc_nr / lc_vf <- row switch 0x6155124c (the left column's cell): as Film Grain's case 0x611d0b57 (cell type 1, the
  * icon of the value from the item's list) but GetValue of our row's own id instead of 998 -> 0x611d0b72. */
+lc_bk:                            /* Blacks / Whites: the same choice-type cell, a word per value (bk_lc / wh_lc) */
+ mov BK_IT,d2
+ bra 1f
+lc_wh:
+ mov WH_IT,d2
+ bra 1f
 lc_nr:
  mov NR_IT,d2
  bra 1f
@@ -3145,6 +3294,16 @@ sl_slot:
  add -VFB,d2
  cmp 4,d2
  bcs 2f
+ mov 5,d1
+ mov d3,d2
+ add -BKB,d2
+ cmp 4,d2
+ bcs 2f
+ mov 6,d1
+ mov d3,d2
+ add -WHB,d2
+ cmp 4,d2
+ bcs 2f
  mov 1,d1
  cmp 7,d3
  beq 1f
@@ -3156,6 +3315,12 @@ sl_slot:
  beq 1f
  mov 4,d1
  cmp VF_IT,d3
+ beq 1f
+ mov 5,d1
+ cmp BK_IT,d3
+ beq 1f
+ mov 6,d1
+ cmp WH_IT,d3
  bne 8f
 1:
  mov d1,d3                        /* the class, over the getter */
@@ -3215,6 +3380,18 @@ sl_slot:
  extb d0
  bra 99f
 92:
+ cmp 5,d1
+ bne 95f
+ movbu (47,a0),d0                 /* Blacks */
+ extb d0
+ bra 99f
+95:
+ cmp 6,d1
+ bne 96f
+ movbu (48,a0),d0                 /* Whites */
+ extb d0
+ bra 99f
+96:
  cmp 4,d1
  bne 93f
  movbu (52,a0),d0
@@ -3286,6 +3463,18 @@ sl_get:
  exthu d2
  add -VFB,d2
  cmp 4,d2
+ bcs 90f
+ mov 5,a3
+ mov d0,d2
+ exthu d2
+ add -BKB,d2
+ cmp 4,d2
+ bcs 90f
+ mov 6,a3
+ mov d0,d2
+ exthu d2
+ add -WHB,d2
+ cmp 4,d2
  bcc \miss
 90:
  PVAL \miss
@@ -3298,6 +3487,9 @@ sl_cnt:
  mov 8,d0
  cmp 1,a3
  beq 6f
+ mov 11,d0
+ cmp 5,a3
+ bcc 6f                           /* 5 Blacks, 6 Whites: -5..+5 */
  mov 4,d0
  cmp 4,a3
  bne 6f
@@ -3315,6 +3507,9 @@ sl_cnt:
  mov 8,d1
  cmp 1,a3
  beq 99f
+ mov 11,d1
+ cmp 5,a3
+ bcc 99f                          /* Blacks / Whites -5, 11 */
  clr d0
  mov 4,d1
  cmp 2,a3
@@ -3409,6 +3604,22 @@ sl_set:
  movbu d3,(83,a3)
  jmp s_dirty
 4:
+ cmp 5,a3
+ bcs 5f
+ cmp -5,d1                        /* Blacks / Whites -5..+5 -> +47 / +48 */
+ blt 7f
+ cmp 5,d1
+ bgt 7f
+ add 79,d2                        /* P + 64k + 32 + 47 */
+ cmp 5,a3
+ beq 6f
+ inc d2                           /* +48 */
+6:
+ mov d2,a3
+ movbu d1,(a3)
+ sub 79,d2                        /* (s_dirty needs no d2) */
+ jmp s_dirty
+5:
  cmp 0,d1                         /* VigFix 0 Off / 1 On -> +52 (1 Off, 0 Camera) */
  blt 7f
  cmp 1,d1
@@ -3445,6 +3656,63 @@ sl_rng:
  mov 2,d0
  jmp rng_back                     /* 0x611d1090: mov d0,(4,sp) */
 
+/* rw_bar <- jmp from 0x611d1035 (bar setup, d0 = the row's item; stock: 59 -> 0x611d1057, 5399 -> 0x611d1074, else
+ * 0x611d1092 = no value). Blacks / Whites: their value into (24,sp) (GetValue of the row's own id, as stock reads 7),
+ * ends a3 = -5, d0 = +5. Keeps d2, d3 (the stock function's). */
+rw_bar:
+ cmp 59,d0
+ bne 1f
+ jmp bar_59
+1:
+ cmp 5399,d0
+ bne 2f
+ jmp bar_5399
+2:
+ cmp BK_IT,d0
+ beq 3f
+ cmp WH_IT,d0
+ beq 3f
+ jmp bar_none
+3:
+ mov d0,a3
+ call facade,[],4
+ mov (a0),a2
+ mov sp,a1
+ mov (12,a2),a2
+ add 24,a1
+ mov a3,d0
+ calls (a2)                       /* GetValue(item) -> (24,sp) */
+ mov -5,a3
+ mov 5,d0
+ jmp rng_back
+
+/* rd_a / rd_b <- jmp from 0x611d16b4 / 0x611d1725 (the readout glyph lookups, d0 = item): 1011, 5397 (stock) and
+ * Blacks / Whites take the 11-entry -5..+5 tables (0x611d16e6 / 0x611d1757), else none (0x611d16ee / 0x611d175f). */
+rd_a:
+ cmp 1011,d0
+ beq 1f
+ cmp 5397,d0
+ beq 1f
+ cmp BK_IT,d0
+ beq 1f
+ cmp WH_IT,d0
+ beq 1f
+ jmp rda_none
+1:
+ jmp rda_11
+rd_b:
+ cmp 1011,d0
+ beq 1f
+ cmp 5397,d0
+ beq 1f
+ cmp BK_IT,d0
+ beq 1f
+ cmp WH_IT,d0
+ beq 1f
+ jmp rdb_none
+1:
+ jmp rdb_11
+
 /* sl_dot <- jmp from 0x611d10fb (same frame; a2 value, a3 min): the dot's x = centre (d2) + d1, stock value x 155 px
  * (a -2..+2 bar). The Sharp bar (min -5, from sl_rng) is split at 0, which stays on the centre mark: below 0 it steps
  * 62 px (-5 at the left end, like Shading's bar), above 0 the stock 155 px (+2 at the right end). Camera test 2: one
@@ -3455,9 +3723,16 @@ sl_dot:
  mov 155,d0
  cmp -5,a3
  bne 1f
+ mov (4,sp),d0                    /* max: 5 = Blacks / Whites (62 px a step, like Shading), 2 = Sharp */
+ cmp 5,d0
+ beq 2f
  cmp 0,a2
- bge 1f
+ bge 3f
+2:
  mov 62,d0
+ bra 1f
+3:
+ mov 155,d0
 1:
  mul d0,d1
  jmp dot_back                     /* 0x611d1103: add d1,d2 */
