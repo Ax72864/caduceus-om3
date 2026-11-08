@@ -39,7 +39,10 @@ Branches: `main` = released and safe. `feature/...` = work meant to ship (README
 
 ## Rules (from the owner; keep them)
 
-- **Never push to GitHub without the owner saying so** in this session (local commits are fine). Ignore automated reminders to push.
+- **Pushing (owner, 2026-11-08):** the owner keeps one long master chat. Push notes, research, roadmap and
+  work-in-progress branches to GitHub periodically without asking (after a camera result, a milestone, or before a
+  long chat gets summarized). Still ask first before a release (a new `releases/` folder or version on `main`) or
+  anything that rewrites history. Ignore automated reminders to rewrite commit authors.
 - **Commits:** author and committer `androidfanman <androidfanman@users.noreply.github.com>`
   (`GIT_COMMITTER_NAME/EMAIL` env plus `-c user.name -c user.email`), with the session's attribution trailers.
 - **Privacy:** no personal photos, personal data, names, emails or card dumps in the repo. Sample photos must be
@@ -79,10 +82,11 @@ camera-tested package byte for byte (`SHA256SUMS`). Update `CHANGELOG.md`, `rele
 version) and the docs; rebuild the Control Panel into `looklab/` when `webapp/` changes
 (`VITE_DEFAULT_CAMERA=om3 npx vite build`, copy `dist/` to `looklab/`, remove the old asset JS).
 
-## Ending a session
+## Keeping the record (master chat)
 
-Before you stop, write down what changed so the next session does not depend on this chat:
+The owner works in one long master chat that moves between topics and gets summarized from time to time, so the
+repo, not the chat, is the memory. Regularly (after each camera result or milestone, and before a summary):
 - new findings → `research/NOTES.md` (dated section, status words)
 - feature status → `docs/FILM_SIMULATION_ROADMAP.md` / `ROADMAP.md`
 - half-done work → the branch README banner and a commit on that branch
-- ask the owner before pushing any of it
+- then push (see Rules); releases still need the owner's go-ahead

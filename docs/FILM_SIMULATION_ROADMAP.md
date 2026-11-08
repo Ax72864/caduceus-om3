@@ -22,7 +22,8 @@ new features have room; more can be opened up the same way.
    [`feature/v0.23-alpha-profile-sliders`](../../../tree/feature/v0.23-alpha-profile-sliders)). Camera-tested (test 7):
    Sharpness, Film Grain, Vignette Correction (Off / On) and Noise Filter (Off / Low / Std / High, High new for looks).
    Tests 8–11: Blacks and Whites rows (−5 to +5, stop at the ends, our own "Blk" / "Wht" icons; owner: "this is
-   perfect!"). Next: A-B / G-M as the camera's own WB grid (research started, see the
+   perfect!", camera-tested). Test 12: an "A-B / G-M" row; the owner wants the WB grid drawn right on the
+   Picture Mode screen (like Highlight & Shadow's curve), in progress. Next: A-B / G-M as the camera's own WB grid (research started, see the
    notebook), then a release. Glow / Clarity and Art Effect stay on the Extras wheel (owner's call: they interact
    with Grain).
 2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
@@ -81,6 +82,7 @@ Newest first. Full details in [`research/NOTES.md`](../research/NOTES.md).
 
 | Date | Topic | Finding |
 |---|---|---|
+| 2026-11-08 | WB grid (camera) | Test 12: a new A-B / G-M row opens the camera's own WB fine-tune grid with the look's values (emulator); on the camera OK went back to live view instead. Owner: the grid should sit on the Picture Mode screen itself. |
 | 2026-11-08 | Picture-mode sliders | Tests 8-11: Blacks / Whites rows. Fixed on the camera: arrows ran backwards, several cells highlighted with 11 rows, values wrapped from +5 to -5. Our own "Blk" / "Wht" pictures now sit in the S icon's place with the camera's own value next to them (firmware/mkicons.py, free font). Owner: "this is perfect!". |
 | 2026-11-08 | Picture-mode sliders (camera) | Tests 5-7: new choice rows Vignette Correction (Off / On, camera icons, our own title) and Noise Filter (Off / Low / Std / High in the camera's font; the look's NR gains High, also on the Extras wheel and in the Control Panel on the branch). Test 7 works on the camera. Test 8 adds Blacks / Whites sliders (emulator only). |
 | 2026-11-08 | WB grid (analysis) | The camera's A-B / G-M grid is the WB± row of its own WB screen, a bespoke screen; three ways to port it are in the notebook. |

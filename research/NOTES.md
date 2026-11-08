@@ -1007,4 +1007,36 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Emulator: Blk / Wht + the camera's value on page 1, Sharpness / Contrast keep S / half-circle, Shading unchanged;
   owner-approval screenshot sent.
 - Package test 11 (includes test 10's stop-at-ends): E1479999.BIN f490d866…, GUIDES.BIN 9d8865c5…, LABELS.BIN 903af75b…
-  (unchanged). On the owner's card, checked by checksum. Owner (2026-11-08): "this is perfect!".
+  (unchanged). On the owner's card, checked by checksum. Camera-tested (owner, 2026-11-08): works, "this is perfect!".
+
+### Test 12: A-B / G-M opens the camera's own WB grid (emulator only)
+- The grid is the camera's WB fine-tune screen, GUI state 0x0408 ID_ST_MENU_FUNC_DIRECT_WB_REV (the WB screen 0x0417
+  opens it on OK / dial at its WB± row: handler 0x6125bc8b returns 0x0408 when 0x6124f6c7 says 3). Screen handlers
+  return the next state (parent << 8 | child) to the dispatcher 0x610f5f88 (`calls (a2)` at 0x610f6014); the GUI state
+  bytes are at (8,sp) there. Picture Mode's handler: 0x6125becc; its row list = (0x6037dfa0) + 0x51a0 (+92 count,
+  +94 cursor, +108 item ids u32). Events: 0x900c OK press, 0x900d release, 0x9031 / 0x9032 main dial, 0x9006 / 0x9007
+  keys.
+- The grid's entry (0x612590ec) picks the stills A-B id by WB mode (setting 1578 -> table 0x615d1944 {mode, A-B id,
+  movie id}, 13 modes) into 0x6037dfbc and builds the screen (0x6124f4e5, kind 18); its item list (table 0x615ae434
+  {key, n, list}) gives two generic bars: A-B 1580..1592 and G-M 1593..1605 (stills), read / written via the facade.
+- Ours: new row GR_IT 5384 "A-B / G-M" after Whites (a one-option choice row like VigFix; the strip and left column
+  show the camera's own WB± picture 12545; bar id WGB 0x7e50 + k, class 9). pm_ev (hook 0x6125becc): OK press on that
+  row on COLOR 1-4 -> gr_flag = look + 1, return 0x0408. While gr_flag is set the facade answers the grid's stills
+  ids from the look's slot +26 (A-B, class 7) / +27 (G-M, class 8), -7..+7, and a write sets wb_flags +25 bit0 (as the
+  Extras wheel). gx_map (hook 0x610f6016): any state change out of 0x0408 clears gr_flag; MENU's 0x0417 -> 0x0418.
+- Row memory: Picture Mode remembers its row in setting 2148, which refuses our row ids (5384..5394), and resets it
+  to 111 on entry; we mirror our rows in gr_row (sl_set / sl_get on 2148), and after MENU from the grid the one reset
+  write is skipped (gr_hold), so the cursor comes back to the A-B / G-M row.
+- Emulator: OK opens the grid with the look's values (dot and "A3 . M1" header follow), dials change the slot only,
+  MENU returns to the row, OK leaves to live view, hold-OK Reset zeroes the look's A-B / G-M; COLOR 2 keeps its own;
+  the camera's own WB grid (from the WB screen) still changes the camera's values, not the look's. The header's WB
+  name is the camera's current WB mode. Opening by dial (as the WB screen does) not done; only OK.
+- Package test 12: E1479999.BIN 500f6e0d…, GUIDES.BIN 1e6aeb91…, LABELS.BIN 903af75b… (unchanged). On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08): the row and its WB± icon show, but
+  OK on it goes back to live view (stock behaviour), so pm_ev did not catch it on the camera although it does in the
+  emulator. Not yet known why: the camera may send OK as another event, or the row / picture-mode check may differ.
+- Owner's choice: the grid should show right on the Picture Mode screen when the row is selected (as Highlight &
+  Shadow's curve, item 5398: its own left cell 0x611d0a9f and object in the bar switch 0x611c2d19 -> 0x611c30bc, kind 7),
+  with the dials moving the dot, not on a separate screen. Next: study how the H&S curve row is built and drawn, and
+  draw a grid there (the WB screen's grid helpers 0x611c7785 / 0x611c782f, tables 0x615513dc.., 0x61551c50, may help).
+  The test 12 route stays in the code for now.
