@@ -791,3 +791,20 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   (+1731 == 0, as tone). Not known: whether live view runs this stage (would preview the toning), the fine table's
   role when the header words are 0 (art curves zero it), Cross Process strength (R+1568 / 0x6052dc3c not traced).
 - Free camera check, no firmware: a grey card / white wall in Cross Process I should show green shadows and mids.
+
+## Firmware-space probe GX1 on the camera (2026-11-07; camera-tested)
+- Flashed `experiment/firmware-space-probe` (package 0c936df9…, GUIDES f7fe50e0…, v0.21 LABELS) on the owner's OM-3
+  and used it normally; card files backed up first (`BACKUP-2026-11-07/` on the card), restored to v0.22 after
+  (LOOKS / NAMES / BUNDLES were untouched by the test; checksums equal to the backup).
+- `OM3MOD/GAPTEST.BIN` was written: **the loader change works** — section 6's loaded end moved from 0x60f49800 to
+  0x60f4a800 (loader word 0x60045e9c) and the camera loaded and ran the probe code placed there.
+- Last boot's run: 45 passes, `bad` 0 of 888 pattern words (the extended 4 KiB stayed intact), every gap summed ~5
+  times with `changed` 0 (nothing wrote into any gap during that run).
+- Gap sums: s2 0x987fd2e7, s3 0xe7b8a684, s4 0xc8fe8d3e, s5 0xa7c6315f, s6 (from 0x60f4a800) 0x1910c2dc,
+  s7 0x5efa3ee0, s8 0x3507ab67, s9 0xb0d61cec. An all-FF gap would sum to -(words) (s2 0xfffef800 …): none does,
+  so the gaps do NOT hold the file's bytes on the camera — confirming they are not loaded unless a loader end is moved
+  (the emulator maps them, the camera does not: the sliders mistake).
+- So: code and data can go past a section's loaded end **after moving that section's loader end word** (proven for
+  s6 +4 KiB). Not yet proven: larger extensions (s6 has 1005568 B), other sections' end words, and which camera
+  activities were covered in that last run (owner to confirm: video, Wi-Fi/Bluetooth, USB). Next: a bigger extension
+  (e.g. s6 +64 KiB) with the same probe, then move the slider code (ext11) there.

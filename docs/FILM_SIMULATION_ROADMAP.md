@@ -3,7 +3,7 @@
 **Goal:** make the OM-3 with Caduceus the best film-replicating camera available: looks that render like real film
 stock straight out of the camera, and that load and shoot like a roll of film.
 
-Last updated 2026-11-07 (split toning research). Update the status column as work moves, and add findings to the research log at the end
+Last updated 2026-11-07 (evening: space probes, split toning research). Update the status column as work moves, and add findings to the research log at the end
 (details go in [`research/NOTES.md`](../research/NOTES.md)). The general roadmap is [`ROADMAP.md`](../ROADMAP.md).
 
 **Effort:** Low = a few sessions on known hooks · Medium = new firmware work on parts we already understand ·
@@ -12,12 +12,13 @@ Large = a new area of the firmware · Hard = no camera feature to borrow, everyt
 Efforts are estimates from what we know of the firmware today.
 
 **Gate for most items: firmware space.** The space proven safe is almost full. The firmware-space probe
-(branch [`experiment/firmware-space-probe`](../../../tree/experiment/firmware-space-probe)) decides how much more we can use.
+(branch [`experiment/firmware-space-probe`](../../../tree/experiment/firmware-space-probe)) ran on the camera on
+2026-11-07: moving a section's loaded end works (4 KiB proven), so the ~2.3 MiB of gaps can be opened up step by step.
 
 ## Next steps
 
-1. **Run the firmware-space probe on the camera.** Flash that build, use the camera normally (photos, menus,
-   playback, video, Wi-Fi), then check `OM3MOD/GAPTEST.BIN`.
+1. **Grow the proven space:** the same probe with a bigger extension (e.g. 64 KiB), camera-tested, with video and
+   Wi-Fi covered. (First probe: done 2026-11-07, 4 KiB loaded and intact.)
 2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
    E-P7. (Split toning research done 2026-11-07: see the table; building it waits for code space.)
 3. **White balance mode and exposure compensation per look:** quick wins that make a look behave like a roll.
@@ -76,6 +77,7 @@ Newest first. Full details in [`research/NOTES.md`](../research/NOTES.md).
 
 | Date | Topic | Finding |
 |---|---|---|
+| 2026-11-07 | Firmware space (camera) | Probe on the camera: moving section 6's loaded end by 4 KiB works; the code there ran, its pattern stayed intact over 45 checks, and nothing wrote into any gap. Gaps hold no file bytes unless a loaded end is moved. |
 | 2026-11-07 | Split toning | Cross Process (and likely Vintage) tint by brightness with separate R/G/B tone curves in the RGB gamma stage. COLOR photos use one curve for all three; the job copies it, so our code could bend each channel after the copy. Emulator-checked on stock code; a design and preview model exist; building needs code space. |
 | 2026-11-07 | Firmware space | The camera does not load the empty stretches between firmware sections; the sliders test put code in one and must not be flashed. |
 | 2026-11-07 | Picture-mode sliders | Camera slider rows can be pointed at our own values with their own range, readout and end stops. Sharp works this way in the emulator. |
