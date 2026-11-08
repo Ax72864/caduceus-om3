@@ -34,7 +34,7 @@ xb_base:
  .balign 8
  jmp xb_dev                       /* +64 grain, camera route: request configuration (s_cl) */
  .balign 8
- jmp xb_sv                        /* +72 after each half-press save (pf_save, `calls`): nothing (research hook) */
+ jmp xb_lw                        /* +72 after each half-press save (pf_save, `calls`): fg1 writes GLOG.BIN */
  .balign 8
  jmp xb_lkd                       /* +80 the '*' with a look selected (lk_pm, `calls`; calls the firmware: uncached) */
  .balign 8
@@ -96,6 +96,7 @@ xb_art:
 /* capture (Art Effect -> flag converter 0x60555e47): a3 = capture, a2 = params+12 (flags), (-4,a2) = key.
  * Exit as stock: fx_back with d0 = the Art Effect id and a1 = its address, or fx_tail. */
 xb_cap:
+ call xb_mark,[d2,d3,a2,a3],20    /* fg1 log: a new slot for this capture */
  clr d0
  movbu d0,(xb_gt)                 /* no camera grain unless a plain COLOR look with Grain below */
  mov 38225,a1
@@ -506,9 +507,295 @@ xb_dev:
  movbu d1,(10,a1)
  mov d1,(48,a0)
 9:
- jmp SEL
+ jmp xb_lg                        /* fg1: the stock selector, then the log */
 
 xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
+ rets
+
+/* ---- fg1 (fast-grain log 1, 2026-11-08): how the Grainy Film Art Filter gets its grain, with and without an Art
+ * Effect, next to a COLOR still and a MONO still (research; adapted from gl2d/gl8). GLOG.BIN = header 48 B ('GLG2',
+ * total, marks, current mark, changed flag, selector calls, records, 0, four slot pointers) + 4 slots of LB_SLOT,
+ * slot = mark & 3. Slot: +0 records, +4 / +8 / +12 copy A / B / C taken, +16 capture key (params+8), +20 flags
+ * (params+12), +24 CPU id, +25..31 capture +37691, +37720, +37721, +37722, +37682, +38225, +37689; records from +32
+ * (LB_NREC x 32 B: combiner, kind, stage, type +14, effect, context key +48, request key +8, CPU id, +12 B from
+ * request +1744 (kind 0/15) / +1086 (kind 3)); copies (1856 B): A = first kind-0 stage-0 request at +1600, B = first
+ * stage 0x09xx at +3456, C = first kind-3 stage-0 (final) at +5312. Live view (+14 0x0030 / 0x0130) skipped. */
+ .set LB_SLOT, 7168
+ .set LB_TOTAL, 48 + 4 * LB_SLOT
+ .set LB_NREC, 48
+ .set LB_A, 1600
+ .set LB_B, 3456
+ .set LB_C, 5312
+
+xb_sbase:                         /* leaf: a0 = log header -> a3 = current slot or 0. Uses d0 */
+ mov (12,a0),d0
+ and 3,d0
+ asl 2,d0
+ add 32,d0
+ mov (d0,a0),a3
+ retf [],0
+
+xb_cpy:                           /* leaf: a0 dest, a1 source, d1 bytes (> 0). Uses d0 */
+1:
+ movbu (a1),d0
+ movbu d0,(a0)
+ inc a0
+ inc a1
+ add -1,d1
+ bne 1b
+ retf [],0
+
+xb_mark:                          /* `call xb_mark,[d2,d3,a2,a3],20` from xb_cap: a3 = capture, a2 = params+12 */
+ call xb_p,[],0                   /* P dirty: the next half-press saves (makes the buffers, writes the log) */
+ cmp 0,a1
+ beq 1f
+ mov 1,d0
+ movbu d0,(P_DIRTY,a1)
+1:
+ mov (xb_lbuf),a0                 /* the buffers come from the first half-press save (xb_lw) */
+ cmp 0,a0
+ beq 9f
+ mov (8,a0),d0
+ mov d0,(12,a0)
+ inc d0
+ mov d0,(8,a0)
+ mov a3,d2
+ call xb_sbase,[],0
+ cmp 0,a3
+ beq 9f
+ clr d0
+ mov d0,(a3)
+ mov d0,(4,a3)
+ mov d0,(8,a3)
+ mov d0,(12,a3)
+ mov (-4,a2),d0
+ mov d0,(16,a3)
+ mov (a2),d0
+ mov d0,(20,a3)
+ mov d2,a1
+ movbu (0x8050),d0
+ movbu d0,(24,a3)
+ movbu (37691,a1),d0
+ movbu d0,(25,a3)
+ movbu (37720,a1),d0
+ movbu d0,(26,a3)
+ movbu (37721,a1),d0
+ movbu d0,(27,a3)
+ movbu (37722,a1),d0
+ movbu d0,(28,a3)
+ movbu (37682,a1),d0
+ movbu d0,(29,a3)
+ movbu (38225,a1),d0
+ movbu d0,(30,a3)
+ movbu (37689,a1),d0
+ movbu d0,(31,a3)
+ mov 1,d0
+ mov d0,(16,a0)
+9:
+ ret [d2,d3,a2,a3],20
+
+xb_lg:                            /* jmp from xb_dev in the frame of `call s_cl,[d2,a2],12`; a0 = context; d3/a3 live */
+ mov a0,a2
+ call SEL,[d2,a2],12              /* the stock selector (reads a0) */
+ mov d0,d2                        /* its combiner */
+ movm [d3,a3],(sp)
+ add -4,sp                        /* (0) call slot for the leaves (above it: the saved d3, a3) */
+ mov xb_lhdr,a0
+ mov (20,a0),d0
+ inc d0
+ mov d0,(20,a0)
+ mov (xb_lbuf),a0
+ cmp 0,a0
+ beq 9f
+ mov (8,a0),d0
+ cmp 0,d0
+ beq 9f                           /* no capture marked yet */
+ call xb_sbase,[],0
+ cmp 0,a3
+ beq 9f
+ mov (4,a2),a1
+ cmp 0,a1
+ beq 9f
+ movhu (14,a1),d0                 /* skip live view (+14 = 0x0030 / 0x0130) */
+ and 0xfeff,d0
+ cmp 0x30,d0
+ bne 1f
+ jmp 9f
+1:
+ mov (24,a0),d0
+ inc d0
+ mov d0,(24,a0)
+ mov (a3),d3
+ cmp LB_NREC,d3
+ bcc 5f
+ mov d3,d0
+ inc d3
+ mov d3,(a3)
+ asl 5,d0
+ add 32,d0
+ add a3,d0
+ mov d0,a0
+ movbu d2,(a0)
+ movbu (16,a1),d0
+ movbu d0,(1,a0)
+ movhu (12,a1),d0
+ movhu d0,(2,a0)
+ movhu (14,a1),d0
+ movhu d0,(4,a0)
+ movbu (16,a1),d0
+ cmp 3,d0
+ beq 3f
+ cmp 0,d0
+ beq 2f
+ cmp 15,d0
+ bne 4f
+2:
+ movhu (1756,a1),d0
+ mov 1744,d3
+ bra 6f
+3:
+ movhu (1084,a1),d0
+ mov 1086,d3
+ bra 6f
+4:
+ clr d0
+ mov 17,d3
+6:
+ movhu d0,(6,a0)
+ mov (48,a2),d0
+ mov d0,(8,a0)
+ mov (8,a1),d0
+ mov d0,(12,a0)
+ movbu (0x8050),d0
+ movbu d0,(16,a0)
+ add 20,a0
+ add d3,a1
+ mov 12,d1
+ call xb_cpy,[],0
+5:
+ mov (4,a2),a1                    /* copies: A first kind-0 stage 0, B first stage 0x09xx, C first kind-3 stage 0 */
+ movhu (12,a1),d0
+ mov d0,d1
+ and 0xff00,d1
+ cmp 0x0900,d1
+ bne 11f
+ mov (8,a3),d0
+ cmp 0,d0
+ bne 9f
+ mov 1,d0
+ mov d0,(8,a3)
+ mov LB_B,d1
+ bra 8f
+11:
+ cmp 0,d0
+ bne 9f
+ movbu (16,a1),d0
+ cmp 3,d0
+ beq 7f
+ cmp 0,d0
+ bne 9f
+ mov (4,a3),d0
+ cmp 0,d0
+ bne 9f
+ mov 1,d0
+ mov d0,(4,a3)
+ mov LB_A,d1
+ bra 8f
+7:
+ mov (12,a3),d0
+ cmp 0,d0
+ bne 9f
+ mov 1,d0
+ mov d0,(12,a3)
+ mov LB_C,d1
+8:
+ add a3,d1
+ mov d1,a0
+ mov 1856,d1
+ call xb_cpy,[],0
+ mov xb_lhdr,a0
+ mov 1,d0
+ mov d0,(16,a0)
+9:
+ add 4,sp
+ movm (sp),[d3,a3]
+ mov d2,d0
+ ret [d2,a2],12
+
+xb_lw:                            /* `calls` from pf_save (the half-press save, HLS_EVENT task): (0,sp) = return */
+ add -16,sp                       /* (0) call slot, (4) handle */
+ mov (xb_lbuf),a3
+ cmp 0,a3
+ bne 5f
+ mov xb_lhdr,a3                   /* first save: the four slot buffers (malloc fails during a capture) */
+ clr d2
+6:
+ mov d2,d0
+ asl 2,d0
+ add 32,d0
+ mov (d0,a3),a0
+ cmp 0,a0
+ bne 8f
+ mov LB_SLOT,d0
+ call malloc,[],4
+ cmp 0,a0
+ beq 9f                           /* try again at the next save */
+ mov a0,a1
+ mov LB_SLOT / 4,d1
+ clr d0
+7:
+ mov d0,(a1)
+ add 4,a1
+ add -1,d1
+ bne 7b
+ mov d2,d0
+ asl 2,d0
+ add 32,d0
+ mov a0,(d0,a3)
+8:
+ inc d2
+ cmp 4,d2
+ bne 6b
+ mov 0x32474c47,d0                /* 'GLG2' */
+ mov d0,(a3)
+ mov LB_TOTAL,d0
+ mov d0,(4,a3)
+ mov a3,(xb_lbuf)
+ bra 9f
+5:
+ mov (16,a3),d0                   /* only when something new was logged */
+ cmp 0,d0
+ beq 9f
+ clr d0
+ mov d0,(16,a3)
+ mov xb_glpath,a0
+ mov xb_glmode,a1
+ call fopen,[],4
+ cmp 0,a0
+ beq 9f
+ mov a0,(4,sp)
+ mov a0,a1
+ mov 48,d1
+ mov 1,d0
+ mov a3,a0
+ call fwrite,[d2,d3,a2,a3],24
+ clr d3
+1:
+ mov d3,d0
+ asl 2,d0
+ add 32,d0
+ mov (d0,a3),a0
+ mov (4,sp),a1
+ mov LB_SLOT,d1
+ mov 1,d0
+ call fwrite,[d2,d3,a2,a3],24
+ inc d3
+ cmp 4,d3
+ bne 1b
+ mov (4,sp),a0
+ call fclose,[d2,a2,a3],16
+9:
+ add 16,sp
  rets
 
  .set P_LIDX, 712
@@ -1636,11 +1923,20 @@ xb_vt:                            /* slice 1..10: slot byte, mode, first label, 
  .byte 0,2,0,0                    /* 8 */
  .byte 0,2,0,0                    /* 9 */
  .byte 0,2,0,0                    /* 10 */
+xb_glpath:
+ .asciz "C:\\OM3MOD\\GLOG.BIN"
+xb_glmode:
+ .asciz "w"
 xb_lpath:
  .asciz "C:\\OM3MOD\\LABELS.BIN"
  .balign 2
 xb_gt:                            /* camera-route grain level of the last capture (xb_cap -> xb_dev), 0 none */
  .byte 0
+ .balign 4
+xb_lbuf:                          /* fg1: the log header once its buffers exist, else 0 */
+ .long 0
+xb_lhdr:                          /* fg1: log header (48 B; +32 the four slot buffers) */
+ .space 48
  .balign 2
 xb_gstab:                         /* Grain 1..3 -> S: the camera's Low / Medium / High in grain contrast (v0.21) */
  .hword 28, 68, 112

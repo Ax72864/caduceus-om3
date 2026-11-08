@@ -1387,6 +1387,15 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     added on top, and keeps its grain. So the camera has a fast image-processor grain that survives the extra effect
     passes -> lead 3 moves up: find Grainy Film's work list (which art key; candidates with grain passes: 0x01010071
     handler 0x604b90ca -> passes 0x604bba9d / 0x604bbbd0 when job+5356 == 0) and whether its grain is colour-safe.
+  - fg1 logging build (branch experiment/fast-grain-log; GUIDES.BIN only, firmware = v0.24 80570ac6…): the gl2d/gl8
+    logger back in the code block. xb_cap marks each capture (slot = mark & 3; capture key, flags, capture bytes),
+    xb_dev's selector call (s_cl, every request) goes through xb_lg (records: combiner, kind, stage, type, effect,
+    context key, request key, CPU, 12 B at +1744 / +1086; copies A first kind-0 stage 0, B first stage 0x09xx, C first
+    kind-3 stage 0), xb_lw (block +72 after the half-press save) allocates 4 x 7168 B at the first save and writes
+    OM3MOD/GLOG.BIN when something new was logged. GUIDES.BIN 15004 B. Emulator: boots, live-view requests pass xb_lg,
+    menus fine; the half-press save does not run in today's emulator sessions (v0.24 baseline neither), so the log
+    write is checked by review only (same design as the camera-proven gl8 logger). Shots asked: COLOR + Grain High,
+    Grainy Film, Grainy Film + an Art Effect, Grainy Film + another Art Effect.
   - E-P7 ideas not yet tried here: stock additive combiner (E-P7 136, A + B gains 1.0) with a noise layer; needs a
     full-size noise buffer (CPU-filled: same memory cost) -> not "as quick as default".
 - NEXT (owner, 2026-11-08): grain as fast as the camera's MONO grain AND with Art Effects, Glow, Clarity and Shading.
