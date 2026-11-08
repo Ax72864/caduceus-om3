@@ -1492,7 +1492,7 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   (so 0x0102005d = Grainy Film II 0x01020068, 0x0101005d = GF I 0x01010068, 0x00000001 = MONO 12). GF's handler is
   **0x604b8ddc**: default list if the request flags (+40) have 0x0100 in 0xf00 or 0x40 in 0xf0; otherwise pass
   0x604b81ca (job+5385 in 4..8) or 0x604b81ec, pass 0x604bc17e, **config hook 0x604bc0cf** (0x604b8cb5 sets the hook
-  of the last pass), pass 0x604bc1a1, then the common tail 0x604b918c (0x604bc2a1 / hook 0x604bc40e). A list entry is
+  of the last pass), then the common tail 0x604b918c with pass 0x604bc2a1 / hook 0x604bc40e. A list entry is
   12 B: +0 pass, +4 request-config hook (0x604b8c45 adds a pass).
 - **Hook 0x604bc0cf (a1 = request) attaches the texture:** kind 0 (development): 19 words (76 B, an image
   descriptor) from (job+8324)+8 to request **+780**, its bus address from the object's +8/+12 with job+8312 & obj+108
