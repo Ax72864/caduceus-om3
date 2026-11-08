@@ -48,6 +48,10 @@
 .section .hook_rev,"ax"
  jmp rv_chk                       /* v0.23 stock 0x611b21e8 (a bar's value list top-down if its id is in 0x6152d6fe) */
  .byte 0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_stp,"ax"
+ jmp st_chk                       /* v0.23 stock 0x611b201b (a bar stops at its ends if its id is in 0x6152d520):
+                                   * clr d0; mov 116,a0; add a3,a0; mov d0,(a0) */
+ .byte 0xcb
 .section .hook_str,"ax"
  jmp st_get                       /* v0.23 stock 0x610f56a6 (string getter, d0 id): mov d0,d2; call 0x610f56bd,[],0 */
  .byte 0xcb
@@ -3777,6 +3781,30 @@ rv_chk:
  jmp rv_469
 3:
  jmp rv_back
+
+/* st_chk <- jmp from 0x611b201b (bar setup, a3 = the bar, (16,sp) -> its id): the bar's +116 says whether the arrows
+ * stop at the ends (1) or wrap around (0); the camera sets 1 for the ids in its table 0x6152d520 (239 u16 ids, 904
+ * Sharpness among them). Camera test 9: Blacks / Whites went from +5 round to -5. Our BKB / WHB ids: 1, then on past
+ * the table search (0x611b2041, a0 = +116 kept). Else as stock: +116 = 0, the search from d0 = 0 (0x611b2021). */
+st_chk:
+ mov 116,a0
+ add a3,a0
+ mov (16,sp),a1
+ movhu (a1),d0
+ add -BKB,d0
+ cmp 4,d0
+ bcs 1f
+ movhu (a1),d0
+ add -WHB,d0
+ cmp 4,d0
+ bcs 1f
+ clr d0
+ mov d0,(a0)
+ jmp stp_back
+1:
+ mov 1,d0
+ mov d0,(a0)
+ jmp stp_end
 
 /* rd_a / rd_b <- jmp from 0x611d16b4 / 0x611d1725 (the readout glyph lookups, d0 = item): 1011, 5397 (stock) and
  * Blacks / Whites take the 11-entry -5..+5 tables (0x611d16e6 / 0x611d1757), else none (0x611d16ee / 0x611d175f). */

@@ -21,6 +21,7 @@ SECTIONS {
   .hook_pg2     0x611c3709 : { *(.hook_pg2) }
   .hook_arw     0x611d0be0 : { *(.hook_arw) }
   .hook_rev     0x611b21e8 : { *(.hook_rev) }
+  .hook_stp     0x611b201b : { *(.hook_stp) }
   .hook_bar     0x611d1035 : { *(.hook_bar) }
   .hook_rda     0x611d16b4 : { *(.hook_rda) }
   .hook_rdb     0x611d1725 : { *(.hook_rdb) }
@@ -52,6 +53,8 @@ pgm_back      = 0x611c3710;
 arw_back      = 0x611d0be8;
 rv_469        = 0x611b21f2;
 rv_back       = 0x611b2217;
+stp_back      = 0x611b2021;
+stp_end       = 0x611b2041;
 str_lang      = 0x610f56bd;
 str_back      = 0x610f56ac;
 lc5_back      = 0x611d0a09;
