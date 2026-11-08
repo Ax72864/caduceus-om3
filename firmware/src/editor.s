@@ -2951,7 +2951,8 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
 .set VFB, 0x7e20
 .set NR_IT, 5394
 .set VF_IT, 5389
-.set ST_VIG, 0x7f00               /* our string id (st_get answers it; the camera's table has ~6000) */
+.set ST_VIG, 0x7f00               /* our string ids (st_get answers them; the camera's table has ~6000) */
+.set ST_STD, 0x7f01
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
 .set VF_I1, 480                   /* the camera's "On" icon */
 .set VF_J0, 358
@@ -2975,9 +2976,9 @@ nr_title:
 vf_title:
  .short 4, ST_VIG                 /* our string "Vignette Correction" (st_get); the camera's own would be 254 "Shading
  .long 0x6154b480                 * Comp.", too close to Shading (owner, 2026-11-07) */
-/* option lists {value, type, id, 0x6154b480}: type 4 = string (the title while selected), 3 = icon. Noise Filter
- * takes the Film Grain Effect icons reversed (the owner's choice, knowing their words stay the grain's): Off = grain
- * High, Low = Med, Standard = Low, High = grain Off. Shading Comp.: the camera's Off / On icons (358 / 480). */
+/* option lists {value, type, id, 0x6154b480}: type 4 = string, 3 = icon. Noise Filter shows words (camera test 6:
+ * the reversed grain icons carry the grain's words, so Off read "High"; the camera has no Low / Std / High word
+ * icons, and type 4 entries draw the word in its font). Vignette Correction: the camera's Off / On icons (358 / 480). */
  .macro OPT v, t, id
  .long \v
  .short \t, \id
@@ -2988,16 +2989,16 @@ nr_l0:
  OPT -1, 4, 1848                  /* "Noise Filter: Low" */
  OPT 0, 4, 1846                   /* "Noise Filter: Standard" */
  OPT 1, 4, 1847                   /* "Noise Filter: High" */
-nr_l1:
- OPT -2, 3, 0x38e5
- OPT -1, 3, 0x38e3
- OPT 0, 3, 0x38e1
- OPT 1, 3, 0x38df
-nr_l2:
- OPT -2, 3, 0x38e6
- OPT -1, 3, 0x38e4
- OPT 0, 3, 0x38e2
- OPT 1, 3, 0x38e0
+nr_l1:                            /* the strip: words in the camera's font (type 4 draws a string) */
+ OPT -2, 4, 1460                  /* "Off" */
+ OPT -1, 4, 284                   /* "Low" */
+ OPT 0, 4, ST_STD                 /* "Std" (ours: the camera's "Standard" is too wide for a cell) */
+ OPT 1, 4, 267                    /* "High" */
+nr_l2:                            /* the left column: the same words */
+ OPT -2, 4, 1460
+ OPT -1, 4, 284
+ OPT 0, 4, ST_STD
+ OPT 1, 4, 267
 vf_l0:
  OPT 0, 4, ST_VIG                 /* the title stays "Vignette Correction" */
  OPT 1, 4, ST_VIG
@@ -3042,10 +3043,17 @@ st_get:
  mov vig_str,a0
  ret [d2],8
 1:
+ cmp ST_STD,d0
+ bne 2f
+ mov std_str,a0
+ ret [d2],8
+2:
  mov d0,d2
  call str_lang,[],0
  jmp str_back
 .balign 2
+std_str:                          /* "Std" */
+ .short 83, 116, 100, 0
 vig_str:                          /* "Vignette Correction", UTF-16 */
  .short 86, 105, 103, 110, 101, 116, 116, 101, 32, 67, 111, 114, 114, 101, 99, 116, 105, 111, 110, 0
 

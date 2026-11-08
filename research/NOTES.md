@@ -920,3 +920,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - **Camera-tested (owner, 2026-11-08 05:05): test 6 works** (Vignette Correction Off / On, Noise Filter Off / Low /
   Standard / High, Sharpness, Film Grain). Owner: the words under the Noise Filter icons must match (the grain icons'
   words "High / Med / Low / Off" are part of the icon pictures, so Noise Filter Off reads "High").
+
+### Test 7: Noise Filter words (emulator only)
+- The camera has no Low / Std / High word icons (its Noise Filter menu list 0x6151cacc is strings only: -2 Off 1460,
+  -1 Low 284, 0 Standard 264, +1 High 267). An option-list entry of type 4 (string) draws the word in the camera's font
+  in the strip and the left column, like a word icon. "Standard" is clipped by the cell ("tandar"), so st_get also
+  answers ST_STD 0x7f01 = "Std". Noise Filter lists: Off / Low / Std / High as words.
+- Emulator: strip and left column read Off / Low / Std / High; titles follow ("Noise Filter: Low" ...).
+- Package test 7: E1479999.BIN fda1c7d4…, GUIDES.BIN bb2a30f9…, LABELS.BIN 903af75b… (as test 6). On the owner's card,
+  checked by checksum. Camera result: pending.
