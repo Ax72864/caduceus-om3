@@ -6,8 +6,9 @@
 > This branch moves the Extras settings onto the camera's own Picture Mode rows (COLOR 1–4). Camera-tested
 > (test 7, 2026-11-08): **Sharp** on the Sharpness slider (−5 to +2), **Grain** on the camera's Film Grain Effect row
 > (Off / Low / Med / High), and two new rows: **Vignette Correction** (lens shading correction Off / On) and **Noise
-> Filter** (Off / Low / Std / High; High is new for looks). Test 8 (emulator only, with the owner): **Blacks** and
-> **Whites** rows (−5 to +5). All stay in step with the Extras wheel.
+> Filter** (Off / Low / Std / High; High is new for looks). Tests 8–11: **Blacks** and **Whites** rows (−5 to +5,
+> stopping at the ends) with our own "Blk" / "Wht" icons next to the camera's value; owner: "this is perfect!".
+> All stay in step with the Extras wheel.
 >
 > **Status:** code in the camera-proven 64 KiB section-6 extension. Next: A-B / G-M as the camera's own WB grid
 > (research started, see `research/NOTES.md`). Glow / Clarity and Art Effect stay on the Extras wheel (owner).

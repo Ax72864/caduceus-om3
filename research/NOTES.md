@@ -1007,4 +1007,4 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Emulator: Blk / Wht + the camera's value on page 1, Sharpness / Contrast keep S / half-circle, Shading unchanged;
   owner-approval screenshot sent.
 - Package test 11 (includes test 10's stop-at-ends): E1479999.BIN f490d866…, GUIDES.BIN 9d8865c5…, LABELS.BIN 903af75b…
-  (unchanged). On the owner's card, checked by checksum. Camera result: pending.
+  (unchanged). On the owner's card, checked by checksum. Owner (2026-11-08): "this is perfect!".
