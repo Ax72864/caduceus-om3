@@ -804,7 +804,10 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   s7 0x5efa3ee0, s8 0x3507ab67, s9 0xb0d61cec. An all-FF gap would sum to -(words) (s2 0xfffef800 …): none does,
   so the gaps do NOT hold the file's bytes on the camera — confirming they are not loaded unless a loader end is moved
   (the emulator maps them, the camera does not: the sliders mistake).
+- Coverage (owner, confirmed by the card): photos JPEG+ORF (PB071392/93, 19:41) and a video (PB071394.MOV,
+  106 MB, ended 19:42:40) inside the last run (GAPTEST.BIN last written 19:42:50); Wi-Fi connected during the test.
+  Both worked normally. USB and Bluetooth-only not reported.
 - So: code and data can go past a section's loaded end **after moving that section's loader end word** (proven for
   s6 +4 KiB). Not yet proven: larger extensions (s6 has 1005568 B), other sections' end words, and which camera
-  activities were covered in that last run (owner to confirm: video, Wi-Fi/Bluetooth, USB). Next: a bigger extension
+  activities beyond those below. Next: a bigger extension
   (e.g. s6 +64 KiB) with the same probe, then move the slider code (ext11) there.
