@@ -2,6 +2,8 @@
  .set W_FILM, 0
  .set W_EXTRAS, 0
  .set W_SALL, 1                   /* film test 8 (owner): Saturation always shows all colours (no single-colour page) */
+ .set W_HSL, 1                    /* film test 10 (owner): pages in HSL order, Hue -> Saturation -> Luminance, opening on
+                                   * Hue; their dial labels Hue / Saturation / Luminance (0: S -> H -> L, open on S) */
 /* OM-3 1.1 editor test 1 (= probe 2 + on-camera Hue/Light pages + card save).
  * Probe 2 part: looks in a heap block, loaded from C:\OM3MOD\BUNDLES.BIN when valid.
  * Adapted from Caduceus SD loader v3 (cakelesscoder/caduceus-ep7, Apache-2.0): same state encoding,
@@ -1077,7 +1079,8 @@ k_go:
  mov EMAGIC,d0
  mov d0,(EMARK,a2)
 6:
- call k_ad,[a2],8                 /* (16,sp) = the ALL state (2201 + k), as the stock INFO handler reads it */
+ jmp k_open                       /* film test 10: the INFO that opens the wheel goes to Hue; else k_ad, then k_6b */
+k_6b:
  mov (16,sp),d0
  cmp 255,d0
  beq k_all
@@ -1103,7 +1106,17 @@ k_all:
 k_step:
  mov (20,sp),a2
  movbu (AXIS,a2),d0               /* S -> H -> L -> Extras -> (Film, when LOOKS.BIN loaded) -> S; v0.24 film test 7
-                                   * (owner): Extras and Film hidden (W_EXTRAS / W_FILM 0): S -> H -> L -> S */
+                                   * (owner): Extras and Film hidden (W_EXTRAS / W_FILM 0): S -> H -> L -> S; film test 10
+                                   * (W_HSL): H -> S -> L -> H */
+ .if W_HSL
+ mov 1,d1
+ cmp 0,d0
+ beq 8f
+ mov 2,d1
+ cmp 1,d0
+ beq 8f
+ clr d1
+ .else
  mov 2,d1
  cmp 0,d0
  beq 8f
@@ -1127,6 +1140,7 @@ k_step:
  mov 4,d1
  .else
  clr d1
+ .endif
  .endif
 8:
  movbu d1,(AXIS,a2)
@@ -2786,7 +2800,7 @@ ei_page:
 3:
  movbu d3,(AXIS,a2)
  mov d3,d0
- call gd_set,[d2,a2],8
+ call ei_open,[d2,a2],8           /* film test 10: P+EOPEN = 1, then gd_set */
 9:
  ret [],4
 
@@ -3064,7 +3078,11 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set LVB, 832                     /* P+LVB: the shooting screen's "FILM N" block (fl_lvp, film test 9) */
 .set LV_SLOT, 2800                /* one picture there (build.py checks the largest) */
 .set LV_BLK, 128 + 4 * LV_SLOT
-.set SAT_LEN, 8 + ((SLS + 3) & ~3) + SGS
+.set SAT_SG, 8 + ((SLS + 3) & ~3)  /* the block: (0) SLS, (4) SGS, (8) the Saturation label, then the guide, the Hue */
+.set SAT_HL, SAT_SG + ((SGS + 3) & ~3)  /* label, the Luminance label, each 4-aligned (as fl_slab.. in films.inc) */
+.set SAT_LL, SAT_HL + ((HLS + 3) & ~3)
+.set SAT_LEN, SAT_LL + LLS
+.set EOPEN, 689                   /* P+EOPEN: 1 from the wheel's init to its first INFO (film test 10) */
 .set LDESC, 0xa4cf61f8            /* the wheel's "Color" dial label, 70 x 30 */
 .set LSTOCK_P, 0xa4cf5c70
 .set LSTOCK_S, 1415
@@ -5972,6 +5990,49 @@ fl_pmod:
  * wheel turns all colours on, as stock: in the emulator, setting it before the stock init made that INFO step on to Hue);
  * its pictures there say Saturation: the "Color" dial label and the "Color Select [INFO]" guide (gd_sel). */
 
+/* film test 10 (owner): "the HSL wheels in HSL order, Light renamed Luminance, so they read hue, saturation and
+ * luminance". INFO: Hue -> Saturation (all colours) -> Luminance -> Hue (k_step), and the wheel opens on Hue: the INFO
+ * that opens it reaches ed_info right after the init (emulator), so ei_open marks the init and k_open sends that
+ * first INFO to Hue (all colours off first, as the stock INFO handler does from all colours). */
+
+/* ei_open: `call ei_open,[d2,a2],8` from ei_page (gd_set's frame), a2 = P, d0 = page: P+EOPEN = 1, then gd_set. */
+ei_open:
+ .if W_HSL
+ mov 1,d1
+ movbu d1,(EOPEN,a2)
+ .endif
+ jmp gd_set
+
+/* k_open <- jmp from ed_info (its frame: (4) / (8) its d1 / a1, (16) value, (20) P = a2, a3 the editor): the first
+ * INFO after the init -> all colours off when on, then k_step from Light (-> Hue). Else k_ad and on (k_6b). */
+k_open:
+ .if W_HSL
+ movbu (EOPEN,a2),d0
+ cmp 0,d0
+ beq 5f
+ clr d0
+ movbu d0,(EOPEN,a2)
+ call k_ad,[a2],8
+ cmp 0,d0
+ bne 2f
+ mov (16,sp),d0
+ cmp 255,d0
+ bne 2f
+ mov a3,a0                        /* all colours on: the stock INFO handler turns them off */
+ mov 0x9014,d0
+ mov (4,sp),d1
+ mov (8,sp),a1
+ calls stock_info                 /* keeps d2/d3/a2/a3 */
+2:
+ mov (20,sp),a2
+ mov 1,d0
+ movbu d0,(AXIS,a2)
+ jmp k_step
+5:
+ .endif
+ call k_ad,[a2],8
+ jmp k_6b
+
 /* k_sall <- jmp from k_step's end (ed_info's frame: (4) / (8) its d1 / a1, (16) value, (20) P, a3 the editor): on
  * Saturation with one colour, the stock INFO handler turns all colours on (as from the single page). -> d0 1. */
 k_sall:
@@ -6106,25 +6167,43 @@ gd_sel:
  movhu (4,a0),d1
  cmp 30,d1
  bne 5f
- mov a3,d2
- add 8,d2                         /* ours */
- mov (16,a0),d1
- cmp d2,d1
- beq 1f
+ mov (16,a0),d1                   /* the camera's or ours (inside the block)? */
  cmp LSTOCK_P,d1
- bne 5f                           /* someone else's: leave it */
+ beq 1f
+ mov a3,d2
+ sub d2,d1
+ cmp SAT_LEN,d1
+ bcc 5f                           /* someone else's: leave it */
 1:
  mov (4,sp),d0
+ mov SAT_SG,d2                    /* Saturation's ends at its guide: its size */
+ add -8,d2
+ mov 8,d3
  cmp 0,d0
- bne 2f
- mov (a3),d1
- mov d1,(12,a0)
- mov d2,(16,a0)
- bra 5f
-2:
+ beq 3f
+ .if W_HSL
+ mov HLS,d2                       /* film test 10: Hue, Luminance */
+ mov SAT_HL,d3
+ cmp 2,d0
+ beq 3f
+ mov LLS,d2
+ mov SAT_LL,d3
+ cmp 1,d0
+ beq 3f
+ .endif
  mov LSTOCK_S,d1
  mov d1,(12,a0)
  mov LSTOCK_P,d1
+ mov d1,(16,a0)
+ bra 5f
+3:
+ cmp 8,d3
+ bne 4f
+ mov (a3),d2                      /* Saturation: its size from the block */
+4:
+ mov d2,(12,a0)
+ mov a3,d1
+ add d3,d1
  mov d1,(16,a0)
 5:
  mov SDESC,a0                     /* the "Color Select [INFO]" guide */

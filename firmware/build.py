@@ -180,6 +180,7 @@ def build(defaults, testfile, out):
     lab, gd = mkicons.sat_pictures()             # film test 8: the wheel's Saturation page (gd_sel swaps them in)
     slab = mkicons.encode11(bytes(lab.flatten().tolist()), 70, 30)
     sgd = mkicons.encode11(bytes(gd.flatten().tolist()), 180, 50)
+    hlab, llab = (mkicons.encode11(bytes(a.flatten().tolist()), 70, 30) for a in mkicons.hsl_labels())
     fwp, fwi, boxes, dw = mkicons.sp_parts()     # the quick menu's "FILM n" (fl_sp draws it)
     assert fwp.shape[0] == mkicons.SPH == 48 and boxes[0].shape[1] % 2 == 0
     (out / 'films.inc').write_text('.balign 4\nfl_top:\n' + db(mkicons.pack4(mkicons.film_top())) + 'fl_tops:\n' +
@@ -196,6 +197,8 @@ def build(defaults, testfile, out):
                                    'fl_sdw:\n' + db(bytes(dw)) + ' .balign 4\n' +
                                    'fl_slab:\n' + db(slab) + f'.set SLS, {len(slab)}\n .balign 4\n' +
                                    'fl_sgd:\n' + db(sgd) + f'.set SGS, {len(sgd)}\n .balign 4\n' +
+                                   'fl_hlab:\n' + db(hlab) + f'.set HLS, {len(hlab)}\n .balign 4\n' +
+                                   'fl_llab:\n' + db(llab) + f'.set LLS, {len(llab)}\n .balign 4\n' +
                                    'fl_lvw:\n' + db(mkicons.pack4(lvw)) + 'fl_lvd:\n' + ''.join(db(mkicons.pack4(x)) for x in lvboxes) +
                                    'fl_lvdw:\n' + db(bytes(lvdw)) + f'.set LVWB, {lvw.shape[1]}\n.set LVWI, {lvwi}\n'
                                    f'.set LVDB, {lvboxes[0].shape[1]}\n.set LV_GAP, {mkicons.LV_GAP}\n.set LV_DGAP, {mkicons.LV_DGAP}\n .balign 2\n')

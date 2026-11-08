@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GUIDES.BIN for the OM-3 colour editor: the guide pictures shown under the wheel ("Hue [INFO]", "Light [INFO]",
+"""GUIDES.BIN for the OM-3 colour editor: the guide pictures shown under the wheel ("Hue [INFO]", "Luminance [INFO]",
 "Extras [INFO]", "Film [INFO]"), drawn from scratch (no camera graphics are copied).
 
 Picture: 175 x 50 px, OM-3 OSD palette indices (0 clear, 7 dark edge, 9 faint rim, 10 white fill, 11 light edge,
@@ -129,13 +129,15 @@ def encode11(px, w, h):
     return bytes(out)
 
 
-PAGES = ['Hue', 'Light', 'Extras', 'Film']               # streams 1..4 = pages Hue, Light, Extras (v0.20; before: WB/BW), Film (v0.20; before: Looks, Profiles)
+PAGES = ['Hue', 'Luminance', 'Extras', 'Film']           # streams 1..4 = pages Hue, Luminance (v0.24 film test 10; before: Light), Extras (v0.20; before: WB/BW), Film (v0.20; before: Looks, Profiles)
+SKIP = {'Film'}   # v0.24 film test 10: the Film page is hidden (editor.s W_FILM 0): its stream left out (length 0, the
+                  # camera's own guide there) to keep GUIDES.BIN under the loader's 16 KB with "Luminance"; put it back with the page
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--preview')
     a = ap.parse_args()
     imgs = [build(t) for t in PAGES]
-    st = [encode11(bytes(i.flatten()), W, H) for i in imgs]
+    st = [b'' if t in SKIP else encode11(bytes(i.flatten()), W, H) for t, i in zip(PAGES, imgs)]
     body = struct.pack('<HHIIII', W, H, *map(len, st[:4]))
     for s in st: body += s + bytes((-len(s)) % 4)
     body += bytes((-len(body)) % 4)

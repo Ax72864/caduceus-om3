@@ -329,6 +329,17 @@ def sat_pictures():
     return lab, gd
 
 
+def hsl_labels():
+    """Film test 10 (owner: "hue, saturation and luminance"): the wheel's "Color" dial label on the Hue and Luminance
+    pages, 70 x 30 as sat_pictures' label (card/mklabels.py style)."""
+    import sys, pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'card'))
+    import mklabels
+    out = [np.asarray(mklabels.build(t), dtype=np.uint8) for t in ('Hue', 'Luminance')]
+    assert all(a.shape == (30, 70) for a in out)
+    return out
+
+
 def pack4(a):
     """palette rows, two pixels a byte (low nibble first)"""
     f = a.flatten().tolist()

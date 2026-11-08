@@ -1316,4 +1316,17 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     (sf_stock, stock_left, stock_right, rsp_back). Never taken so far (the code block is always loaded).
   - Not verified: in the emulator the up arrow on the wheel's Saturation page (all colours) still shows one colour
     (it goes through the Picture Mode screen, not the editor's records). The front dial: no emulator key.
+  - Package film test 9: E1479999.BIN d44c4c76…, GUIDES.BIN b05673ac…, LABELS.BIN 903af75b…. On the owner's card,
+    checked by checksum. Camera result: pending.
+- Film test 10 (emulator only), owner: "the HSL wheels in HSL order, Light renamed Luminance: hue, saturation,
+  luminance". W_HSL 1 in editor.s:
+  - INFO: Hue -> Saturation (all colours) -> Luminance -> Hue (k_step; the old order under W_HSL 0).
+  - Opens on Hue: in the emulator the INFO that opens the wheel reaches ed_info right after the init (that is why the
+    wheel used to open on "all colours"). ei_page now calls ei_open (P+EOPEN 689 = 1, then gd_set); k_open, at
+    ed_info's ALL check, sends that first INFO to Hue (all colours off first when on).
+  - The dial label: "Hue" / "Saturation" / "Luminance" in place of the camera's "Color" on the three pages (gd_sel;
+    mkicons hsl_labels, the SATB block now Saturation label, guide, Hue label, Luminance label). The guide: "Luminance
+    [INFO]" (card/mkguides.py PAGES). GUIDES.BIN would pass the loader's 16 KB (16844 B), so the hidden Film page's
+    guide stream is left out (length 0; mkguides SKIP): 14144 B.
+  - Emulator: opens on Hue, then Saturation All, Luminance, Hue; arrows move the colour on Hue.
 
