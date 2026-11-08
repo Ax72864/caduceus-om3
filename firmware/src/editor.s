@@ -345,7 +345,7 @@ t_go:
  movbu d0,(DIRTY,a2)              /* one attempt per batch of edits, whatever happens */
  call ed_save,[d2,d3,a2,a3],24
  movbu d0,(STATUS,a2)
- call pf_save,[d2,d3,a2,a3],24
+ call fl_save,[d2,d3,a2,a3],24    /* v0.24: EDITS.BIN (when changed), then pf_save */
 t_out:
  ret [d2,d3,a2,a3],36
 
@@ -2216,6 +2216,7 @@ pf_put:
  mov (LPTR,a2),a3
  add d0,a3
 1:
+pf_put1:                          /* v0.24 (fl_sw): (4) a0, (8) a1, (12) k set, a3 = the record to load */
  mov a3,(16,sp)
  mov d2,d0
  asl 6,d0
@@ -3024,7 +3025,10 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set ROW, 80                      /* fl_mk's row buffer (100 B) in its frame */
 .set SROW, 64                     /* fl_sp's row buffer (160 B) in its frame */
 .set SP_SLOT, 2600                /* fl_scp: one quick-menu picture */
-.set SP_BLK, 16 + 4 * 24 + 16 + 4 * SP_SLOT
+.set TWO, 16 + 4 * 24 + 16 + 4 * SP_SLOT   /* the EDITS.BIN image in the P+TORG block */
+.set TW_LEN, 16 + 24 * 68         /* EDITS.BIN: 'OM3T' | total | crc | valid mask | 24 x {record 64, check 4} */
+.set TWMAGIC, 0x54334d4f
+.set SP_BLK, TWO + TW_LEN + 4     /* + 2 flag bytes: EDITS.BIN to save, skip one capture (film reset) */
 .set ST_N0, 0x7f30                /* ST_N0 + j: film j's cell label "FILM" over its number in the list (1, 2, ...) */
 .set FL_SB, NF * 68               /* strings after the LOOKS.BIN copy: 20 names, then 20 cell labels (UTF-16, 17 shorts) */
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
@@ -4124,6 +4128,16 @@ fl_l2:                            /* the strip */
  .short 3, IC_FM0 + \j
  .long 0x6154b480
  .endr
+fl_rtab:                          /* the held-OK reset's {picture mode, row count, rows} table (stock 0x61536324, 8
+                                   * entries: MONO / COLOR 1-4), then the films with COLOR's rows (film test 4) */
+ .space 8 * 8
+ .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+ .short FV0 + \j, 1
+ .long fl_rrow
+ .endr
+fl_rrow:                          /* a film: only the wheel row gets the event (its handler loads the whole film; the
+                                   * stock rows would put their own settings back to the factory values after it) */
+ .long 5397
 fl_cvt:                           /* COLOR k -> picture mode value */
  .byte 54, 55, 56, 64
 .balign 2
@@ -4185,7 +4199,7 @@ fl_has:
  ret [],0
 
 /* fl_get <- sl_get (CALLS: d0 id, a0 facade, a1 out != 0, mdr return): FLB + j -> 1 / 0 (film j there?); 901 asked
- * by the list builder (0x611b32ae) or the left column (0x611d1869) while COLOR k has look n -> FV0 + 5k + n - 1.
+ * by the list builder (0x611b32ae) while COLOR k has look n -> FV0 + 5k + n - 1.
  * Anything else: back to sl_gb with the registers as at entry. Stores: (a1), own frame. */
 fl_get:
  movm [d2,d3,a2,a3],(sp)
@@ -4212,11 +4226,8 @@ fl_get:
  bra 7f
 1:
  mov (4,sp),d1
- cmp 0x611b32ae,d1
- beq 2f
- cmp 0x611d1869,d1
- bne 8f
-2:
+ cmp 0x611b32ae,d1                /* only the list builder (film test 4: 0x611d1869 is the "COLOR k changed?" check */
+ bne 8f                           /* behind the Reset guide and the held-OK reset: it must see COLOR k) */
  mov 111,d0
  call sget,[],4                   /* the picture mode (keeps d2, d3, a2, a3) */
  call fl_k,[],0
@@ -4885,6 +4896,50 @@ fl_mk:
  mov d0,(4,a1)
  mov d0,(8,a1)
  mov d0,(12,a1)
+ mov a0,(56,sp)                   /* the block */
+ add TWO,a0
+ mov a0,(60,sp)                   /* the EDITS.BIN image: none valid until read */
+ mov d0,(12,a0)
+ movbu d0,(TW_LEN,a0)
+ movbu d0,(TW_LEN + 1,a0)
+ mov tw_path,a0
+ mov sd_mode,a1
+ call fopen,[],4
+ cmp 0,a0
+ beq 95f
+ mov a0,(64,sp)
+ mov (60,sp),a0
+ mov 1,d0
+ mov TW_LEN,d1
+ mov (64,sp),a1
+ call fread,[d2,d3,a2,a3],24
+ mov d0,d2
+ mov (64,sp),a0
+ call fclose,[d2,a2,a3],16
+ cmp TW_LEN,d2
+ bne 94f
+ mov (60,sp),a3
+ mov (a3),d0
+ cmp TWMAGIC,d0
+ bne 94f
+ mov (4,a3),d0
+ cmp TW_LEN,d0
+ bne 94f
+ mov -1,d0
+ mov a3,a0
+ add 12,a0
+ mov TW_LEN - 12,d1
+ call sd_crc,[d2,d3],12
+ not d0
+ mov (8,a3),d1
+ cmp d0,d1
+ beq 95f
+94:
+ mov (60,sp),a0                   /* a bad file: nothing valid */
+ clr d0
+ mov d0,(12,a0)
+95:
+ mov (56,sp),a0
  mov (52,sp),a2
  mov a0,(TORG,a2)
 99:
@@ -4938,29 +4993,179 @@ fl_ic:
  movm (sp),[d2,d3,a2,a3]
  retf [],0
 
-/* ------------------------------------------------------------------ v0.24 film test 3
+/* ------------------------------------------------------------------ v0.24 film test 3 / 4
+ * Changes are kept apart from the films as built: EDITS.BIN (C:\OM3MOD, written by the camera) holds record r = film j
+ * (r = j, 0..19) or COLOR k's own settings (r = 20 + k), LOOKS.BIN format, each with a check (films: CRC-32 of the
+ * LOOKS.BIN record it was made from; a film rebuilt in the Control Panel drops its old changes) and a valid bit.
  * fl_sw: `call fl_sw,[d2,d3,a2,a3],40` in place of pf_put's call (same frame and registers: a2 = P, d2 = k, d3 = the
- * new look 0..5, a0 / a1 the SetValue's inner / mode), d0 = the old look 0..5: a film being left keeps its changes
- * (pf_cap: COLOR k now -> its record, P dirty, so LOOKS.BIN is written at the next half-press), then pf_put. */
+ * new look 0..5, a0 / a1 the SetValue's inner / mode), d0 = the old look 0..5. What COLOR k is leaving (its own
+ * settings for look 0, else that film) <- COLOR k now (pf_capto), then the new one loads: its saved changes when
+ * valid, else the film as built (pf_put; look 0 without saved settings: the factory settings). A film reset skips
+ * one capture (flag). Locals (4) a0, (8) a1, (12) new, (16) old / r, (20) the record (the rest of the frame is
+ * pf_put's). Stores: the EDITS.BIN image, P+DIRTY, then pf_put's. */
 fl_sw:
- cmp 1,d0
- blt 1f
- cmp 5,d0
- bgt 1f
- cmp d0,d3
- beq 1f
  mov a0,(4,sp)
  mov a1,(8,sp)
  mov d3,(12,sp)
- mov d0,d3
- call pf_cap,[d2,d3,a2,a3],28     /* keeps d2, a2 */
+ mov d0,(16,sp)
+ mov (TORG,a2),a3
+ cmp 0,a3
+ bne 10f
+ jmp 90f
+10:
+ add TWO,a3
+ cmp 0,d0                         /* 1. what is being left */
+ bne 2f
+ movbu (TW_LEN + 1,a3),d1
+ cmp 0,d1
+ beq 1f
+ clr d1
+ movbu d1,(TW_LEN + 1,a3)         /* a film reset: no capture */
+ bra 5f
+1:
+ mov d2,d0
+ add 20,d0                        /* COLOR k's own */
+ bra 3f
+2:
+ cmp 5,d0
+ bgt 5f
+ mov d2,d1
+ asl2 d1
+ add d2,d1
+ add d1,d0
+ add -1,d0                        /* film j */
+3:
+ mov d0,(16,sp)
+ mov d0,d1
+ asl 6,d1
+ asl2 d0
+ add d0,d1
+ add 16,a3
+ add d1,a3
+ mov a3,(20,sp)
+ call pf_capto,[d2,d3,a2,a3],28   /* keeps d2, d3, a2, a3 */
+ clr d0
+ mov (16,sp),d1
+ cmp 20,d1
+ bcc 4f
+ mov (LPTR,a2),a0                 /* check: the film as built */
+ asl 6,d1
+ add d1,a0
+ add 32,a0
+ mov -1,d0
+ mov 64,d1
+ call sd_crc,[d2,d3],12
+ not d0
+4:
+ mov (20,sp),a3
+ mov d0,(64,a3)
+ mov (TORG,a2),a3
+ add TWO,a3
+ mov (16,sp),d0
+ mov 1,d1
+ asl d0,d1
+ mov (12,a3),d0
+ or d1,d0
+ mov d0,(12,a3)                   /* valid */
+ mov 1,d0
+ movbu d0,(TW_LEN,a3)             /* EDITS.BIN to save */
+ movbu d0,(DIRTY,a2)
+5:                                /* 2. what loads */
+ mov (12,sp),d3
+ mov (TORG,a2),a3
+ add TWO,a3
+ cmp 0,d3
+ bne 6f
+ mov d2,d0
+ add 20,d0
+ bra 7f
+6:
+ mov d2,d0
+ asl2 d0
+ add d2,d0
+ add d3,d0
+ add -1,d0
+7:
+ mov d0,(16,sp)
+ mov 1,d1
+ asl d0,d1
+ mov (12,a3),d0
+ and d1,d0
+ beq 90f
+ mov (16,sp),d0
+ mov d0,d1
+ asl 6,d1
+ asl2 d0
+ add d0,d1
+ add 16,a3
+ add d1,a3
+ mov a3,(20,sp)
+ mov (16,sp),d1
+ cmp 20,d1
+ bcc 8f
+ mov (LPTR,a2),a0                 /* a film: only changes made from this build of it */
+ asl 6,d1
+ add d1,a0
+ add 32,a0
+ mov -1,d0
+ mov 64,d1
+ call sd_crc,[d2,d3],12
+ not d0
+ mov (20,sp),a3
+ mov (64,a3),d1
+ cmp d0,d1
+ bne 90f
+8:
+ mov (20,sp),a3
+ mov d2,(12,sp)
+ jmp pf_put1
+90:
  mov (12,sp),d3
  mov (4,sp),a0
  mov (8,sp),a1
- mov 1,d0
- movbu d0,(DIRTY,a2)
-1:
  jmp pf_put
+
+/* fl_save: `call fl_save,[d2,d3,a2,a3],24` in place of pf_save's call (ed_trig, a2 = P): EDITS.BIN when changed
+ * (header, CRC, written whole), then pf_save. Locals (4) the handle. */
+fl_save:
+ mov (TORG,a2),a3
+ cmp 0,a3
+ beq 9f
+ add TWO,a3
+ movbu (TW_LEN,a3),d0
+ cmp 0,d0
+ beq 9f
+ clr d0
+ movbu d0,(TW_LEN,a3)
+ mov TWMAGIC,d0
+ mov d0,(a3)
+ mov TW_LEN,d0
+ mov d0,(4,a3)
+ mov -1,d0
+ mov a3,a0
+ add 12,a0
+ mov TW_LEN - 12,d1
+ call sd_crc,[d2,d3],12
+ not d0
+ mov d0,(8,a3)
+ mov tw_path,a0
+ mov ed_m_w,a1
+ call fopen,[],4
+ cmp 0,a0
+ beq 9f
+ mov a0,(4,sp)
+ mov a0,a1
+ mov TW_LEN,d1
+ mov 1,d0
+ mov a3,a0
+ call fwrite,[d2,d3,a2,a3],24
+ mov (4,sp),a0
+ call fclose,[d2,a2,a3],16
+9:
+ jmp pf_save
+tw_path:
+ .asciz "C:\\OM3MOD\\EDITS.BIN"
+ .balign 2
 
 /* fl_film: `call fl_film,[],0`, a2 = P, d2 = COLOR k -> d0 = film j 0..19 when COLOR k holds look n 1..5 (whether it
  * is there: fl_has), else -1. Uses d0, d1, a1. */

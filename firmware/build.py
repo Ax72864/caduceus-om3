@@ -288,6 +288,14 @@ def build(defaults, testfile, out):
     assert struct.unpack_from('<3I', m, o(0x6152f8dc)) == (901, 4, 0x6152f850)
     assert bytes(m[o(0x6152f850):o(0x6152f850) + 80]) == bytes(m[o(sy['fl_rec']):o(sy['fl_rec']) + 80])
     struct.pack_into('<II', m, o(0x6152f8e0), 24, sy['fl_rec'])
+    # film test 4: the held-OK reset sends its event to the rows listed for the selected picture mode (0x611c3c07
+    # `add 0x61536324,d1` over 8 entries, bound `cmp 8,d1` at 0x611c3cae): fl_rtab = the stock 8 + the films
+    assert struct.unpack_from('<HHI', m, o(0x61536324) + 8 * 4) == (54, 5, 0x61536310)
+    m[o(sy['fl_rtab']):o(sy['fl_rtab']) + 64] = m[o(0x61536324):o(0x61536324) + 64]
+    assert bytes(m[o(0x611c3c07):o(0x611c3c0d)]) == b'\xfc\xc1' + struct.pack('<I', 0x61536324)
+    struct.pack_into('<I', m, o(0x611c3c09), sy['fl_rtab'])
+    assert bytes(m[o(0x611c3cae):o(0x611c3cb0)]) == b'\xa5\x08'
+    m[o(0x611c3caf)] = 8 + 20
     NR_IT, VF_IT, BK_IT, WH_IT, AB_IT, GM_IT = 5394, 5389, 5386, 5385, 5384, 5383
     def sw_add(base, n, item, target):
         key = item - 6
@@ -410,7 +418,8 @@ def make_xblock(out, sy, xtag):
     PC-relative to the firmware), check that relocating the first link gives the second, and pack the block."""
     ext = dict(getter=0x60063380, facade=0x60b8696a, fopen=0x608d4d22, fread=0x608d4eb7, fclose=0x608d4d2b, malloc=0x60024068, sd_crc=sy['sd_crc'], gd_mode=sy['gd_mode'], VDESC=0xa4cf688c, VSTOCK_P=0xa4cf6210, VSTOCK_S=1660, AXIS=684, EDK=687, fx_tail=sy['fx_tail'], fx_back=sy['fx_back'], lv_skip=sy['lv_skip'], c11_ret=0x60504edb,
                STATE=sy['STATE'], HMAX=sy['HMAX'], POOL=sy['POOL'], MAGIC=sy['MAGIC'], BUFIDX=0x604afdf9, SF_ENT=0x604be2aa, LOCK=0x60075f73, UNLOCK=0x60075fbc, WINMAP=0x60071018, FLUSH=0x60070e69, free=0x6002409a,
-               SEL=0x6052cf39, fwrite=0x608d4da9, PF_CAPTO=sy['pf_capto'], PF_CAP=sy['pf_cap'], E_LK=sy['e_lk'], E_RET=sy['e_ret'], E_RST=sy['e_rst'], REFRESH=0x611b20ea, XT_TAB=sy['xt_tab'], EMARK=680, EMAGIC=0x45334d4f)
+               SEL=0x6052cf39, fwrite=0x608d4da9, PF_CAPTO=sy['pf_capto'], PF_CAP=sy['pf_cap'], E_LK=sy['e_lk'], E_RET=sy['e_ret'], E_RST=sy['e_rst'], REFRESH=0x611b20ea, XT_TAB=sy['xt_tab'], EMARK=680, EMAGIC=0x45334d4f,
+               FL_HAS=sy['fl_has'], FACADE=0x60b8696a, TWO=sy['TWO'], TW_LEN=sy['TW_LEN'], FV0=sy['FV0'])
     subprocess.run([P.AS, '-o', out / 'xb.o', XB_SRC], check=True)
     imgs, xs = [], None
     for L in (XB_L1, XB_L2):

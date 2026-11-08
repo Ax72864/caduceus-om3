@@ -8,8 +8,9 @@
 > a film switches to the COLOR it is stored on and loads it. Film test 1 **camera-tested** (2026-11-08). Film test 2
 > (emulator only): the list cells read **FILM 1, FILM 2, …** in the same style as COLOR 1–4, with the film's name as
 > the big title (owner: "looks great"). Film test 3 (emulator only): the quick menu shows **FILM n** and the film's
-> name, and changes to a film are kept when you switch away. Known: choosing COLOR n itself loads its factory
-> settings. Notes: `research/NOTES.md` ("v0.24 film list").
+> name, and changes to a film are kept when you switch away. Film test 4 (emulator only): COLOR 1–4 keep their own
+> settings too, changes live in a new camera-written file `EDITS.BIN` (the films as built stay in `LOOKS.BIN`), and
+> OK held resets COLOR 1–4 to factory and a film to how it was built. Notes: `research/NOTES.md` ("v0.24 film list").
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 

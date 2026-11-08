@@ -1192,5 +1192,31 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     +1 -> +2, FILM 2, back to FILM 1: +2; after a half-press LOOKS.BIN record 0 +41 = 2.
   - ext11 38.6 KB of 64 KB.
 - Package film test 3: E1479999.BIN 590db381…, GUIDES.BIN 7830515b…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Not flashed (owner asked for test 4 first).
+- Film test 4 (emulator only): owner: COLOR 1-4 keep what you adjust; OK held resets COLOR 1-4 and FILM 1-20 to their
+  defaults.
+  - Changes are kept apart from the films as built: new card file EDITS.BIN (docs/FORMATS.md), written by the camera
+    at the half-press save when changed (fl_save in place of pf_save's call in ed_trig), read when the films load (fl_mk;
+    bad size / magic / CRC -> nothing valid). Record r = film j (0..19) or COLOR k's own settings (20 + k), LOOKS.BIN
+    record format (pf_capto / pf_put), + a check (films: CRC-32 of the LOOKS.BIN record it came from, so a film
+    rebuilt in the Control Panel drops its old changes). LOOKS.BIN is no longer changed by switching (only by the
+    Film page's OK-held save, which makes that the film's new default, and the selection bytes).
+  - fl_sw (every look switch, list or Film page): COLOR k leaving look 0 -> its own settings saved (r = 20 + k);
+    leaving film j -> its changes saved (r = j); then the new one loads from its record when valid (pf_put1: pf_put
+    from any record), else as built (pf_put; look 0 without own settings = factory).
+  - OK held with a film selected: the camera sends the reset to the rows listed for the selected picture mode
+    (table 0x61536324, 8 entries {mode, count, rows}: MONO / COLOR 1-4; read at 0x611c3c07, bound `cmp 8` at
+    0x611c3cae); a film value had no entry, so nothing happened and the OK release left the screen. build.py points it
+    at fl_rtab (the stock 8 + 20 films with one row, 5397, the wheel: the stock rows 7 / 8 / 5398 / 5399 would put
+    their settings to factory after the film loads). xb_lkh (0xf881) with COLOR k on film j: j's changes dropped,
+    the next capture skipped, look 0, then facade SetValue(901, FV0 + j) -> fl_set / fl_sw load the film as built.
+    OK held on COLOR n itself: the stock factory reset, as before.
+  - Bug found: 0x611d1869 (made to read the film value in test 1) is the "COLOR k changed?" check behind the Reset
+    guide and the held-OK reset, not the left column; it reads COLOR k again.
+  - Emulator: COLOR 1 Contrast +2 -> FILM 1 (+1 as built) -> back to COLOR 1: +2; FILM 1 to +2, FILM 2, back: +2; OK
+    held on FILM 1: +1, stays on FILM 1, its record equal to LOOKS.BIN's; COLOR 1 still +2 after. OK held on COLOR 1
+    (+2): 0, '*' gone, still 0 after a film. EDITS.BIN written (CRC ok), LOOKS.BIN records unchanged.
+  - Owner's card: LOOKS.BIN / BUNDLES.BIN equal their .NEW copies (saving healthy; the older FAT dates are cosmetic).
+- Package film test 4: E1479999.BIN 8408e7a8…, GUIDES.BIN 11962fd4…, LABELS.BIN 903af75b…. On the owner's card,
   checked by checksum. Camera result: pending.
 

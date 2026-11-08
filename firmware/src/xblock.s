@@ -472,6 +472,7 @@ xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  rets
 
  .set P_LIDX, 712
+ .set P_TORG, 820                 /* v0.24: the film block (EDITS.BIN image at +TWO) */
 /* xb_lkh (v0.21): jmp from lk_hold in ed_event's frame (after its movm and add -28: (12,sp) cursor id 2197 + k,
  * (24,sp) the event, a2 = P, a3 = the parent, d2 = 4). OK held on the wheel (0x903e) with a look selected for COLOR k:
  * that look <- COLOR k now (pf_cap), P dirty (written at the next half-press), -> ed_event e_lk (children re-read,
@@ -482,6 +483,58 @@ xb_lkh:
  movbu (24,sp),d0
  cmp 0x81,d0                      /* 0xf881: OK held on "COLOR n" = the whole-profile reset: also no look selected */
  bne 1f
+ mov (12,sp),d3                   /* v0.24: COLOR k holding a film that is there -> the film as built */
+ add -2197,d3
+ mov a2,a0
+ add d3,a0
+ movbu (P_LIDX,a0),d0
+ extb d0
+ cmp 1,d0
+ blt 20f
+ cmp 5,d0
+ bgt 20f
+ mov (P_TORG,a2),d1
+ cmp 0,d1
+ beq 20f
+ mov d3,d1
+ asl2 d1
+ add d3,d1
+ add d0,d1
+ add -1,d1                        /* film j */
+ mov d1,(16,sp)
+ mov d1,d0
+ mov (P_LPTR,a2),a0
+ call FL_HAS,[],0
+ cmp 0,d0
+ beq 20f
+ mov (P_TORG,a2),a0               /* its saved changes dropped, the next capture skipped, look 0 ... */
+ add TWO,a0
+ mov (16,sp),d0
+ mov 1,d1
+ asl d0,d1
+ not d1
+ mov (12,a0),d0
+ and d1,d0
+ mov d0,(12,a0)
+ mov 1,d0
+ movbu d0,(TW_LEN,a0)
+ movbu d0,(TW_LEN + 1,a0)
+ mov a2,a0
+ add d3,a0
+ clr d0
+ movbu d0,(P_LIDX,a0)
+ call FACADE,[],4                 /* ... then SetValue(901, the film): fl_set -> fl_sw loads it as built */
+ mov (a0),a2
+ mov (4,a2),a2
+ mov (16,sp),d0
+ add FV0,d0
+ mov d0,a1
+ clr d1
+ mov 901,d0
+ calls (a2)
+ mov 1,d3
+ jmp E_RET
+20:
  mov (12,sp),d0
  add -2197,d0
  mov a2,a0
