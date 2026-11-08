@@ -1,6 +1,7 @@
 /* v0.24 film test 7 (owner): the Extras page is hidden and its Glow / Clarity and Art Effect read 0 wherever they act
  * (XB_FX 0); the code stays: set XB_FX 1 to bring them back. */
  .set XB_FX, 0
+ .set XB_SHG, 0                   /* film test 11's Shading check before the camera grain (1: on; rebooted on the camera) */
 /* Caduceus for OM-3 v0.20 test 5: the Extras code block (appended to GUIDES.BIN, our own code).
  *
  * Runs from its heap buffer (uncached pool, as the camera's malloc returns), relocated in place by entry 0. Linked at
@@ -128,6 +129,8 @@ xb_cap:
  movbu (53,a1),d0                 /* plain: Grain 0..3 -> the camera's own grain (xb_dev) */
  cmp 0,d0
  beq 1f
+ .if XB_SHG                        /* v0.24 camera (owner): High grain rebooted the camera; the likely cause is the
+                                   * stock settings getter (AGET) called from the capture pipeline here: off */
  add -12,sp                       /* film test 11 (owner, camera): with Shading on, the camera's grain (its MONO route)
  mov d1,(4,sp)                     * made the picture monochrome -> then the CPU grain, as with an Art Effect */
  mov a1,(8,sp)
@@ -144,6 +147,7 @@ xb_cap:
  extb d0
  cmp 0,d0
  bne 2f
+ .endif
  movbu (53,a1),d0
  cmp 3,d0
  bls 4f
