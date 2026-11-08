@@ -19,7 +19,8 @@
 > own smaller FILM n picture, and the wheel's Saturation page always shows all colours, labelled "Saturation". Film
 > test 9 (emulator only): holding OK on a film keeps the list where it was, the wheel's reset on a film goes back to
 > the film as built, and the shooting screen shows FILM n. Film test 10 (emulator only): the wheel's pages in HSL
-> order, Hue → Saturation → Luminance (Light renamed), opening on Hue. Notes:
+> order, Hue → Saturation → Luminance (Light renamed), opening on Hue. Film test 11 (emulator only): Saturation
+> adjusts one colour at a time, and Grain with Shading no longer turns the picture monochrome. Notes:
 > `research/NOTES.md` ("v0.24 film list").
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).

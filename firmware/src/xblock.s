@@ -127,6 +127,23 @@ xb_cap:
  movbu (53,a1),d0                 /* plain: Grain 0..3 -> the camera's own grain (xb_dev) */
  cmp 0,d0
  beq 1f
+ add -12,sp                       /* film test 11 (owner, camera): with Shading on, the camera's grain (its MONO route)
+ mov d1,(4,sp)                     * made the picture monochrome -> then the CPU grain, as with an Art Effect */
+ mov a1,(8,sp)
+ mov 63153,d0                     /* the effective COLOR profile 1..4 (xb_slot found it) */
+ clr d1
+ mov 0,a0
+ call getter,[d2,d3],12
+ extbu d0
+ add 911,d0                       /* its Shading: setting 912 + k */
+ call AGET,[],4
+ mov (4,sp),d1
+ mov (8,sp),a1
+ add 12,sp
+ extb d0
+ cmp 0,d0
+ bne 2f
+ movbu (53,a1),d0
  cmp 3,d0
  bls 4f
  mov 3,d0

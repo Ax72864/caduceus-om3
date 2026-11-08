@@ -1341,4 +1341,19 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     land on other fields. Also possible: tone (Blacks / Whites LUT) and wb_get, both slot-dependent.
   - Asked the owner for two shots: a factory COLOR with only Shading, and a film with Shading. Colour + mono -> the
     slot-dependent hooks (start with hl_pp); both mono -> a logging build.
+  - Owner found it (camera): mono only with Shading AND Grain; Shading alone stays colour. So the camera grain route
+    (xb_gt -> xb_dev: request key 11 -> 12, the MONO pipeline) plus the camera's Shading = monochrome.
+- Film test 11 (emulator only; capture not emulated):
+  - Grain: xb_cap's plain-COLOR path reads the COLOR's Shading (setting 912 + k, stock getter 0x603f039d = AGET) and,
+    when it is not 0, takes the CPU grain route (Soft Focus passes, flag 0x80) as with an Art Effect (camera-tested
+    with effects in gt3) instead of the camera's MONO grain route. Camera check pending: Shading + Grain in colour.
+  - Wheel (owner): the Saturation page should adjust one colour at a time, not all at once. Film test 8 had it the
+    wrong way round: the owner's "hide the color select wheel" meant the all-colours page, whose guide reads "Color
+    Select [INFO]". W_SONE 1: Saturation shows one colour; INFO from it goes on to Luminance (no all-colours step);
+    entering it turns all colours off when on (k_sall); the reset leaves one colour (e_sall off). Its guide: our
+    "Saturation [INFO]" in the camera's "Color All [INFO]" descriptor (gd_set's stock path -> gd_s0; gd_sel puts the
+    camera's back first so gd_set accepts the descriptor); the all-colours guide swap is off. The Saturation guide is
+    now 175 x 50 (mkicons sat_pictures).
+  - Emulator: Hue -> Saturation (one colour, "Saturation ■", "Saturation INFO") -> right stays one colour ->
+    Luminance -> Hue -> Saturation; OK held on Saturation stays one colour.
 

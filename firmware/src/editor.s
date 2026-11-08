@@ -2,6 +2,10 @@
  .set W_FILM, 0
  .set W_EXTRAS, 0
  .set W_SALL, 1                   /* film test 8 (owner): Saturation always shows all colours (no single-colour page) */
+ .set W_SONE, 1                   /* film test 11 (owner): the Saturation page shows ONE colour at a time (film test 8
+                                   * misread "hide the color select wheel": the page the owner meant was the all-colours
+                                   * one, whose guide reads "Color Select [INFO]"); all colours never come on (0: film
+                                   * test 8, all colours always). Needs W_SALL 1 */
  .set W_HSL, 1                    /* film test 10 (owner): pages in HSL order, Hue -> Saturation -> Luminance, opening on
                                    * Hue; their dial labels Hue / Saturation / Luminance (0: S -> H -> L, open on S) */
 /* OM-3 1.1 editor test 1 (= probe 2 + on-camera Hue/Light pages + card save).
@@ -1086,9 +1090,11 @@ k_6b:
  beq k_all
  mov (20,sp),a2
  movbu (AXIS,a2),d1
+ .if W_SONE == 0
  cmp 0,d1
  beq f_no                         /* Saturation, single: stock INFO turns ALL on */
- bra k_step
+ .endif
+ bra k_step                       /* film test 11 (W_SONE): from one colour on to the next page */
 k_all:
  mov a3,a0                        /* ALL on: the stock INFO handler turns it off */
  mov 0x9014,d0
@@ -1440,11 +1446,7 @@ gd_set:
  cmp 0,d1
  bne 5f
 4:
- mov GSTOCK_S,d1
- mov d1,(12,a0)
- mov GSTOCK_P,d1
- mov d1,(16,a0)
- bra 9f
+ jmp gd_s0                        /* film test 11: Saturation -> our guide, else the camera's */
 2:
  mov (16,a1),d1
  mov d1,(12,a0)
@@ -6046,7 +6048,11 @@ k_sall:
  bne 9f                           /* no value: leave it */
  mov (16,sp),d0
  cmp 255,d0
+ .if W_SONE
+ bne 9f                           /* film test 11: all colours on -> off (one colour) */
+ .else
  beq 9f
+ .endif
  mov a3,a0
  mov 0x9014,d0
  mov (4,sp),d1
@@ -6061,7 +6067,7 @@ k_sall:
  * result, a3 the editor): the held-OK reset on Saturation left one colour (the reset sets the cursor) -> the stock INFO
  * handler turns all colours on again. -> d0 = the result. */
 e_sall:
- .if W_SALL
+ .if W_SALL && (W_SONE == 0)          /* film test 11: one colour: the reset's own state (one colour) stays */
  mov (24,sp),d0
  cmp 0x903e,d0
  bne 9f
@@ -6147,6 +6153,28 @@ rs_pos:
 1:
  jmp rsp_back
 
+/* gd_s0 <- jmp from gd_set's stock-guide path (its frame, `ret [d2,a2],8`), a0 = GDESC, a2 = P, d0 = page: on
+ * Saturation (W_SONE: one colour, the camera's "Color All [INFO]") our "Saturation [INFO]" (P+SATB), else the camera's. */
+gd_s0:
+ .if W_SALL && W_SONE
+ cmp 0,d0
+ bne 8f
+ mov (SATB,a2),d1
+ cmp 0,d1
+ beq 8f
+ add SAT_SG,d1
+ mov d1,(16,a0)
+ mov SGS,d1
+ mov d1,(12,a0)
+ ret [d2,a2],8
+8:
+ .endif
+ mov GSTOCK_S,d1
+ mov d1,(12,a0)
+ mov GSTOCK_P,d1
+ mov d1,(16,a0)
+ ret [d2,a2],8
+
 /* gd_sel: `call gd_sel,[d2,d3,a2,a3],24` from gd_set, a2 = P, d0 = page (0 Saturation, -1 the stock pictures): our
  * "Saturation" label / guide (P+SATB: (0) label size, (4) guide size, (8) label, then the guide 4-aligned) into the
  * camera's "Color" label and "Color Select [INFO]" descriptors on Saturation, the camera's own on any other page; only
@@ -6157,6 +6185,19 @@ gd_sel:
  mov (SATB,a2),a3
  cmp 0,a3
  beq 9f
+ .if W_SONE                       /* film test 11: our guide in the "Color All [INFO]" descriptor -> the camera's again, */
+ mov GDESC,a0                     /* so gd_set treats it as stock (gd_s0 puts ours back on Saturation) */
+ mov (16,a0),d1
+ mov a3,d2
+ add SAT_SG,d2
+ cmp d2,d1
+ bne 11f
+ mov GSTOCK_S,d1
+ mov d1,(12,a0)
+ mov GSTOCK_P,d1
+ mov d1,(16,a0)
+11:
+ .endif
  mov LDESC,a0                     /* the "Color" label */
  movhu (a0),d1
  cmp 14,d1
@@ -6206,6 +6247,9 @@ gd_sel:
  add d3,d1
  mov d1,(16,a0)
 5:
+ .if W_SONE                       /* film test 11: no all-colours page, its guide stays the camera's */
+ bra 9f
+ .endif
  mov SDESC,a0                     /* the "Color Select [INFO]" guide */
  movhu (a0),d1
  cmp 14,d1

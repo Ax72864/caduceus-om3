@@ -318,14 +318,14 @@ def film_lcell(n, top=None, digs=None):
 def sat_pictures():
     """Film test 8 (owner): the wheel's Saturation page always shows all colours, so its pictures say "Saturation":
     the dial label (70 x 30, in place of the camera's "Color" there; card/mklabels.py, the Extras labels' style) and
-    the guide (180 x 50, in place of "Color Select [INFO]"; card/mkguides.py with 5 clear columns on the left, so the
-    INFO key sits where the camera's does). Returns two palette arrays."""
+    the guide (film test 8: 180 x 50 for "Color Select [INFO]"; film test 11: 175 x 50 for "Color All [INFO]", the
+    Saturation page now showing one colour at a time; card/mkguides.py). Returns two palette arrays."""
     import sys, pathlib
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'card'))
     import mklabels, mkguides
     lab = np.asarray(mklabels.build('Saturation'), dtype=np.uint8)
-    gd = np.hstack([np.zeros((50, 5), dtype=np.uint8), np.asarray(mkguides.build('Saturation'), dtype=np.uint8)])
-    assert lab.shape == (30, 70) and gd.shape == (50, 180)
+    gd = np.asarray(mkguides.build('Saturation'), dtype=np.uint8)   # film test 11: 175 x 50, for the one-colour page
+    assert lab.shape == (30, 70) and gd.shape == (50, 175)
     return lab, gd
 
 
