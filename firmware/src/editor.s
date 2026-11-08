@@ -3204,6 +3204,10 @@ st_get:
  bcc 3f
  jmp fl_str
 3:
+ cmp 203,d0                       /* v0.24 film test 5: "Picture Mode" (the row's title) on the Picture Mode screen */
+ bne 5f
+ jmp fl_pm
+5:
  cmp 2755,d0                      /* v0.24: "Color Profile 1..4" -> the film's name when COLOR k holds one */
  beq 4f
  cmp 2756,d0
@@ -5535,3 +5539,41 @@ fl_tt:
  mov (8,sp),a2
  add 16,sp
  jmp st_stk
+
+/* fl_pm <- st_get (the string getter's frame: ret [d2],8; d0 = 203, "Picture Mode"): on the Picture Mode screen (GUI
+ * state 0x0418: the two bytes at the pointer 0x603713a4) with COLOR k selected, the title of what is selected, as when
+ * it is chosen in the list (fl_tt: the film's name, or "Color Profile k"); the stock title moved to "Picture Mode"
+ * when the row was reached with up / down (owner, film test 4: "the name goes away"). Else as stock. */
+fl_pm:
+ mov (0x603713a4),a0
+ cmp 0,a0
+ beq 9f
+ movbu (a0),d1
+ cmp 4,d1
+ bne 9f
+ movbu (1,a0),d1
+ cmp 0x18,d1
+ bne 9f
+ add -4,sp
+ mov 111,d0
+ call sget,[],4                   /* the picture mode */
+ add 4,sp
+ mov d0,d1
+ mov 2755,d0
+ cmp 54,d1
+ beq 8f
+ mov 2756,d0
+ cmp 55,d1
+ beq 8f
+ mov 2757,d0
+ cmp 56,d1
+ beq 8f
+ mov 4769,d0
+ cmp 64,d1
+ bne 9f
+8:
+ jmp fl_tt
+9:
+ mov 203,d0
+ jmp st_stk
+

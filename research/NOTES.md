@@ -1218,5 +1218,14 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     (+2): 0, '*' gone, still 0 after a film. EDITS.BIN written (CRC ok), LOOKS.BIN records unchanged.
   - Owner's card: LOOKS.BIN / BUNDLES.BIN equal their .NEW copies (saving healthy; the older FAT dates are cosmetic).
 - Package film test 4: E1479999.BIN 8408e7a8…, GUIDES.BIN 11962fd4…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08): "nearly perfect" -> COLOR 1-4 / film keeping and the held-OK
+  resets camera-tested; one quirk: after adjusting a film the title read "Picture Mode" (owner photo: FILM 6, Blk -1).
+- Film test 5 (emulator only): the title on the Picture Mode row is the item's own title, string 203 "Picture Mode",
+  whenever the row is reached with up / down (stock behaviour for COLOR n as well); the selection's title (l0) shows
+  only when the value is changed. st_get -> fl_pm: string 203 while the GUI state is 0x0418 (Picture Mode screen; the
+  state is the two bytes at the pointer 0x603713a4 on the OM-3 = E-P7's 0x60368b88, from om-emu src/fw/ports.mjs)
+  and COLOR k is selected -> fl_tt with "Color Profile k" (the film's name when it holds one). Emulator: after an edit
+  and up to the row: "Color Profile 1" on COLOR 1, "SoftOff" on FILM 1; the quick menu still FILM 1 / SoftOff.
+- Package film test 5: E1479999.BIN 0c3a0925…, GUIDES.BIN 7d301e73…, LABELS.BIN 903af75b…. On the owner's card,
   checked by checksum. Camera result: pending.
 
