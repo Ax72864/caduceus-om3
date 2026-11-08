@@ -1437,7 +1437,7 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   and the write is not seen; not checked). Workaround for run 3: change a Picture Mode row (and back) before the first
   half-press and again before the last one, so the editor's own change flag triggers both saves.
 - fg2 camera run 3 (2026-11-08, owner; Blk changed and back before the first and the last half-press): GLOG.BIN
-  written (camera-tested log; kept outside the repo). Photos PB081439..441 (JPEG ~15 MB) before the save, 442 (~9 MB,
+  written (camera-tested log; the decoded text of the fg3 logs is research/grain/fg3_logs.txt, decoder research/grain/glog3.py; the GLOG.BIN files stay off the repo). Photos PB081439..441 (JPEG ~15 MB) before the save, 442 (~9 MB,
   the size of run 2's COLOR + Grain High) after it. Header: 4 marks, 44 records, 1952 selector calls. Slots alternate
   capture keys 0x00680201 / 0x00020000:
   - key 0x00680201 (context key 0x01020068: Art 0x68 variant II, presumably Grainy Film II): kind-3 0xf002 x4, then
