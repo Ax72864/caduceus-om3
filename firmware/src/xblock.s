@@ -203,7 +203,8 @@ xb_wt:
 /* property reads (s_nr): the site's `call getter,[d2,d3],12` frame, d0 key, d1, a0 as for the getter. v0.22: key
  * 0x8119 (Sharpness, the capture read): the COLOR slot's Sharp (slot +54, -5..+2) after the real read, -5 sent as -7
  * (fully off for any picture-key class). Key 0x9719
- * (stills Noise Filter; capture and Exif sites): NR 1..3 -> the real read, then d0 = 0 Standard / -1 Low / -2 Off.
+ * (stills Noise Filter; capture and Exif sites): NR 1..4 -> the real read, then d0 = 0 Standard / -1 Low / -2 Off /
+ * +1 High.
  * Key 0x8c21 (Shading Comp., sid 61; capture and lens-request sites, v0.21): VigFix 1 -> the real read, then d0 = 0
  * (Off, a stock value). Otherwise the getter as stock. */
 xb_nr:
@@ -231,9 +232,9 @@ xb_nr:
 4:
  cmp 38681,d1
  bne 5f
- movbu (51,a1),d0                 /* NR 1..3 */
+ movbu (51,a1),d0                 /* NR 1..4 */
  add -1,d0
- cmp 3,d0
+ cmp 4,d0
  bcc 9f
  mov xb_nm,a1
  movbu (d0,a1),d0
@@ -1150,7 +1151,7 @@ xb_reloc:                         /* a2 = P (x_load) */
 /* ---- dial labels: OM3MOD/LABELS.BIN v2 = 'OM3V' | u32 total | u32 CRC-32 of bytes 12.. | u32 n (24) | n bitmaps
  * 30 rows x 9 bytes (70 px, MSB first, 1 = letter fill). One heap copy (XL_FILE B) and one 2 KB stream buffer; the
  * label is drawn and encoded (OSD type 11, 70 x 30) only when it changes. */
- .set XL_N, 26
+ .set XL_N, 27
  .set XL_BM, 270
  .set XL_FILE, 16+XL_N*XL_BM
  .set XL_OUT, 2048
@@ -1518,16 +1519,16 @@ xb_lc:
 xb_ll:
  .long 0                          /* its length */
 xb_vt:                            /* slice 1..10: slot byte, mode, first label, max */
- .byte 51,0,0,3                   /* 1 NR: Camera, Std, Low, Off */
- .byte 49,1,4,0                   /* 2 Glow (-), Clarity (+), Glow/Clar. (0) */
- .byte 26,1,7,0                   /* 3 Blue (-), Amber (+), A-B (0) */
- .byte 27,1,10,0                  /* 4 Magenta (-), Green (+), G-M (0) */
- .byte 50,0,13,5                  /* 5 Art Effect: Off, Star Light, Pin Hole, (Off), White Edge, Frame */
- .byte 47,2,19,0                  /* 6 Blacks */
- .byte 48,2,20,0                  /* 7 Whites */
- .byte 52,0,21,1                  /* 8 VigFix: Camera, Off (v0.21) */
- .byte 53,2,23,0                  /* 9 Grain (the readout shows the level) */
- .byte 54,3,24,0                  /* 10 Sharp (v0.22): Sharp (the readout shows -4..+2), Sharp Off at -5 */
+ .byte 51,0,0,4                   /* 1 NR: Camera, Std, Low, Off, High (v0.23) */
+ .byte 49,1,5,0                   /* 2 Glow (-), Clarity (+), Glow/Clar. (0) */
+ .byte 26,1,8,0                   /* 3 Blue (-), Amber (+), A-B (0) */
+ .byte 27,1,11,0                  /* 4 Magenta (-), Green (+), G-M (0) */
+ .byte 50,0,14,5                  /* 5 Art Effect: Off, Star Light, Pin Hole, (Off), White Edge, Frame */
+ .byte 47,2,20,0                  /* 6 Blacks */
+ .byte 48,2,21,0                  /* 7 Whites */
+ .byte 52,0,22,1                  /* 8 VigFix: Camera, Off (v0.21) */
+ .byte 53,2,24,0                  /* 9 Grain (the readout shows the level) */
+ .byte 54,3,25,0                  /* 10 Sharp (v0.22): Sharp (the readout shows -4..+2), Sharp Off at -5 */
 xb_lpath:
  .asciz "C:\\OM3MOD\\LABELS.BIN"
  .balign 2
@@ -1560,7 +1561,7 @@ xb_gl:                            /* Glow 1..5 -> w (Caduceus bloom LUT) */
  .hword 942, 881, 819, 748, 666
 xb_cl:                            /* Clarity 1..5 -> w > 1024 on combiner 11 (unsharp mask, Caduceus) */
  .hword 1100, 1180, 1260, 1340, 1420
-xb_nm:                            /* NR 1 Std, 2 Low, 3 Off -> the stills Noise Filter value */
- .byte 0, -1, -2
+xb_nm:                            /* NR 1 Std, 2 Low, 3 Off, 4 High (v0.23) -> the stills Noise Filter value (stock -2..+1) */
+ .byte 0, -1, -2, 1
  .balign 4
 xb_end:

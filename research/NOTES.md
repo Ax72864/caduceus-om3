@@ -889,3 +889,26 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   selectable, set (with the NR mapping table) all checked in the emulator with Sharp -3, Grain Medium, VigFix -1,
   NR -2 / +1. GetValue of the rows' own ids (5394, 5389) is answered on COLOR 1-4 only.
 - Package test 5: E1479999.BIN 8cfa7096…, GUIDES.BIN b8c1ea1a…, LABELS unchanged. Camera result: pending.
+
+### Test 6: Noise Filter and Shading Comp. as choice rows; NR High (emulator only)
+- Owner (test 5 feedback): the slider icons were confusing; Shading Comp. should be Off / On and Noise Filter a
+  choice row like Film Grain, with the camera's real Noise Filter levels Off / Low / Standard / High and the grain
+  icons reversed (grain High = NR Off; owner's choice after seeing that the icons' words stay the grain's).
+- Rows are now choice rows built like Film Grain Effect (item 5400): item entries {id, title, labels, n, 0, icons,
+  n, 0, icons 2, n}; option lists {value, 4 string | 3 icon, id, 0x6154b480}. Values are the camera's: Noise Filter
+  -2 Off, -1 Low, 0 Standard, +1 High (titles 1845/1848/1846/1847 "Noise Filter Off/: Low/: Standard/: High");
+  Shading Comp. 0 Off, 1 On, title stays 254, icons 358 "Off" / 480 "On" (camera icons, owner-approved).
+- Film Grain's cases that ask its own id (0x611c308a) are replaced for our rows by stubs (CHC macro -> ch_id: our id
+  per picture mode, then the stock case after its call: 0x611c2446 / 25a1 / 2705 / 2867 / 2d03). Left column: lc_nr
+  / lc_vf = 0x611d0b57 with our id instead of 998 -> 0x611d0b72. Other switches: 5400's (generic) targets. The slider
+  hooks for these rows (bar ends, readouts, Shading-type cell) are gone.
+- Look NR value 4 = High (new): stills Noise Filter +1 (stock range -2..+1: the capture read sets min -2, max 1 right
+  after reading key 0x9719). xb_nm gets +1; Extras wheel NR 0..4 with a new "NR High" label (LABELS.BIN n 27, all later
+  first-label indexes +1). A look with NR Camera shows the camera's own Noise Filter on the row (getter 0x60063380,
+  key 38681); choosing on the row writes the look.
+- Control Panel (webapp, this branch only; not published): NR Camera / Off / Low / Std / High; High needs the new
+  "v0.23 (test builds)" firmware choice, else it is written as Std. E-P7 packs write high as standard.
+- Emulator: both rows step through their choices, titles follow, the left column shows the chosen icon, Camera shows
+  the camera's Standard; Sharpness and Film Grain unchanged. Not checked in the emulator: the Extras wheel's label
+  pictures (the emulator does not draw them) and photos.
+- Package test 6: E1479999.BIN b0588834…, GUIDES.BIN a645f5c0…, **LABELS.BIN 903af75b… (new, must go with it)**.

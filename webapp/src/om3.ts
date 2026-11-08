@@ -29,12 +29,12 @@ export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5
 /** v0.22 Sharp (Extras sector 10): the camera's own numbers, 0 = its normal; -3..-4 softer than its menu goes, -5 = Off. */
 export const SHARP = { lo: -5, hi: 2 } as const;
 export const sharpLabel = (v: number) => (v <= SHARP.lo ? 'Off' : v > 0 ? `+${v}` : String(v));
-/** Firmware the LOOKS.BIN is for: 22 = v0.22 or later (Sharp), 21 (Grain, VigFix), 20 = v0.20 and older / PROFILES.BIN. */
-export type Fw = 20 | 21 | 22;
+/** Firmware the LOOKS.BIN is for: 23 = v0.23 (NR High), 22 = v0.22 (Sharp), 21 (Grain, VigFix), 20 = v0.20 and older / PROFILES.BIN. */
+export type Fw = 20 | 21 | 22 | 23;
 /** v0.21 Grain: Glow / Clarity or an Art Effect send it the slow way (about 3 s per photo, no fast sequential shooting). */
 export const slowGrain = (l: Look) => !!l.film_grain && (!!l.effect || (l.art_effect !== 'off' && l.art_effect !== 'blur'));
 /** v0.20 Extras: NR byte <-> the Caduceus look's noise reduction (grain field), Art Effects the OM-3 renders. */
-export const OM3_NR: Grain[] = ['off', 'standard', 'fine', 'film'];          // 0 Camera, 1 Std, 2 Low, 3 Off
+export const OM3_NR: Grain[] = ['off', 'standard', 'fine', 'film', 'high'];  // 0 Camera, 1 Std, 2 Low, 3 Off, 4 High (v0.23)
 export const OM3_ARTS = ['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const;
 export type Bank = (Look | null)[][];          // [COLOR 0..3][profile 0..4]
 export interface BankFile { schema: 'caduceus-om3-bank/1'; name: string; bank: Bank }
@@ -102,7 +102,7 @@ export function validateProfile(l: Look, at?: { k: number; v: number }): Problem
   if (l.effect && !(Number.isInteger(l.effect.strength) && l.effect.strength >= 1 && l.effect.strength <= OM3.fx && (l.effect.type === 'bloom' || l.effect.type === 'clarity')))
     add('effect', 'Glow / Clarity: strength 1..5.');
   if (!(OM3_ARTS as readonly string[]).includes(l.art_effect)) add('art_effect', 'Art Effect: Off, Star Light, Pin Hole, White Edge or Frame.');
-  if (!OM3_NR.includes(l.grain)) add('grain', 'NR: Camera, Std, Low or Off.');
+  if (!OM3_NR.includes(l.grain)) add('grain', 'NR: Camera, Off, Low, Std or High.');
   if (l.film_grain !== undefined && !(Number.isInteger(l.film_grain) && l.film_grain >= 0 && l.film_grain <= OM3.grain)) add('film_grain', 'Grain: Off, Low, Med or High.');
   return p;
 }
@@ -131,7 +131,8 @@ export function profilesBin(bank: Bank, fw: Fw = 22): Uint8Array {
     s8(44, l.tone.shadows); s8(45, l.tone.midtones); s8(46, l.tone.highlights);
     s8(47, !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength);
     b[o + 48] = Math.max(0, (ARTS as readonly string[]).indexOf(l.art_effect === 'blur' ? 'off' : l.art_effect));
-    b[o + 49] = Math.max(0, OM3_NR.indexOf(l.grain));
+    const nr = Math.max(0, OM3_NR.indexOf(l.grain));
+    b[o + 49] = nr === 4 && fw < 23 ? 1 : nr;                                     // High needs v0.23: Standard before
     if (fw >= 21) { b[o + 50] = l.lens_correction ? 0 : 1; b[o + 51] = Math.max(0, Math.min(OM3.grain, l.film_grain ?? 0)); }
     if (fw >= 22) s8(52, Math.max(SHARP.lo, Math.min(SHARP.hi, sharp)));
     const nm = l.name.replace(/[^\x20-\x7e]/g, '?').slice(0, 15);
