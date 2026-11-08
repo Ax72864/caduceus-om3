@@ -16,7 +16,7 @@ import { recipeCard } from './targets/recipe';
 import { previewToneLut } from './tone';
 import {
   BANK_SCHEMA, COLORS, OM3, OM3_ARTS, OM3_NAME_MAX, PER, om3NameProblem, blankProfile, defaultBank, emptyBank, fromOldLookLab, parseBank, profilesBin, readProfiles,
-  SHARP, sharpLabel, slowGrain, toOm3, validateBank, type Bank, type Fw,
+  SHARP, sharpLabel, slowGrain, monoGrain, toOm3, validateBank, type Bank, type Fw,
 } from './om3';
 import { namesBin } from './om3names';
 import { FILMS, FILM_GROUPS, filmLook, filmOf, type Film, type FilmGroup } from './om3films';
@@ -1404,8 +1404,10 @@ function renderOm3Editor(l: Look) {
   // v0.21: Grain with Glow / Clarity or an Art Effect takes the camera's slow route: say so next to the Grain setting
   const grainWarn = h('p', { class: 'warn', role: 'status' });
   const showWarn = () => {
-    grainWarn.replaceChildren(...(slowGrain(l) ? [h('b', {}, 'Slower saving: '), 'with Shading (or, on firmware v0.20–v0.22, Glow / Clarity or an Art Effect), the camera adds this grain in a slower way. Each photo takes about 3 seconds longer to save, and fast sequential (burst) shooting isn\'t possible with this look. Grain on its own, or with the other settings, is as fast as normal.'] : []));
-    grainWarn.hidden = !slowGrain(l);
+    grainWarn.replaceChildren(
+      ...(monoGrain(l) ? [h('b', {}, 'Black and white: '), 'Shading together with grain turns the photo black and white on the camera. Looks saved for firmware v0.24.1 or later get Shading 0 (the camera hides its Shading row there). '] : []),
+      ...(slowGrain(l) ? [h('b', {}, 'Slower saving (firmware v0.20–v0.22): '), 'with Glow / Clarity or an Art Effect, the camera adds this grain in a slower way. Each photo takes about 3 seconds longer to save, and fast sequential (burst) shooting isn\'t possible with this look. Grain on its own, or with the other settings, is as fast as normal.'] : []));
+    grainWarn.hidden = !slowGrain(l) && !monoGrain(l);
   };
   const fxChanged = () => { changed(); showWarn(); };
   showWarn();
@@ -1452,7 +1454,7 @@ function renderOm3Editor(l: Look) {
       h('span', { class: 'lbl' }, 'Camera settings'),
       setting('Contrast', OM3.contrast, () => l.advice.contrast ?? 0, (x) => { l.advice.contrast = x; }, 'The camera\'s Contrast for this look'),
       setting('Shading', OM3.shading, () => l.vignette, (x) => { l.vignette = x; }, 'The camera\'s Shading (− darker corners, + lighter)'),
-      h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast and Shading (Picture Mode menu items) to these.')),
+      h('p', { class: 'help' }, 'Choosing the look on the camera sets its Contrast and Shading (Picture Mode menu items) to these. Firmware v0.24.1 hides Shading for now (with grain it turns the photo black and white): looks saved for it get Shading 0.')),
     h('div', { class: 'group' },
       h('span', { class: 'lbl' }, 'Extras (camera firmware v0.20; lens correction and Grain v0.21; Sharp v0.22; NR High v0.23)'),
       seg('NR', [['off', 'Camera'], ['film', 'Off'], ['fine', 'Low'], ['standard', 'Std'], ['high', 'High']], l.grain,
@@ -1476,7 +1478,7 @@ function renderOm3Editor(l: Look) {
       return h('div', { class: 'srow plain', title: 'The camera\'s sharpening for photos with this look' }, h('span', { class: 'sname' }, 'Sharp'), inp, out);
     })(),
       h('p', { class: 'help' }, 'The camera\'s sharpening for photos with this look, in its own numbers: 0 is its normal, +1 and +2 crisper, −1 to −4 softer (−3 and −4 go past the camera\'s menu) and Off (−5) no sharpening at all. Extras sector 10 (firmware v0.22, which takes the Sharpness item off the COLOR screen). Shown roughly in the preview.')),
-    h('p', { class: 'warn' }, h('b', {}, 'Firmware v0.24: '), 'Glow / Clarity and Art Effects are switched off on the camera for now (with them, grain saves slowly). They stay in the look and work again on v0.20–v0.22.'),
+    h('p', { class: 'warn' }, h('b', {}, 'Firmware v0.24.1: '), 'Glow / Clarity and Art Effects are switched off on the camera for now (with them, grain saves slowly). They stay in the look and work again on v0.20–v0.22.'),
     effectPanel(l, fxChanged),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
       h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; fxChanged(); } },
@@ -1683,7 +1685,7 @@ function om3ExportDialog() {
   const fwSel = h('select', { onchange: (e: Event) => {
     fw = Number((e.target as HTMLSelectElement).value) as Fw;
     try { localStorage.setItem('caduceus.om3.fw', String(fw)); } catch { /* storage blocked */ }
-  } }, h('option', { value: '23', selected: fw === 23 }, 'v0.24 or later'), h('option', { value: '22', selected: fw === 22 }, 'v0.22'), h('option', { value: '21', selected: fw === 21 }, 'v0.21'), h('option', { value: '20', selected: fw === 20 }, 'v0.20 or older'));
+  } }, h('option', { value: '23', selected: fw === 23 }, 'v0.24.1 or later'), h('option', { value: '22', selected: fw === 22 }, 'v0.22'), h('option', { value: '21', selected: fw === 21 }, 'v0.21'), h('option', { value: '20', selected: fw === 20 }, 'v0.20 or older'));
   const cardFiles = async () => [{ name: 'LOOKS.BIN', data: looksBin() }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
   const busy = async (b: HTMLButtonElement, f: () => Promise<void>) => { b.disabled = true; try { await f(); } catch (e) { toast((e as Error).message, 'err'); } finally { b.disabled = probs.length > 0; } };
   const looks = O.bank.flat().filter(Boolean) as Look[];
