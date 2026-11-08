@@ -10,6 +10,9 @@
 >
 > Package: `DCOLYMP/E1479999.BIN` sha256 `3e154b3c6d49e305…`, `OM3MOD/GUIDES.BIN` `5a73b4bb6ab5beea…` (build with
 > `firmware/build.py`), with the v0.21 `LABELS.BIN`. Emulator: 39 passes, 0 bad, no gap changed.
+>
+> **Camera result (2026-11-07): the 64 KiB extension loads.** `GAPTEST.BIN` (GXR2) was written; all 16248 pattern
+> words intact after photos and a video. Details: `research/NOTES.md` on `main`.
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main).
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
