@@ -19,9 +19,11 @@ new features have room; more can be opened up the same way.
 ## Next steps
 
 1. **Finish the picture-mode sliders** (branch
-   [`feature/v0.23-alpha-profile-sliders`](../../../tree/feature/v0.23-alpha-profile-sliders)): Sharp (Sharpness slider) and
-   Grain (the camera's Film Grain Effect row) work on the camera (test 4, 2026-11-07). Next: the other Extras settings,
-   then a release.
+   [`feature/v0.23-alpha-profile-sliders`](../../../tree/feature/v0.23-alpha-profile-sliders)). Camera-tested (test 7):
+   Sharpness, Film Grain, Vignette Correction (Off / On) and Noise Filter (Off / Low / Std / High, High new for looks).
+   Test 8 (Blacks, Whites) is with the owner. Next: A-B / G-M as the camera's own WB grid (research started, see the
+   notebook), then a release. Glow / Clarity and Art Effect stay on the Extras wheel (owner's call: they interact
+   with Grain).
 2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
    E-P7. (Split toning research done 2026-11-07: see the table; building it can now use the proven 64 KiB.)
 3. **White balance mode and exposure compensation per look:** quick wins that make a look behave like a roll.
@@ -78,6 +80,8 @@ Newest first. Full details in [`research/NOTES.md`](../research/NOTES.md).
 
 | Date | Topic | Finding |
 |---|---|---|
+| 2026-11-08 | Picture-mode sliders (camera) | Tests 5-7: new choice rows Vignette Correction (Off / On, camera icons, our own title) and Noise Filter (Off / Low / Std / High in the camera's font; the look's NR gains High, also on the Extras wheel and in the Control Panel on the branch). Test 7 works on the camera. Test 8 adds Blacks / Whites sliders (emulator only). |
+| 2026-11-08 | WB grid (analysis) | The camera's A-B / G-M grid is the WB± row of its own WB screen, a bespoke screen; three ways to port it are in the notebook. |
 | 2026-11-07 | Picture-mode sliders (camera) | Test 4 works on the camera: the code runs from the proven 64 KiB; Sharp on the Sharpness slider (−5 to +2, ends line up, 0 on the centre mark) and Grain on the camera's own Film Grain Effect row (Off / Low / Med / High) on COLOR 1–4, in step with the Extras wheel. |
 | 2026-11-07 | Firmware space (camera) | 64 KiB probe: section 6 loads 64 KiB more; all 16248 pattern words intact after photos and a video. New features can use that space. |
 | 2026-11-07 | Firmware space (camera) | Probe on the camera: moving section 6's loaded end by 4 KiB works; the code there ran, its pattern stayed intact over 45 checks (photos, video and Wi-Fi in use), and nothing wrote into any gap. Gaps hold no file bytes unless a loaded end is moved. |

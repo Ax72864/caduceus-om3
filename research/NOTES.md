@@ -861,3 +861,104 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   unchanged) and touch on the row.
 - Strings: the camera's text table is in decoded section 01 (UTF-16LE); index at file offset 0x24a0ac, u32 entries
   minus 0xa4f22020 = the string's file offset (256 Sharpness, 91 Contrast, 227 Saturation, 4809 Shading Effect).
+
+### Test 5: two new rows, Noise Filter and Shading Comp. (emulator only)
+- New Picture Mode rows on COLOR 1-4 (the camera has no row for either): **Noise Filter** (string 188, the camera's
+  name for its NR) = slot +51 as a slider -2..+1 (-2 Off, -1 Low, 0 Camera, +1 Standard), and **Shading Comp.**
+  (string 254) = VigFix slot +52 as a slider -1..0 (-1 Off, 0 Camera). Row order: Picture Mode, wheel, H&S, Shading,
+  Shading Comp., Sharpness, Contrast, Noise Filter, Film Grain Effect.
+- Item ids NR_IT 5394, VF_IT 5389 (not in the item table; picked so their keys miss the row switches); bar ids
+  NRB 0x7e10 + k, VFB 0x7e20 + k.
+- How a row exists (all in the column code 0x611c2xxx / 0x611d0xxx):
+  - Item table 0x6154c2a8 (17 x 40 B: id, +4/+16 title struct {4, string id, 0x6154b480}, +26 left-column icon) is
+    searched at 0x611d040d and 0x611d0846 (count 17): both now take it_tab (stock 17 + ours, count 19).
+  - Nine hash switches on item - 6 ({key, target} x 32 or 16, linear probing, key 0 = empty): 0x61536a2c / b2c / c2c
+    / d2c (row actions; item 7's targets are generic), 0x61536f2c (the bar object's setting id: our nr_f / vf_f give
+    NRB/VFB + k), 0x615510cc (bar setup, generic), 0x615511cc (generic), 0x6155124c (left-column cell: item 7's =
+    type-4 cell, GetValue(item id); Shading Comp. uses lc_vf = Shading's type-5 cell with its own id), 0x6155134c
+    (generic). build.py inserts ours at the first empty slot of each probe chain.
+  - Bar setup 0x611d0f99: hook_bar at 0x611d1035 gives our rows their value (GetValue(item)) and ends; sl_dot keeps 0
+    on the centre mark (NR: 155 px below 0, 310 above; VigFix: the two ends). Readout lookups 0x611d1697 / 0x611d1708:
+    hook_rda / hook_rdb send our rows to the 11-entry -5..+5 tables. The left column's id lookup (gr_lc) gives our
+    per-mode ids for the enable check.
+  - Left-column icons: type-4 cells have only 1 S, 2 Contrast, 3 Saturation (others draw the S); type-5 cells draw
+    Shading's icon. Noise Filter uses the S for now (no fitting icon); Shading Comp. the Shading icon.
+- Lesson: `jmp 0x611c2ce8` in our code assembles as a relative jump by that amount (emulator trap at 0xc211b75a).
+  Name stock addresses in editor.ld and jump to the names.
+- Facade handlers reworked by class (REAL macro, LOWCNT): Sharp / Grain / NR / VigFix: count, value by index,
+  selectable, set (with the NR mapping table) all checked in the emulator with Sharp -3, Grain Medium, VigFix -1,
+  NR -2 / +1. GetValue of the rows' own ids (5394, 5389) is answered on COLOR 1-4 only.
+- Package test 5: E1479999.BIN 8cfa7096…, GUIDES.BIN b8c1ea1a…, LABELS unchanged. Camera result: pending.
+
+### Test 6: Noise Filter and Shading Comp. as choice rows; NR High (emulator only)
+- Owner (test 5 feedback): the slider icons were confusing; Shading Comp. should be Off / On and Noise Filter a
+  choice row like Film Grain, with the camera's real Noise Filter levels Off / Low / Standard / High and the grain
+  icons reversed (grain High = NR Off; owner's choice after seeing that the icons' words stay the grain's).
+- Rows are now choice rows built like Film Grain Effect (item 5400): item entries {id, title, labels, n, 0, icons,
+  n, 0, icons 2, n}; option lists {value, 4 string | 3 icon, id, 0x6154b480}. Values are the camera's: Noise Filter
+  -2 Off, -1 Low, 0 Standard, +1 High (titles 1845/1848/1846/1847 "Noise Filter Off/: Low/: Standard/: High");
+  Shading Comp. 0 Off, 1 On, title stays 254, icons 358 "Off" / 480 "On" (camera icons, owner-approved).
+- Film Grain's cases that ask its own id (0x611c308a) are replaced for our rows by stubs (CHC macro -> ch_id: our id
+  per picture mode, then the stock case after its call: 0x611c2446 / 25a1 / 2705 / 2867 / 2d03). Left column: lc_nr
+  / lc_vf = 0x611d0b57 with our id instead of 998 -> 0x611d0b72. Other switches: 5400's (generic) targets. The slider
+  hooks for these rows (bar ends, readouts, Shading-type cell) are gone.
+- Look NR value 4 = High (new): stills Noise Filter +1 (stock range -2..+1: the capture read sets min -2, max 1 right
+  after reading key 0x9719). xb_nm gets +1; Extras wheel NR 0..4 with a new "NR High" label (LABELS.BIN n 27, all later
+  first-label indexes +1). A look with NR Camera shows the camera's own Noise Filter on the row (getter 0x60063380,
+  key 38681); choosing on the row writes the look.
+- Control Panel (webapp, this branch only; not published): NR Camera / Off / Low / Std / High; High needs the new
+  "v0.23 (test builds)" firmware choice, else it is written as Std. E-P7 packs write high as standard.
+- Emulator: both rows step through their choices, titles follow, the left column shows the chosen icon, Camera shows
+  the camera's Standard; Sharpness and Film Grain unchanged. Not checked in the emulator: the Extras wheel's label
+  pictures (the emulator does not draw them) and photos.
+- Owner: "Shading Comp." reads too close to Shading. The row is titled **Vignette Correction** (our own string): the
+  camera's text table has no vignette wording, so the string getter 0x610f56a6 (`call ..,[d2],8`, d0 id -> a0 UTF-16
+  string; language index 0x610f56bd, table lookup 0x610f56ac) is hooked (hook_str, 6 B) to answer our id ST_VIG
+  0x7f00 with our string; every other id as stock. Emulator: the title shows; Shading Effect's own title unchanged.
+- Package test 6 (with the title): E1479999.BIN f786481c…, GUIDES.BIN e19b775c… and **LABELS.BIN 903af75b… (new, must go with
+  it)**.
+- **Camera-tested (owner, 2026-11-08 05:05): test 6 works** (Vignette Correction Off / On, Noise Filter Off / Low /
+  Standard / High, Sharpness, Film Grain). Owner: the words under the Noise Filter icons must match (the grain icons'
+  words "High / Med / Low / Off" are part of the icon pictures, so Noise Filter Off reads "High").
+
+### Test 7: Noise Filter words (emulator only)
+- The camera has no Low / Std / High word icons (its Noise Filter menu list 0x6151cacc is strings only: -2 Off 1460,
+  -1 Low 284, 0 Standard 264, +1 High 267). An option-list entry of type 4 (string) draws the word in the camera's font
+  in the strip and the left column, like a word icon. "Standard" is clipped by the cell ("tandar"), so st_get also
+  answers ST_STD 0x7f01 = "Std". Noise Filter lists: Off / Low / Std / High as words.
+- Emulator: strip and left column read Off / Low / Std / High; titles follow ("Noise Filter: Low" ...).
+- Package test 7: E1479999.BIN fda1c7d4…, GUIDES.BIN bb2a30f9…, LABELS.BIN 903af75b… (as test 6). On the owner's card,
+  checked by checksum. **Camera-tested (owner, 2026-11-08 05:18): "perfect".**
+
+### Test 8: Blacks and Whites rows (emulator only)
+- Owner: Glow / Clarity and Art Effect (Frame) stay on the Extras wheel (they interact with Grain). Next: Blacks,
+  Whites, A-B, G-M (ideally the camera's own WB A-B / G-M grid).
+- Blacks (slot +47) and Whites (+48) as slider rows -5..+5 after Highlight & Shadow: items BK_IT 5386 / WH_IT 5385,
+  bar ids BKB 0x7e30 / WHB 0x7e40 + k, classes 5 / 6. As test 5's slider rows (item 7's switch cases; f2c -> our stub
+  to 0x611c2ce8 with our id; bar ends hook_bar / rw_bar; readouts hook_rda/b -> 11-entry tables; dot 62 px like
+  Shading when max is 5) except the left column: the choice-type cell (lc_bk / lc_wh, like Film Grain's) with a word per
+  value from the item's +20 list: "Bk-5".."Bk+5", "Wh-5".."Wh+5" (our strings; "Blk"/"Wht" were clipped). Titles
+  "Blacks" / "Whites" (our strings, owner's choice over the camera's "Black" / "White").
+- The 16-entry row switches 0x615511cc and 0x6155134c were full: build.py re-hashes them into 32-entry copies in our
+  space (sw11_tab / sw13_tab) and patches their code (base 0x611d05eb / 0x611d1a59, mask 15 -> 31 at 0x611d05f1 /
+  0x611d1a5f, end bound 0x611d060a / 0x611d1a74). Both switches do nothing for an unknown item.
+- Emulator: Blacks 0 -> -5, Whites +5 -> +2, bar ends and dots right, left column follows; other rows unchanged.
+- Package test 8: E1479999.BIN 21eb72c2…, GUIDES.BIN 6d109d75…, LABELS.BIN 903af75b… (as test 6). On the owner's card,
+  checked by checksum. Camera result: pending.
+
+### A-B / G-M: the camera's WB grid (research started 2026-11-08; analysis + emulator observation)
+- Owner wants A-B / G-M on COLOR 1-4 as the camera's own WB fine-tune grid, not sliders ("research the grid first").
+- Where it is (emulator): SCP -> WB (right of the picture mode) -> OK = GUI `SS_MENU_LV/ID_ST_DIRECT_WB`. Left column:
+  WB mode, Keep Warm Color, **WB±**; on WB± the right side shows the grid (G top, M bottom, B left, A right, a dot).
+- How it is built (analysis): unlike the Picture Mode column (generic item table 0x6154c2a8 + row switches), the WB
+  screen is a bespoke class. Its draw code (around 0x611d1cbd..0x611d1e8x) branches on the screen object's own fields
+  (+5254 row index 0 / 1 / 4, +5256, +5240 a sub-object with a vtable, +5252 still/movie) and draws with the shared
+  helpers 0x611c7785 / 0x611c782f from tables 0x615513dc..0x61551490 and 0x61551c50.
+- Its values: per-axis id functions pick the camera's real WB compensation id for the current WB mode and still/movie:
+  0x611d27df A-B (1578 / 1579 by +5252), 0x611d2807 (1634 / 1635), 0x611d282f / 0x611d2919 / 0x611d28c7 (tables
+  0x615518a8 13 entries, 0x61551910); traced GetValue ids on the screen include 1578, 1584, 1597.
+- So the grid is not a row type the Picture Mode column can list (as Film Grain was). Ways to port, not yet tried:
+  1. Draw a grid row ourselves in the Picture Mode column with the same helpers (most work; looks native).
+  2. From an "A-B / G-M" row, open the camera's WB screen on WB±, with its A-B / G-M ids answered from the look's
+     slot (+26 A-B, +27 G-M) only while opened from our row (needs the screen transition and a context flag).
+  3. Two slider rows (as Blacks / Whites) as a fallback.
