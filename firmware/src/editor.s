@@ -1951,7 +1951,7 @@ s_look:                           /* after WHERE (a2 = P, d2 = 64k + slice, d3 =
  mov (20,sp),d3
  mov (8,sp),a0
  mov (12,sp),a1
- call pf_put,[d2,d3,a2,a3],40
+ call fl_sw,[d2,d3,a2,a3],40     /* v0.24: the look being left keeps its changes, then pf_put */
  mov 4,d0
  call gd_set,[d2,a2],8            /* test 17: the name picture of the new profile (redrawn with the dial step) */
 7:
@@ -2044,6 +2044,7 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
 pf_load:
  clr d0
  mov d0,(TTAB,a2)                 /* v0.24: no film cell pictures until fl_mk publishes them */
+ mov d0,(TORG,a2)
  mov PF_LEN + FL_SB,d0            /* v0.24: the file, then the film-name strings (fl_str) */
  call malloc,[],4
  cmp 0,a0
@@ -3021,6 +3022,9 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set IC_FM0, 0x7f90               /* IC_FM0 + j: film j's list cell picture "FILM" over its number (fl_mk draws them) */
 .set FL_BLK, 14336                /* fl_mk heap blocks (up to 3) */
 .set ROW, 80                      /* fl_mk's row buffer (100 B) in its frame */
+.set SROW, 64                     /* fl_sp's row buffer (160 B) in its frame */
+.set SP_SLOT, 2600                /* fl_scp: one quick-menu picture */
+.set SP_BLK, 16 + 4 * 24 + 16 + 4 * SP_SLOT
 .set ST_N0, 0x7f30                /* ST_N0 + j: film j's cell label "FILM" over its number in the list (1, 2, ...) */
 .set FL_SB, NF * 68               /* strings after the LOOKS.BIN copy: 20 names, then 20 cell labels (UTF-16, 17 shorts) */
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
@@ -3196,6 +3200,17 @@ st_get:
  bcc 3f
  jmp fl_str
 3:
+ cmp 2755,d0                      /* v0.24: "Color Profile 1..4" -> the film's name when COLOR k holds one */
+ beq 4f
+ cmp 2756,d0
+ beq 4f
+ cmp 2757,d0
+ beq 4f
+ cmp 4769,d0
+ bne st_stk
+4:
+ jmp fl_tt
+st_stk:
  mov d0,d2
  call str_lang,[],0
  jmp str_back
@@ -3899,11 +3914,17 @@ ic_get:
  bcc 11f
  jmp fl_ic
 11:
+ cmp 15746,d1                     /* v0.24: the quick menu's "COLOR k" / "COLOR k*" pictures */
+ bcs 12f
+ cmp 15754,d1
+ bcc 12f
+ jmp fl_scp
+12:
  cmp IC_BK,d1
- bcs 2f
+ bcs ic_stk
  cmp IC_END,d1
  bcs 3f
-2:
+ic_stk:
  mov (0x60379740),a0
  exthu d0
  asl2 d0
@@ -4329,7 +4350,7 @@ fl_set:
  beq 4f
  mov (8,sp),a0
  mov (12,sp),a1
- call pf_put,[d2,d3,a2,a3],40     /* the look (0: neutral) into the slot and the camera's own settings */
+ call fl_sw,[d2,d3,a2,a3],40      /* the film being left keeps its changes; the look (0: neutral) into the slot */
  mov 1,d1
  movbu d1,(DIRTY,a2)
 4:
@@ -4848,6 +4869,24 @@ fl_mk:
  mov (52,sp),a2
  mov (20,sp),d0
  mov d0,(TTAB,a2)                 /* published last */
+ mov SP_BLK,d0                    /* the quick menu's pictures (fl_scp draws them when asked) */
+ call malloc,[],4
+ cmp 0,a0
+ beq 99f
+ mov a0,a1
+ mov 8,d1                         /* slot words and drawn numbers 0 */
+ clr d0
+ mov d0,(a1)
+ mov d0,(4,a1)
+ mov d0,(8,a1)
+ mov d0,(12,a1)
+ add 16 + 4 * 24,a1
+ mov d0,(a1)
+ mov d0,(4,a1)
+ mov d0,(8,a1)
+ mov d0,(12,a1)
+ mov (52,sp),a2
+ mov a0,(TORG,a2)
 99:
  mov (52,sp),a2
  ret [d2,d3,a2,a3],200
@@ -4899,3 +4938,395 @@ fl_ic:
  movm (sp),[d2,d3,a2,a3]
  retf [],0
 
+/* ------------------------------------------------------------------ v0.24 film test 3
+ * fl_sw: `call fl_sw,[d2,d3,a2,a3],40` in place of pf_put's call (same frame and registers: a2 = P, d2 = k, d3 = the
+ * new look 0..5, a0 / a1 the SetValue's inner / mode), d0 = the old look 0..5: a film being left keeps its changes
+ * (pf_cap: COLOR k now -> its record, P dirty, so LOOKS.BIN is written at the next half-press), then pf_put. */
+fl_sw:
+ cmp 1,d0
+ blt 1f
+ cmp 5,d0
+ bgt 1f
+ cmp d0,d3
+ beq 1f
+ mov a0,(4,sp)
+ mov a1,(8,sp)
+ mov d3,(12,sp)
+ mov d0,d3
+ call pf_cap,[d2,d3,a2,a3],28     /* keeps d2, a2 */
+ mov (12,sp),d3
+ mov (4,sp),a0
+ mov (8,sp),a1
+ mov 1,d0
+ movbu d0,(DIRTY,a2)
+1:
+ jmp pf_put
+
+/* fl_film: `call fl_film,[],0`, a2 = P, d2 = COLOR k -> d0 = film j 0..19 when COLOR k holds look n 1..5 (whether it
+ * is there: fl_has), else -1. Uses d0, d1, a1. */
+fl_film:
+ mov (LPTR,a2),d0
+ cmp 0,d0
+ beq 9f
+ mov a2,a1
+ add d2,a1
+ movbu (LIDX,a1),d1
+ extb d1
+ cmp 1,d1
+ blt 9f
+ cmp 5,d1
+ bgt 9f
+ mov d2,d0
+ asl2 d0
+ add d2,d0
+ add d1,d0
+ add -1,d0
+ ret [],0
+9:
+ mov -1,d0
+ ret [],0
+
+/* fl_bl: `call fl_bl,[],0`, a0 = a part's row (4 bits a pixel), a1 = where it goes in the row buffer, d3 = its
+ * bytes: every pixel that is not clear is written. Uses d0, d1, d3, a0, a1. */
+fl_bl:
+ movbu (a0),d0
+ mov d0,d1
+ and 15,d1
+ cmp 0,d1
+ beq 2f
+ movbu d1,(a1)
+2:
+ lsr 4,d0
+ cmp 0,d0
+ beq 3f
+ movbu d0,(1,a1)
+3:
+ inc a0
+ add 2,a1
+ add -1,d3
+ bne fl_bl
+ ret [],0
+
+/* fl_sp: `call fl_sp,[d2,d3,a2,a3],240`, d0 = N 1..20, a0 = out -> d0 = the bytes written: the quick menu's
+ * "FILM N" picture (160 x 48, type 11; firmware/mkicons.py sp_film is the same rule). Frame: (0) call slot, (4) x0,
+ * (8) N, (12) first digit, (16) second digit or -1, (24) out, (28) y, (32) / (36) / (40) the token word (fl_emit),
+ * (44) start, (48) digit x, (SROW) the row. */
+fl_sp:
+ mov d0,(8,sp)
+ mov a0,(44,sp)
+ mov 0x0b09f02f,d0                /* header: h - 1 = 47, w - 1 = 159, type 11 */
+ mov d0,(a0)
+ add 4,a0
+ mov a0,(24,sp)
+ clr d0
+ mov d0,(32,sp)
+ mov d0,(36,sp)
+ mov d0,(40,sp)
+ mov d0,(28,sp)
+ mov -1,d1
+ mov d1,(16,sp)
+ mov (8,sp),d0
+ cmp 10,d0
+ bcs 1f
+ clr d1
+2:
+ cmp 10,d0
+ bcs 3f
+ add -10,d0
+ inc d1
+ bra 2b
+3:
+ mov d1,(12,sp)
+ mov d0,(16,sp)
+ bra 4f
+1:
+ mov d0,(12,sp)
+4:                                /* x0 = (160 - width) / 2 */
+ mov fl_sdw,a0
+ mov (12,sp),d0
+ add d0,a0
+ movbu (a0),d1
+ add SFWI + SP_GAP,d1
+ mov (16,sp),d0
+ cmp 0,d0
+ blt 5f
+ mov fl_sdw,a0
+ add d0,a0
+ movbu (a0),d0
+ add d0,d1
+ add SP_DGAP,d1
+5:
+ mov 160,d0
+ sub d1,d0
+ lsr 1,d0
+ mov d0,(4,sp)
+10:                               /* row y */
+ mov sp,a1
+ add SROW,a1
+ mov 160,d2
+ clr d1
+6:
+ movbu d1,(a1)
+ inc a1
+ add -1,d2
+ bne 6b
+ mov (28,sp),d0                   /* the word */
+ mov SFW / 2,d1
+ mul d0,d1
+ mov fl_sfw,a0
+ add d1,a0
+ mov sp,a1
+ add SROW,a1
+ mov (4,sp),d0
+ add d0,a1
+ mov SFW / 2,d3
+ call fl_bl,[],0
+ mov (4,sp),d0                    /* the first digit */
+ add SFWI + SP_GAP,d0
+ mov d0,(48,sp)
+ mov (12,sp),d0
+ mov SDB * SPH / 2,d1
+ mul d0,d1
+ mov (28,sp),d0
+ mov SDB / 2,d2
+ mul d0,d2
+ add d2,d1
+ mov fl_sdg,a0
+ add d1,a0
+ mov sp,a1
+ add SROW,a1
+ mov (48,sp),d0
+ add d0,a1
+ mov SDB / 2,d3
+ call fl_bl,[],0
+ mov (16,sp),d0                   /* the second digit */
+ cmp 0,d0
+ blt 20f
+ mov fl_sdw,a0
+ mov (12,sp),d1
+ add d1,a0
+ movbu (a0),d1
+ add SP_DGAP,d1
+ mov (48,sp),d2
+ add d1,d2
+ mov d2,(48,sp)
+ mov SDB * SPH / 2,d1
+ mul d0,d1
+ mov (28,sp),d0
+ mov SDB / 2,d2
+ mul d0,d2
+ add d2,d1
+ mov fl_sdg,a0
+ add d1,a0
+ mov sp,a1
+ add SROW,a1
+ mov (48,sp),d0
+ add d0,a1
+ mov SDB / 2,d3
+ call fl_bl,[],0
+20:                               /* the row as runs */
+ clr d2
+21:
+ cmp 160,d2
+ bcc 29f
+ mov sp,a1
+ add SROW,a1
+ add d2,a1
+ movbu (a1),d3
+ mov 1,d1
+22:
+ cmp 16,d1
+ bcc 23f
+ mov d2,d0
+ add d1,d0
+ cmp 160,d0
+ bcc 23f
+ mov a1,a0
+ add d1,a0
+ movbu (a0),d0
+ cmp d3,d0
+ bne 23f
+ inc d1
+ bra 22b
+23:
+ add d1,d2
+ mov d3,d0
+ asl 4,d0
+ add d1,d0
+ add -1,d0
+ call fl_emit,[],0
+ bra 21b
+29:
+ mov (28,sp),d0
+ inc d0
+ mov d0,(28,sp)
+ cmp SPH,d0
+ bcc 30f
+ jmp 10b
+30:
+ mov (32,sp),d0
+ cmp 0,d0
+ beq 31f
+ mov (24,sp),a0
+ mov (36,sp),d1
+ mov d1,(a0)
+ mov (40,sp),d1
+ mov d1,(4,a0)
+ add 8,a0
+ mov a0,(24,sp)
+31:
+ mov (24,sp),d0
+ mov (44,sp),d1
+ sub d1,d0
+ ret [d2,d3,a2,a3],240
+
+/* fl_scp <- ic_get (d0 / d1 = 15746..15753: the quick menu's "COLOR k" / "COLOR k*", k = 0..3): when COLOR k holds a
+ * film that is there, "FILM N" (N its number in the list) from P+TORG's block {4 slot words, 4 descriptors, 4 drawn
+ * numbers, 4 pictures of SP_SLOT}, drawn (fl_sp) when N changes; else as stock (ic_stk). Returns as ic_get (retf). */
+fl_scp:
+ movm [d2,d3,a2,a3],(sp)
+ add -24,sp                       /* (0) call slot, (4) i, (8) return, (12) id, (16) k, (20) j */
+ mov d0,(12,sp)
+ mov mdr,d0
+ mov d0,(8,sp)
+ mov d1,d2
+ add -15746,d2
+ cmp 4,d2
+ bcs 1f
+ add -4,d2
+1:
+ mov d2,(16,sp)
+ PVAL 80f
+ mov (TORG,a2),d0
+ cmp 0,d0
+ beq 80f
+ call fl_film,[],0
+ cmp 0,d0
+ blt 80f
+ mov d0,(20,sp)
+ mov (LPTR,a2),a3
+ mov a3,a0
+ call fl_has,[],0
+ cmp 0,d0
+ beq 80f
+ clr d3                           /* N = films before j, + 1 */
+ clr d0
+ mov d0,(4,sp)
+2:
+ mov (4,sp),d0
+ mov (20,sp),d1
+ cmp d1,d0
+ bcc 3f
+ mov a3,a0
+ call fl_has,[],0
+ add d0,d3
+ mov (4,sp),d0
+ inc d0
+ mov d0,(4,sp)
+ bra 2b
+3:
+ inc d3
+ mov (TORG,a2),a3
+ mov (16,sp),d2
+ mov d2,d0
+ asl2 d0
+ mov a3,a1
+ add d0,a1
+ add 112,a1                       /* drawn number k */
+ mov (a1),d0
+ cmp d3,d0
+ beq 5f
+ mov SP_SLOT,d1
+ mul d2,d1
+ mov a3,a0
+ add 128,a0
+ add d1,a0                        /* picture k */
+ mov a0,(4,sp)
+ mov d3,d0
+ call fl_sp,[d2,d3,a2,a3],240
+ mov d2,d1                        /* descriptor k */
+ asl 3,d1
+ mov a3,a1
+ add 16,a1
+ add d1,a1
+ add d1,a1
+ add d1,a1
+ mov 14,d1
+ movhu d1,(a1)
+ mov 160,d1
+ movhu d1,(2,a1)
+ mov 48,d1
+ movhu d1,(4,a1)
+ mov 8,d1
+ movhu d1,(6,a1)
+ clr d1
+ movhu d1,(8,a1)
+ movhu d1,(10,a1)
+ mov d1,(20,a1)
+ mov d0,(12,a1)                   /* size */
+ mov (4,sp),d0
+ mov d0,(16,a1)                   /* payload */
+ mov d2,d0
+ asl2 d0
+ mov a3,a0
+ add d0,a0
+ mov a1,(a0)                      /* slot word k */
+ add 112,a0
+ mov d3,(a0)                      /* drawn number k */
+5:
+ mov d2,d0
+ asl2 d0
+ mov a3,a0
+ add d0,a0
+ mov (8,sp),d0
+ mov d0,mdr
+ add 24,sp
+ movm (sp),[d2,d3,a2,a3]
+ retf [],0
+80:
+ mov (8,sp),d1
+ mov d1,mdr
+ mov (12,sp),d0
+ add 24,sp
+ movm (sp),[d2,d3,a2,a3]
+ jmp ic_stk
+
+/* fl_tt <- st_get (the string getter's frame: ret [d2],8; d0 = 2755 / 2756 / 2757 / 4769, "Color Profile 1..4"):
+ * when COLOR k holds a film that is there, its name (fl_str), else as stock (st_stk). */
+fl_tt:
+ add -16,sp                       /* (0) call slot, (4) d3, (8) a2, (12) id */
+ mov d3,(4,sp)
+ mov a2,(8,sp)
+ mov d0,(12,sp)
+ clr d2
+ cmp 2755,d0
+ beq 1f
+ inc d2
+ cmp 2756,d0
+ beq 1f
+ inc d2
+ cmp 2757,d0
+ beq 1f
+ inc d2
+1:
+ PVAL 8f
+ call fl_film,[],0
+ cmp 0,d0
+ blt 8f
+ mov d0,d2
+ mov (LPTR,a2),a0
+ call fl_has,[],0
+ cmp 0,d0
+ beq 8f
+ mov d2,d0
+ add ST_F0,d0
+ mov (4,sp),d3
+ mov (8,sp),a2
+ add 16,sp
+ jmp fl_str
+8:
+ mov (12,sp),d0
+ mov (4,sp),d3
+ mov (8,sp),a2
+ add 16,sp
+ jmp st_stk

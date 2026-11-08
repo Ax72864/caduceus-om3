@@ -163,8 +163,14 @@ def build(defaults, testfile, out):
     import mkicons
     digs = mkicons.film_digits()                 # v0.24 film cells: the "FILM" line and the digits (fl_mk draws the cells)
     assert digs[0].shape == (mkicons.FD, 20) and mkicons.FT == 40 and (mkicons.FCW, mkicons.FCH) == (100, 76)
+    fwp, fwi, boxes, dw = mkicons.sp_parts()     # the quick menu's "FILM n" (fl_sp draws it)
+    assert fwp.shape[0] == mkicons.SPH == 48 and boxes[0].shape[1] % 2 == 0
     (out / 'films.inc').write_text('.balign 4\nfl_top:\n' + db(mkicons.pack4(mkicons.film_top())) + 'fl_dig:\n' +
-                                   ''.join(db(mkicons.pack4(d)) for d in digs))
+                                   ''.join(db(mkicons.pack4(d)) for d in digs) +
+                                   f'.set SFW, {fwp.shape[1]}\n.set SFWI, {fwi}\n.set SDB, {boxes[0].shape[1]}\n.set SPH, 48\n'
+                                   f'.set SP_GAP, {mkicons.SP_GAP}\n.set SP_DGAP, {mkicons.SP_DGAP}\n'
+                                   'fl_sfw:\n' + db(mkicons.pack4(fwp)) + 'fl_sdg:\n' + ''.join(db(mkicons.pack4(x)) for x in boxes) +
+                                   'fl_sdw:\n' + db(bytes(dw)) + ' .balign 2\n')
     subprocess.run([P.AS, '-I', out, '-o', out / 'p.o', HERE / 'src' / 'editor.s'], check=True)
     subprocess.run([P.LD, '-T', HERE / 'src' / 'editor.ld', '-o', out / 'p.elf', out / 'p.o'], check=True)
     blobs = {}

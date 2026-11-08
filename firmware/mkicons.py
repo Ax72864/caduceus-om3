@@ -116,6 +116,75 @@ def film_cell(n, top=None, digs=None):
     return px
 
 
+# v0.24 quick menu (Super Control Panel) picture of a COLOR holding a film: "FILM n" on one line, 160 x 48, in that
+# panel's own style (measured from its "COLOR 4" picture: no dark edge, fill 13, soft 14 / 15 / 7, ink rows 7..40,
+# x 12..148, stems ~5 px, letters ~2 px apart, a wider gap before the number). Matched by drawing each letter on its own
+# (cap 32, baseline 40, 0.75 width, a 0.6 px blur, thresholds 0.05 / 0.08 / 0.18 / 0.50 in our font), 2 px apart;
+# 6 px between word and number. Parts: the "FILM" word and the digits 0..9 (left-aligned in a common box), composed
+# by the camera (fl_sp): centred, a part pixel written only where it is not clear.
+SPW, SPH, SP_GAP, SP_DGAP = 160, 48, 6, 2
+
+
+def _sp_part(txt):
+    small, b = word(txt, 32, 999, 0.75)
+    cov = np.zeros((SPH, small.shape[1] + 8))
+    y0 = int(round(40 - b))
+    cov[y0:y0 + small.shape[0], 4:4 + small.shape[1]] = small
+    cov = ndimage.gaussian_filter(cov, 0.6)
+    px = np.zeros(cov.shape, dtype=np.uint8)
+    for t, v in ((0.05, 7), (0.08, 15), (0.18, 14), (0.50, 13)):
+        px[cov >= t] = v
+    cols = np.nonzero((px != 0).any(axis=0))[0]
+    return px[:, cols[0]:cols[-1] + 1]
+
+
+def _sp_word(txt):
+    ps = [_sp_part(c) for c in txt]
+    out = np.zeros((SPH, sum(p.shape[1] for p in ps) + SP_DGAP * (len(ps) - 1)), dtype=np.uint8)
+    x = 0
+    for p in ps:
+        m = p != 0
+        out[:, x:x + p.shape[1]][m] = p[m]
+        x += p.shape[1] + SP_DGAP
+    return out
+
+
+def sp_parts():
+    """(word picture, its width even-padded; digit boxes 10 x SPH x WD; digit ink widths)"""
+    fw = _sp_word('FILM')
+    fwp = np.zeros((SPH, fw.shape[1] + fw.shape[1] % 2), dtype=np.uint8)
+    fwp[:, :fw.shape[1]] = fw
+    ds = [_sp_part(str(d)) for d in range(10)]
+    wd = max(d.shape[1] for d in ds)
+    wd += wd % 2
+    boxes = []
+    for d in ds:
+        bx = np.zeros((SPH, wd), dtype=np.uint8)
+        bx[:, :d.shape[1]] = d
+        boxes.append(bx)
+    return fwp, fw.shape[1], boxes, [d.shape[1] for d in ds]
+
+
+def sp_film(n, parts=None):
+    fwp, fwi, boxes, dw = sp_parts() if parts is None else parts
+    ds = [int(c) for c in str(n)]
+    tw = fwi + SP_GAP + sum(dw[d] for d in ds) + SP_DGAP * (len(ds) - 1)
+    x = (SPW - tw) // 2
+    px = np.zeros((SPH, SPW), dtype=np.uint8)
+
+    def blit(a, x):
+        for yy in range(SPH):
+            for xx in range(a.shape[1]):
+                if a[yy, xx] and x + xx < SPW:
+                    px[yy, x + xx] = a[yy, xx]
+    blit(fwp, x)
+    x += fwi + SP_GAP
+    for d in ds:
+        blit(boxes[d], x)
+        x += dw[d] + SP_DGAP
+    return px
+
+
 def pack4(a):
     """palette rows, two pixels a byte (low nibble first)"""
     f = a.flatten().tolist()

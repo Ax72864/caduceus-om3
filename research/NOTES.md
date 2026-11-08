@@ -1173,5 +1173,24 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   (memory dump), the strip reads COLOR 1-4, FILM 1 .. FILM 13 with the names as titles. The left column still shows
   COLOR n (it does not use these lists). ext11 31.9 KB of 64 KB.
 - Package film test 2: E1479999.BIN 8657819e…, GUIDES.BIN 8b742cfb…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Owner (2026-11-08): "this looks great" (look approved).
+- Film test 3 (emulator only): owner: (1) the quick menu (Super Control Panel) should show the film, (2) changes to a
+  film are kept, not reset.
+  - Quick menu: its picture-mode cell is a picture, 160 x 48, ids 15746..15749 = "COLOR 1..4", 15750..15753 = with
+    "*" (choice records {76, 76, id, 0xffff} at 0x61408260..); its text style: no dark edge, fill 13, soft 14 / 15 / 7,
+    ink rows 7..40, stems ~5 px, letters ~2 px apart. Its title "Color Profile k" = strings 2755 / 2756 / 2757 / 4769
+    (the only string asked when it opens). ic_get -> fl_scp: when COLOR k holds a film that is there, "FILM N" (N its
+    list number) drawn by fl_sp into a heap block (P+TORG, allocated by fl_mk: 4 slot words, 4 descriptors, 4 drawn
+    numbers, 4 pictures) and redrawn only when N changes; st_get -> fl_tt: those titles -> the film's name. Parts from
+    firmware/mkicons.py sp_parts (each letter drawn on its own, cap 32, 0.75 width, 0.6 px blur, 2 px apart, 6 px
+    before the number; the "*" picture shows the same "FILM N"). Emulator: the cell reads FILM 1, the title the
+    film's name; the picture is byte-identical to mkicons.sp_film(1) (memory dump).
+  - Keeping changes: leaving a film (choosing another film or COLOR n in the list, or turning the Film page) now saves
+    COLOR k into the film first: fl_sw (in place of pf_put's call in s_look and fl_set) = pf_cap(k, old look) + dirty,
+    then pf_put. pf_cap takes everything (wheels, Extras, WB shift, Blacks / Whites, the 18 camera settings). Holding
+    OK on "COLOR n" still resets it and sets its look to 0 (nothing saved over the film). Emulator: FILM 1 Contrast
+    +1 -> +2, FILM 2, back to FILM 1: +2; after a half-press LOOKS.BIN record 0 +41 = 2.
+  - ext11 38.6 KB of 64 KB.
+- Package film test 3: E1479999.BIN 590db381…, GUIDES.BIN 7830515b…, LABELS.BIN 903af75b…. On the owner's card,
   checked by checksum. Camera result: pending.
 
