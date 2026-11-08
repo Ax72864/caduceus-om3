@@ -159,6 +159,12 @@ def build(defaults, testfile, out):
     (out / 'data4.inc').write_text(f' .equ DEF_CRC, 0x{def_crc:08x}\n' + 'sd_hdr:\n' + db(header(0)) + 'sd_lo:\n' + db(bytes(v & 0xff for v in lo)) +
                                    'sd_span:\n' + db(bytes(span)))
     (out / 'BUNDLES.BIN').write_bytes(test)
+    sys.path.insert(0, str(ROOT / 'firmware'))
+    import mkicons
+    digs = mkicons.film_digits()                 # v0.24 film cells: the "FILM" line and the digits (fl_mk draws the cells)
+    assert digs[0].shape == (mkicons.FD, 20) and mkicons.FT == 40 and (mkicons.FCW, mkicons.FCH) == (100, 76)
+    (out / 'films.inc').write_text('.balign 4\nfl_top:\n' + db(mkicons.pack4(mkicons.film_top())) + 'fl_dig:\n' +
+                                   ''.join(db(mkicons.pack4(d)) for d in digs))
     subprocess.run([P.AS, '-I', out, '-o', out / 'p.o', HERE / 'src' / 'editor.s'], check=True)
     subprocess.run([P.LD, '-T', HERE / 'src' / 'editor.ld', '-o', out / 'p.elf', out / 'p.o'], check=True)
     blobs = {}

@@ -25,8 +25,9 @@ PICTURES = [
 ]
 
 
-def word(txt, cap, maxw):
-    """The word's ink coverage 0..1, cap height `cap`, squeezed to fit maxw; and its baseline row in that array."""
+def word(txt, cap, maxw, sx=1.0):
+    """The word's ink coverage 0..1, cap height `cap`, `sx` times its width, squeezed to fit maxw; and its baseline row
+    in that array."""
     S = 8
     f = ImageFont.truetype(FONT, 100 * S)
     im = Image.new('L', (100 * S * (len(txt) + 1), 200 * S), 0)
@@ -39,29 +40,87 @@ def word(txt, cap, maxw):
     ink = np.nonzero(a.any(axis=1))[0]
     a = a[ink.min():ink.max() + 1, cols.min():cols.max() + 1]
     scale = cap / (cap_bot - cap_top + 1)
-    w = a.shape[1] * scale
+    w = a.shape[1] * scale * sx
     sq = min(1.0, maxw / w)
     out_w, out_h = max(1, round(w * sq)), max(1, round(a.shape[0] * scale))
     small = np.array(Image.fromarray(a).resize((out_w, out_h), Image.BOX)).astype(float) / 255
     return small, (cap_bot - ink.min()) * scale
 
 
-def picture(lines, w, h):
-    """w x h palette indices: fill 10, soft 11 / 12, a 2 px dark edge 7 round the ink."""
+def picture(lines, w, h, sx=1.0, th=(0.30, 0.50, 0.70)):
+    """w x h palette indices: fill 10, soft 11 / 12 (coverage thresholds th), a 2 px dark edge 7 round the ink."""
     cov = np.zeros((h, w))
     for txt, cap, base in lines:
-        small, b = word(txt, cap, w - 6)
+        small, b = word(txt, cap, w - 6, sx)
         y0, x0 = int(round(base - b)), (w - small.shape[1]) // 2
         sh = cov[y0:y0 + small.shape[0], x0:x0 + small.shape[1]]
         cov[y0:y0 + small.shape[0], x0:x0 + small.shape[1]] = np.maximum(sh, small[:sh.shape[0], :sh.shape[1]])
-    px = np.zeros((h, w), dtype=np.uint8)
-    px[cov >= 0.30] = 12
-    px[cov >= 0.50] = 11
-    px[cov >= 0.70] = 10
+    return quant(cov, th)
+
+
+def quant(cov, th=(0.30, 0.50, 0.70)):
+    px = np.zeros(cov.shape, dtype=np.uint8)
+    px[cov >= th[0]] = 12
+    px[cov >= th[1]] = 11
+    px[cov >= th[2]] = 10
     ink = px > 0
-    edge = ndimage.binary_dilation(ink, structure=np.ones((3, 3)), iterations=2) & ~ink
-    px[edge] = 7
+    px[ndimage.binary_dilation(ink, structure=np.ones((3, 3)), iterations=2) & ~ink] = 7
     return px
+
+
+# v0.24 film cells (100 x 76, the stock "COLOR / 1" strip cell's size): "FILM" over the film's number, matched to the
+# stock cells' measured metrics (owner: "the same style and size as COLOR 1-4"): word fill rows 16..36 and 73 px for
+# "COLOR" -> cap 20, baseline 36, 0.88 width, coverage thresholds 0.2 / 0.4 / 0.6 in our font; digits fill rows
+# 43..68, 9..16 px wide -> cap 26, baseline 69, 0.95 width. The camera
+# draws them itself when the films load (firmware fl_mk): the "FILM" line (rows 0..FT-1) as it is, then each digit's
+# picture (FD rows, FW wide) under it, centred; two digits overlap by 2 px (their dark edges), a digit pixel replacing
+# only clear or edge pixels. film_cell() is the same rule, for the preview and the checks.
+FCW, FCH, FT = 100, 76, 40
+FD = FCH - FT
+
+
+def film_top():
+    return picture([('FILM', 20, 36)], FCW, FT, 0.88, (0.20, 0.40, 0.60))
+
+
+def film_digits():
+    """10 arrays FD x FW: the digits 0..9, cap 24, baseline 68 - FT, centred in a common width."""
+    small = [word(str(d), 26, 99, 0.95) for d in range(10)]
+    fw = max(a.shape[1] for a, _ in small) + 4
+    out = []
+    for a, b in small:
+        cov = np.zeros((FD, fw))
+        y0, x0 = int(round(69 - FT - b)), (fw - a.shape[1]) // 2
+        cov[y0:y0 + a.shape[0], x0:x0 + a.shape[1]] = a
+        out.append(quant(cov))
+    return out
+
+
+def film_cell(n, top=None, digs=None):
+    top = film_top() if top is None else top
+    digs = film_digits() if digs is None else digs
+    fw = digs[0].shape[1]
+    px = np.zeros((FCH, FCW), dtype=np.uint8)
+    px[:FT] = top
+    ds = [int(c) for c in str(n)]
+    tw = len(ds) * fw - 2 * (len(ds) - 1)
+    x = (FCW - tw) // 2
+    for d in ds:
+        g = digs[d]
+        for yy in range(FD):
+            for xx in range(fw):
+                v, c = g[yy, xx], px[FT + yy, x + xx]
+                if v and (c == 0 or c == 7):
+                    px[FT + yy, x + xx] = v
+        x += fw - 2
+    return px
+
+
+def pack4(a):
+    """palette rows, two pixels a byte (low nibble first)"""
+    f = a.flatten().tolist()
+    if len(f) % 2: f.append(0)
+    return bytes(f[i] | f[i + 1] << 4 for i in range(0, len(f), 2))
 
 
 def encode11(px, w, h):

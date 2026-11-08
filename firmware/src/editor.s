@@ -2042,6 +2042,8 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
  * P+LIDX, the heap buffer, own frame. */
 .section .ext8,"ax"
 pf_load:
+ clr d0
+ mov d0,(TTAB,a2)                 /* v0.24: no film cell pictures until fl_mk publishes them */
  mov PF_LEN + FL_SB,d0            /* v0.24: the file, then the film-name strings (fl_str) */
  call malloc,[],4
  cmp 0,a0
@@ -2100,6 +2102,7 @@ pf_load:
 6:
  mov (8,sp),d0
  mov d0,(LPTR,a2)                 /* published last */
+ call fl_mk,[d2,d3,a2,a3],200     /* v0.24: the film list's cell pictures */
  bra 9f
 7:
  mov (8,sp),a0
@@ -3014,8 +3017,12 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set FV0, 100                     /* v0.24 film list: picture-mode values FV0 + j for film j (COLOR k = j / 5, look j % 5 + 1) */
 .set NF, 20
 .set FLB, 0x7e70                  /* FLB + j: "is film j there?" (the list's per-entry availability id) */
-.set ST_F0, 0x7f10                /* ST_F0 + j: film j's name */
-.set FL_SB, NF * 34               /* name strings (UTF-16, 16 + 1 shorts each) after the LOOKS.BIN copy */
+.set ST_F0, 0x7f10                /* ST_F0 + j: film j's name (the big title) */
+.set IC_FM0, 0x7f90               /* IC_FM0 + j: film j's list cell picture "FILM" over its number (fl_mk draws them) */
+.set FL_BLK, 14336                /* fl_mk heap blocks (up to 3) */
+.set ROW, 80                      /* fl_mk's row buffer (100 B) in its frame */
+.set ST_N0, 0x7f30                /* ST_N0 + j: film j's cell label "FILM" over its number in the list (1, 2, ...) */
+.set FL_SB, NF * 68               /* strings after the LOOKS.BIN copy: 20 names, then 20 cell labels (UTF-16, 17 shorts) */
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
 .set VF_I1, 480                   /* the camera's "On" icon */
 
@@ -3185,7 +3192,7 @@ st_get:
 2:
  cmp ST_F0,d0                     /* v0.24: film names */
  bcs 3f
- cmp ST_F0 + NF,d0
+ cmp ST_N0 + NF,d0
  bcc 3f
  jmp fl_str
 3:
@@ -3886,6 +3893,12 @@ ic_get:
  mov 0,a0
  retf [],0
 1:
+ cmp IC_FM0,d1
+ bcs 11f
+ cmp IC_FM0 + NF,d1
+ bcc 11f
+ jmp fl_ic
+11:
  cmp IC_BK,d1
  bcs 2f
  cmp IC_END,d1
@@ -4070,22 +4083,26 @@ fl_rec:
  .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
  .long FV0 + \j, FLB + \j, FV0 + \j, 0, 0
  .endr
- .macro FLOPT
+ .macro FLOPT base
  .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
  .long FV0 + \j
- .short 4, ST_F0 + \j
+ .short 4, \base + \j
  .long 0x6154b480
  .endr
  .endm
 fl_l0:                            /* item 111's title list: the stock 48 (build.py), then the films */
  .space 48 * 12
- FLOPT
+ FLOPT ST_F0
 fl_l1:                            /* the left column */
  .space 48 * 12
- FLOPT
+ FLOPT ST_N0
 fl_l2:                            /* the strip */
  .space 48 * 12
- FLOPT
+ .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+ .long FV0 + \j
+ .short 3, IC_FM0 + \j
+ .long 0x6154b480
+ .endr
 fl_cvt:                           /* COLOR k -> picture mode value */
  .byte 54, 55, 56, 64
 .balign 2
@@ -4348,11 +4365,16 @@ fl_str:
  mov d3,(0,sp)
  mov a2,(4,sp)
  mov d0,d2
- add -ST_F0,d2                    /* j */
+ add -ST_F0,d2                    /* j (ST_N0 + j: + 32) */
  PVAL 8f
  mov (LPTR,a2),a0
  cmp 0,a0
  beq 8f
+ cmp NF,d2
+ bcs 10f
+ add -(ST_N0 - ST_F0),d2
+ jmp fl_lbl
+10:
  mov d2,d1
  asl 5,d1
  add d2,d1
@@ -4410,12 +4432,470 @@ fl_str:
  clr d0
  movhu d0,(a1)
  mov a2,a0
- bra 9f
+ bra fl_sx
 8:
  mov fl_none,a0
-9:
+fl_sx:
  mov (0,sp),d3
  mov (4,sp),a2
  add 8,sp
  ret [d2],8
+
+/* fl_lbl <- fl_str (its frame; d2 = j, a0 = the LOOKS.BIN copy): film j's cell label "FILM", a line break and its
+ * number among the films there (1 = the first after COLOR 4), into its label buffer. Then fl_sx (a0 = the string). */
+fl_lbl:
+ mov a0,a2                        /* the LOOKS.BIN copy */
+ add -12,sp                       /* (0) call slot, (4) i, (8) j */
+ mov d2,(8,sp)
+ clr d3                           /* films before j */
+ clr d0
+ mov d0,(4,sp)
+1:
+ mov (4,sp),d0
+ mov (8,sp),d1
+ cmp d1,d0
+ bcc 2f
+ mov a2,a0
+ call fl_has,[],0
+ add d0,d3
+ mov (4,sp),d0
+ inc d0
+ mov d0,(4,sp)
+ bra 1b
+2:
+ inc d3                           /* n = 1.. */
+ mov (8,sp),d2
+ mov d2,d1
+ asl 5,d1
+ add d2,d1
+ add d2,d1                        /* 34 j */
+ mov a2,a1
+ add d1,a1
+ add PF_LEN + NF * 34,a1          /* out */
+ mov a1,a2                        /* keep the start */
+ mov 70,d0                        /* "Film " */
+ movhu d0,(a1)
+ mov 105,d0
+ movhu d0,(2,a1)
+ mov 108,d0
+ movhu d0,(4,a1)
+ mov 109,d0
+ movhu d0,(6,a1)
+ mov 32,d0
+ movhu d0,(8,a1)
+ add 10,a1
+ cmp 10,d3
+ bcs 5f
+ mov 49,d0                        /* "1" */
+ cmp 20,d3
+ bcs 6f
+ mov 50,d0                        /* "2" */
+ add -10,d3
+6:
+ add -10,d3
+ movhu d0,(a1)
+ add 2,a1
+5:
+ add 48,d3
+ movhu d3,(a1)
+ clr d0
+ movhu d0,(2,a1)
+ mov a2,a0
+ add 12,sp
+ jmp fl_sx
+
+/* ------------------------------------------------------------------ v0.24 film cells (film test 2)
+ * The list cell of film j is "FILM" over its number among the films there (1 = the first after COLOR 4), in the stock
+ * "COLOR / 1" cell's size and style (firmware/mkicons.py, our own font). fl_mk draws the 20 pictures once, when the
+ * films load (pf_load, HLS task): each row from fl_top (the "FILM" line, rows 0..39) or from the digit pictures fl_dig
+ * (rows 40..75; one digit centred at x 40, two at x 31 and 49), then runs of up to 16 pixels (not past the row's end)
+ * as OSD type-11 tokens, five to a 64-bit word. Heap: up to 3 blocks of FL_BLK; block 0 starts with 20 slot words
+ * and 20 descriptors <6H3I>. P+TTAB = the slot words (0 = none). ic_get answers IC_FM0 + j through fl_ic. */
+ .include "films.inc"             /* fl_top (100 x 40), fl_dig (10 x 20 x 36), 4 bits a pixel, low nibble first */
+
+/* fl_emit: `call fl_emit,[],0` from fl_mk (its frame: (24) out, (32) tokens in the word, (36) / (40) the word),
+ * d0 = token. Uses d0, d1, a0. */
+fl_emit:
+ mov (32,sp),d1
+ cmp 0,d1
+ bne 1f
+ mov d0,(36,sp)
+ bra 8f
+1:
+ cmp 1,d1
+ bne 2f
+ asl 12,d0
+ mov (36,sp),d1
+ or d0,d1
+ mov d1,(36,sp)
+ bra 8f
+2:
+ cmp 2,d1
+ bne 3f
+ mov d0,d1
+ lsr 8,d1
+ mov d1,(40,sp)
+ asl 24,d0
+ mov (36,sp),d1
+ or d0,d1
+ mov d1,(36,sp)
+ bra 8f
+3:
+ cmp 3,d1
+ bne 4f
+ asl 4,d0
+ mov (40,sp),d1
+ or d0,d1
+ mov d1,(40,sp)
+ bra 8f
+4:
+ asl 16,d0
+ mov (40,sp),d1
+ or d0,d1
+ mov (24,sp),a0
+ mov (36,sp),d0
+ mov d0,(a0)
+ mov d1,(4,a0)
+ add 8,a0
+ mov a0,(24,sp)
+ clr d0
+ mov d0,(36,sp)
+ mov d0,(40,sp)
+ mov -1,d1
+ mov d1,(32,sp)
+8:
+ mov (32,sp),d1
+ inc d1
+ mov d1,(32,sp)
+ ret [],0
+
+/* fl_dg: `call fl_dg,[],0` from fl_mk (its frame: (28) row y 40..75, the row at (ROW,sp)), d0 digit, d1 x: the
+ * digit's row onto the row; a digit pixel replaces a clear or edge pixel. Uses d0..d3, a0, a1. */
+fl_dg:
+ mov d0,d2
+ asl 8,d2
+ mov d0,d3
+ asl 6,d3
+ add d3,d2
+ mov d0,d3
+ asl 5,d3
+ add d3,d2
+ asl 3,d0
+ add d0,d2                        /* 360 d */
+ mov (28,sp),d0
+ add -40,d0
+ mov d0,d3
+ asl 3,d3
+ add d0,d3
+ add d0,d3                        /* 10 (y - 40) */
+ add d3,d2
+ mov fl_dig,a0
+ add d2,a0
+ mov sp,a1
+ add ROW,a1
+ add d1,a1
+ mov 10,d3
+1:
+ movbu (a0),d2
+ mov d2,d0
+ and 15,d0
+ cmp 0,d0
+ beq 2f
+ movbu (a1),d1
+ cmp 0,d1
+ beq 3f
+ cmp 7,d1
+ bne 2f
+3:
+ movbu d0,(a1)
+2:
+ lsr 4,d2
+ cmp 0,d2
+ beq 4f
+ movbu (1,a1),d1
+ cmp 0,d1
+ beq 5f
+ cmp 7,d1
+ bne 4f
+5:
+ movbu d2,(1,a1)
+4:
+ inc a0
+ add 2,a1
+ add -1,d3
+ bne 1b
+ ret [],0
+
+/* fl_mk: `call fl_mk,[d2,d3,a2,a3],200` from pf_load, a2 = P. Frame: (0) call slot, (4) block cursor, (8) block end,
+ * (12) blocks, (16) n 1..20, (20) the slot words (block 0), (24) out, (28) y, (32) / (36) / (40) the token word,
+ * (48) picture start, (52) P, (56) units digit, (ROW) the row. Stores: the heap blocks, P+TTAB, own frame. */
+fl_mk:
+ mov a2,(52,sp)
+ mov FL_BLK,d0
+ call malloc,[],4
+ cmp 0,a0
+ bne 1f
+ jmp 99f
+1:
+ mov a0,(20,sp)
+ mov a0,d0
+ add FL_BLK,d0
+ mov d0,(8,sp)
+ mov 1,d0
+ mov d0,(12,sp)
+ mov 20,d1
+ clr d0
+2:
+ mov d0,(a0)                      /* slot words 0 */
+ add 4,a0
+ add -1,d1
+ bne 2b
+ mov (20,sp),a0
+ add 20 * 4 + 20 * 24,a0
+ mov a0,(4,sp)
+ mov 1,d0
+ mov d0,(16,sp)
+10:                               /* picture n */
+ mov (8,sp),d0
+ mov (4,sp),d1
+ sub d1,d0
+ cmp 2400,d0
+ bge 11f
+ mov (12,sp),d0
+ cmp 3,d0
+ bcs 12f
+ jmp 90f
+12:
+ mov FL_BLK,d0
+ call malloc,[],4
+ cmp 0,a0
+ bne 13f
+ jmp 90f
+13:
+ mov a0,(4,sp)
+ mov a0,d0
+ add FL_BLK,d0
+ mov d0,(8,sp)
+ mov (12,sp),d0
+ inc d0
+ mov d0,(12,sp)
+11:
+ mov (4,sp),a0
+ mov a0,(48,sp)
+ mov 0x0b06304b,d0                /* header: h - 1 = 75, w - 1 = 99, type 11 */
+ mov d0,(a0)
+ add 4,a0
+ mov a0,(24,sp)
+ clr d0
+ mov d0,(32,sp)
+ mov d0,(36,sp)
+ mov d0,(40,sp)
+ mov d0,(28,sp)
+20:                               /* row y */
+ mov (28,sp),d0
+ cmp 40,d0
+ bcc 25f
+ mov d0,d1                        /* the "FILM" line: fl_top + 50 y */
+ asl 5,d1
+ mov d0,d2
+ asl 4,d2
+ add d2,d1
+ add d0,d1
+ add d0,d1
+ mov fl_top,a0
+ add d1,a0
+ mov sp,a1
+ add ROW,a1
+ mov 50,d2
+21:
+ movbu (a0),d0
+ mov d0,d1
+ and 15,d1
+ movbu d1,(a1)
+ lsr 4,d0
+ movbu d0,(1,a1)
+ inc a0
+ add 2,a1
+ add -1,d2
+ bne 21b
+ bra 30f
+25:                               /* the number */
+ mov sp,a1
+ add ROW,a1
+ mov 100,d2
+ clr d1
+26:
+ movbu d1,(a1)
+ inc a1
+ add -1,d2
+ bne 26b
+ mov (16,sp),d0
+ cmp 10,d0
+ bcc 27f
+ mov 40,d1
+ call fl_dg,[],0
+ bra 30f
+27:
+ clr d1
+28:
+ cmp 10,d0
+ bcs 29f
+ add -10,d0
+ inc d1
+ bra 28b
+29:
+ mov d0,(56,sp)
+ mov d1,d0
+ mov 31,d1
+ call fl_dg,[],0
+ mov (56,sp),d0
+ mov 49,d1
+ call fl_dg,[],0
+30:                               /* the row as runs */
+ clr d2
+31:
+ cmp 100,d2
+ bcc 39f
+ mov sp,a1
+ add ROW,a1
+ add d2,a1
+ movbu (a1),d3
+ mov 1,d1
+32:
+ cmp 16,d1
+ bcc 33f
+ mov d2,d0
+ add d1,d0
+ cmp 100,d0
+ bcc 33f
+ mov a1,a0
+ add d1,a0
+ movbu (a0),d0
+ cmp d3,d0
+ bne 33f
+ inc d1
+ bra 32b
+33:
+ add d1,d2
+ mov d3,d0
+ asl 4,d0
+ add d1,d0
+ add -1,d0
+ call fl_emit,[],0
+ bra 31b
+39:
+ mov (28,sp),d0
+ inc d0
+ mov d0,(28,sp)
+ cmp 76,d0
+ bcc 40f
+ jmp 20b
+40:
+ mov (32,sp),d0                   /* the last word */
+ cmp 0,d0
+ beq 41f
+ mov (24,sp),a0
+ mov (36,sp),d1
+ mov d1,(a0)
+ mov (40,sp),d1
+ mov d1,(4,a0)
+ add 8,a0
+ mov a0,(24,sp)
+41:
+ mov (16,sp),d0                   /* descriptor n - 1 */
+ add -1,d0
+ mov d0,d1
+ asl 4,d1
+ asl 3,d0
+ add d0,d1
+ mov (20,sp),a1
+ add 80,a1
+ add d1,a1
+ mov 14,d0
+ movhu d0,(a1)
+ mov 100,d0
+ movhu d0,(2,a1)
+ mov 76,d0
+ movhu d0,(4,a1)
+ mov 8,d0
+ movhu d0,(6,a1)
+ clr d0
+ movhu d0,(8,a1)
+ movhu d0,(10,a1)
+ mov d0,(20,a1)
+ mov (24,sp),d0
+ mov (48,sp),d1
+ sub d1,d0
+ mov d0,(12,a1)                   /* size */
+ mov d1,(16,a1)                   /* payload (the heap's uncached address) */
+ mov (16,sp),d0
+ add -1,d0
+ asl2 d0
+ mov (20,sp),a0
+ add d0,a0
+ mov a1,(a0)                      /* slot word -> descriptor */
+ mov (24,sp),d0
+ add 7,d0
+ and 0xfffffff8,d0
+ mov d0,(4,sp)
+ mov (16,sp),d0
+ inc d0
+ mov d0,(16,sp)
+ cmp 21,d0
+ bcc 90f
+ jmp 10b
+90:
+ mov (52,sp),a2
+ mov (20,sp),d0
+ mov d0,(TTAB,a2)                 /* published last */
+99:
+ mov (52,sp),a2
+ ret [d2,d3,a2,a3],200
+
+/* fl_ic <- ic_get (d0 / d1 = IC_FM0 + j; returns as ic_get: a0 = the slot word, or 0): film j's number among the
+ * films there picks its cell picture. */
+fl_ic:
+ movm [d2,d3,a2,a3],(sp)
+ add -12,sp                       /* (0) call slot, (4) i, (8) the return address (retf returns through mdr) */
+ mov mdr,d0
+ mov d0,(8,sp)
+ mov d1,d2
+ add -IC_FM0,d2                   /* j */
+ PVAL 8f
+ mov (LPTR,a2),d0
+ cmp 0,d0
+ beq 8f
+ mov (TTAB,a2),a3
+ cmp 0,a3
+ beq 8f
+ mov d0,a2
+ clr d3
+ clr d0
+ mov d0,(4,sp)
+1:
+ mov (4,sp),d0
+ cmp d2,d0
+ bcc 2f
+ mov a2,a0
+ call fl_has,[],0
+ add d0,d3
+ mov (4,sp),d0
+ inc d0
+ mov d0,(4,sp)
+ bra 1b
+2:
+ asl2 d3
+ mov a3,a0
+ add d3,a0
+ mov (a0),d0
+ cmp 0,d0
+ bne 9f
+8:
+ mov 0,a0
+9:
+ mov (8,sp),d0
+ mov d0,mdr
+ add 12,sp
+ movm (sp),[d2,d3,a2,a3]
+ retf [],0
 
