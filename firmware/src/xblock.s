@@ -525,7 +525,9 @@ xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  * request +1744 (kind 0/15) / +1086 (kind 3)); copies (1856 B): A = first kind-0 stage-0 request at +1600, B = first
  * stage 0x09xx at +3456, C = first kind-3 stage-0 (final) at +5312. Live view (+14 0x0030 / 0x0130) skipped. */
  .set LB_SLOT, 7168
- .set LB_TOTAL, 48 + 4 * LB_SLOT
+ .set LB_NSLOT, 8                 /* fg3: 8 slots (an Art photo takes two marks) */
+ .set LB_HDR, 32 + 4 * LB_NSLOT
+ .set LB_TOTAL, LB_HDR + LB_NSLOT * LB_SLOT
  .set LB_NREC, 48
  .set LB_A, 1600
  .set LB_B, 3456
@@ -533,7 +535,7 @@ xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
 
 xb_sbase:                         /* leaf: a0 = log header -> a3 = current slot or 0. Uses d0 */
  mov (12,a0),d0
- and 3,d0
+ and LB_NSLOT - 1,d0
  asl 2,d0
  add 32,d0
  mov (d0,a0),a3
@@ -677,27 +679,11 @@ xb_lg:                            /* jmp from xb_dev in the frame of `call s_cl,
  mov 12,d1
  call xb_cpy,[],0
 5:
- mov (4,a2),a1                    /* copies: A first kind-0 stage 0, B first stage 0x09xx, C first kind-3 stage 0 */
- movhu (12,a1),d0
- mov d0,d1
- and 0xff00,d1
- cmp 0x0900,d1
- bne 11f
- mov (8,a3),d0
- cmp 0,d0
- bne 9f
- mov 1,d0
- mov d0,(8,a3)
- mov LB_B,d1
- bra 8f
-11:
- cmp 0,d0
- bne 9f
+ mov (4,a2),a1                    /* fg3 copies: A first kind-0 request (any stage: Grainy Film develops in 0x0100),
+                                     B first kind-3 stage 0x01xx (the Art pass), C first kind-3 stage 0 (final) */
  movbu (16,a1),d0
- cmp 3,d0
- beq 7f
  cmp 0,d0
- bne 9f
+ bne 11f
  mov (4,a3),d0
  cmp 0,d0
  bne 9f
@@ -705,7 +691,24 @@ xb_lg:                            /* jmp from xb_dev in the frame of `call s_cl,
  mov d0,(4,a3)
  mov LB_A,d1
  bra 8f
-7:
+11:
+ cmp 3,d0
+ bne 9f
+ movhu (12,a1),d0
+ mov d0,d1
+ and 0xff00,d1
+ cmp 0x0100,d1
+ bne 12f
+ mov (8,a3),d0
+ cmp 0,d0
+ bne 9f
+ mov 1,d0
+ mov d0,(8,a3)
+ mov LB_B,d1
+ bra 8f
+12:
+ cmp 0,d0
+ bne 9f
  mov (12,a3),d0
  cmp 0,d0
  bne 9f
@@ -758,9 +761,9 @@ xb_lw:                            /* `calls` from pf_save (the half-press save, 
  mov a0,(d0,a3)
 8:
  inc d2
- cmp 4,d2
+ cmp LB_NSLOT,d2
  bne 6b
- mov 0x32474c47,d0                /* 'GLG2' */
+ mov 0x33474c47,d0                /* fg3: 'GLG3' (8 slots, header LB_HDR) */
  mov d0,(a3)
  mov LB_TOTAL,d0
  mov d0,(4,a3)
@@ -779,7 +782,7 @@ xb_lw:                            /* `calls` from pf_save (the half-press save, 
  beq 9f
  mov a0,(4,sp)
  mov a0,a1
- mov 48,d1
+ mov LB_HDR,d1
  mov 1,d0
  mov a3,a0
  call fwrite,[d2,d3,a2,a3],24
@@ -794,7 +797,7 @@ xb_lw:                            /* `calls` from pf_save (the half-press save, 
  mov 1,d0
  call fwrite,[d2,d3,a2,a3],24
  inc d3
- cmp 4,d3
+ cmp LB_NSLOT,d3
  bne 1b
  mov (4,sp),a0
  call fclose,[d2,a2,a3],16
@@ -1939,8 +1942,8 @@ xb_gt:                            /* camera-route grain level of the last captur
  .balign 4
 xb_lbuf:                          /* fg1: the log header once its buffers exist, else 0 */
  .long 0
-xb_lhdr:                          /* fg1: log header (48 B; +32 the four slot buffers) */
- .space 48
+xb_lhdr:                          /* fg1: log header (fg3: LB_HDR B; +32 the slot buffers) */
+ .space LB_HDR
  .balign 2
 xb_gstab:                         /* Grain 1..3 -> S: the camera's Low / Medium / High in grain contrast (v0.21) */
  .hword 28, 68, 112

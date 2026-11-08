@@ -1450,3 +1450,10 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Reading (analysis): Grainy Film develops in a stage-0x0100 pass and keeps its grain through a following kind-3 art
   pass (0x0101), unlike our COLOR grain (lost on any extra pass, gl9). Next: a logger that copies the stage-0x0100
   development and the 0x0101 art pass in full (fg3), and the owner's exact shot list for run 3.
+- Owner (run 3 shot list): Grainy Film II, GF II + Pin Hole, GF II + Frame, then COLOR + Grain High (after the
+  save). So the logged slots are slot 0 = GF II + Pin Hole (combiner 9, effect 0x0200), slot 2 = GF II + Frame
+  (combiner 10, effect 0x0300); plain GF II came before the logged window. Owner: GF keeps its grain with both.
+- fg3 (2026-11-08; emulator: boots, menus fine): 8 slots (header 64 B, 'GLG3'), copy A = the first kind-0 request at
+  any stage (GF's 0x0100 development), B = the first kind-3 stage 0x01xx (the Art pass), C = the final. Firmware
+  unchanged (v0.24.1); GUIDES.BIN 0ecb6bc8…, 14968 B. Shots asked: GF II, GF II + Pin Hole, GF II + Frame, COLOR +
+  Grain High; Blk change and back before the first and the last half-press (in COLOR).

@@ -1,7 +1,7 @@
 # Caduceus for OM-3
 
 > [!CAUTION]
-> **Experiment: fast-grain logging build fg2. Not a release.** A `GUIDES.BIN` for v0.24.1 (firmware unchanged) that
+> **Experiment: fast-grain logging build fg3. Not a release.** A `GUIDES.BIN` for v0.24.1 (firmware unchanged) that
 > logs how the camera processes Grainy Film photos (with and without Art Effects) into `OM3MOD/GLOG.BIN`, to find a
 > fast grain that works with every effect. Plan: `research/NOTES.md` ("Fast-grain review"). Current release:
 > [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.24.1).
