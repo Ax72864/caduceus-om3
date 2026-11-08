@@ -1227,5 +1227,26 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   and COLOR k is selected -> fl_tt with "Color Profile k" (the film's name when it holds one). Emulator: after an edit
   and up to the row: "Color Profile 1" on COLOR 1, "SoftOff" on FILM 1; the quick menu still FILM 1 / SoftOff.
 - Package film test 5: E1479999.BIN 0c3a0925…, GUIDES.BIN 7d301e73…, LABELS.BIN 903af75b…. On the owner's card,
+  checked by checksum. Camera (owner, 2026-11-08, photos): the title keeps the film's name ("Classic Chrome") ->
+  camera-tested. Two issues: (1) the row's left cell still reads COLOR 1 on a film; (2) the '*' were wrong: after
+  cycling through the films COLOR 2-4 had '*' (they held films), and films showed '*' too.
+- Film test 6 (emulator only):
+  - Pictures per COLOR / MONO profile: 82 x 62 (unused here), 100 x 76 cell, 100 x 76 cell with '*' (14519..14530
+    COLOR, 14507..14518 MONO). The star: the cell builder (0x611d0e2a) asks "COLOR changed?" (0x6129ba07) for a
+    COLOR value and swaps in the '*' picture (table 0x61550fc0 {value, id}); any other value draws as listed.
+  - Left cell: GetValue(111) returning to 0x611d08f4 (the left column's generic cell) -> the film value (fl_get), and
+    item 111's left-column list has the film cell pictures (IC_FM0 + j); the cell draws "FILM n" (+ a '*' mark when
+    the film is changed, see below).
+  - '*' rules: COLOR n = its own settings differ from the factory; a film = it differs from how it was built.
+    .hook_pmod -> fl_pmod: COLOR k holding a film -> for the cell (any caller but 0x611d1837): its own settings' flag
+    (EDITS.BIN record 20 + k byte +63, set by fl_sw from ed_pmod when they are saved); for the row's own check
+    (0x611d182f, return 0x611d1837: the row '*' and the Reset guide): the film changed? (its 18 settings via fl_isdef
+    and the slot's pf_bt bytes against LOOKS.BIN record j). The seven "is at default" sites (ISDEF_SITES) -> fl_isdef:
+    one of COLOR k's 18 settings (pf_ids) while COLOR k holds a film -> default when equal to the film as built
+    (Saturation sectors: Hue and Light too); else ed_isdef.
+  - Emulator: FILM 14 as built: no '*'; Contrast +1 -> +2: "+2*", left cell FILM* 14, Reset guide; OK held: all
+    clear; after cycling all films COLOR 2-4 have no '*', COLOR 1* (changed itself) keeps it. (The row's return address
+    was first taken as 0x611d1835: the call is 7 bytes.)
+- Package film test 6: E1479999.BIN f70024c2…, GUIDES.BIN 3e240b4b…, LABELS.BIN 903af75b…. On the owner's card,
   checked by checksum. Camera result: pending.
 

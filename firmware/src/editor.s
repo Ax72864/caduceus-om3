@@ -64,7 +64,8 @@
                                    * bra 0x611d19b4 */
  .byte 0xcb,0xcb,0xcb
 .section .hook_pmod,"ax"
- jmp ed_pmod                      /* stock 0x6129ba07: clr d3; mov 0x6037ec10,a2 (its first 5 bytes) */
+ jmp fl_pmod                      /* stock 0x6129ba07: clr d3; mov 0x6037ec10,a2 (its first 5 bytes); v0.24 film test 6:
+                                   * fl_pmod first (a COLOR holding a film), then ed_pmod */
 
 /* ------------------------------------------------------------------ section-1 tail */
 .section .ext1,"ax"
@@ -4124,7 +4125,11 @@ fl_l0:                            /* item 111's title list: the stock 48 (build.
  FLOPT ST_F0
 fl_l1:                            /* the left column */
  .space 48 * 12
- FLOPT ST_N0
+ .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+ .long FV0 + \j
+ .short 3, IC_FM0 + \j
+ .long 0x6154b480
+ .endr
 fl_l2:                            /* the strip */
  .space 48 * 12
  .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
@@ -4221,6 +4226,13 @@ fl_get:
  beq 8f
  cmp 901,d2
  beq 1f
+ cmp 111,d2                       /* film test 6: the Picture Mode row's left cell (0x611d08f4) shows the film too */
+ bne 12f
+ mov (4,sp),d1
+ cmp 0x611d08f4,d1
+ beq fl_g2
+ bra 8f
+12:
  add -FLB,d2
  cmp NF,d2
  bcc 8f
@@ -4232,6 +4244,7 @@ fl_get:
  mov (4,sp),d1
  cmp 0x611b32ae,d1                /* only the list builder (film test 4: 0x611d1869 is the "COLOR k changed?" check */
  bne 8f                           /* behind the Reset guide and the held-OK reset: it must see COLOR k) */
+fl_g2:
  mov 111,d0
  call sget,[],4                   /* the picture mode (keeps d2, d3, a2, a3) */
  call fl_k,[],0
@@ -5048,10 +5061,19 @@ fl_sw:
  add d1,a3
  mov a3,(20,sp)
  call pf_capto,[d2,d3,a2,a3],28   /* keeps d2, d3, a2, a3 */
- clr d0
  mov (16,sp),d1
  cmp 20,d1
- bcc 4f
+ bcs 41f
+ mov fl_cvt,a0                    /* COLOR k's own: is it changed from the factory? (its '*' while a film is on it) */
+ add d2,a0
+ movbu (a0),d0
+ call ed_pmod,[d2,d3,a2],16
+ mov (20,sp),a3
+ movbu d0,(63,a3)
+ clr d0
+ bra 4f
+41:
+ clr d0
  mov (LPTR,a2),a0                 /* check: the film as built */
  asl 6,d1
  add d1,a0
@@ -5576,4 +5598,212 @@ fl_pm:
 9:
  mov 203,d0
  jmp st_stk
+
+/* fl_pmod <- .hook_pmod (stock 0x6129ba07 "COLOR profile changed?", the caller's call [d2,d3,a2],16; d0 picture
+ * mode -> d0 1 changed): COLOR k holding a film that is there -> its own settings' flag (EDITS.BIN record 20 + k
+ * valid and its byte +63, set by fl_sw when they were saved), so its '*' follows its own settings, not the film's;
+ * else ed_pmod as before. Uses (0,sp) as the call slot of the leaves it calls. */
+fl_pmod:
+ mov mdr,d1
+ mov d0,a1
+ clr d2
+ cmp 0x611d1837,d1                /* film test 6: 0x611d182f (the Picture Mode row's own '*' and Reset guide) */
+ bne 10f
+ mov 1,d2
+10:
+ call fl_k,[],0
+ cmp 0,d0
+ bge 1f
+ mov a1,d0
+ jmp ed_pmod
+1:
+ asl 8,d2
+ or d0,d2                         /* k | row flag << 8 */
+ PVAL 9f
+ mov d2,d3
+ lsr 8,d3                         /* the row flag */
+ and 0xff,d2                      /* k */
+ mov (TORG,a2),d0
+ cmp 0,d0
+ beq 9f
+ call fl_film,[],0
+ cmp 0,d0
+ blt 9f
+ mov (LPTR,a2),a0
+ call fl_has,[],0
+ cmp 0,d0
+ beq 9f
+ cmp 0,d3
+ bne 20f
+ mov (TORG,a2),a0                 /* the COLOR k cell: its own settings */
+ add TWO,a0
+ mov d2,d1
+ add 20,d1                        /* r */
+ mov 1,d3
+ asl d1,d3
+ mov (12,a0),d0
+ and d3,d0
+ beq 8f
+ mov d1,d0
+ asl 6,d0
+ asl2 d1
+ add d1,a0
+ add d0,a0
+ add 16,a0
+ movbu (63,a0),d0
+ ret [d2,d3,a2],16
+8:
+ clr d0
+ ret [d2,d3,a2],16
+20:                               /* the row: the film changed from as built? its 18 settings (fl_isdef) ... */
+ clr d3
+21:
+ mov pf_ids,a0
+ mov d3,d1
+ asl2 d1
+ add d1,a0
+ movbu (2,a0),d1
+ mul d2,d1
+ movhu (a0),d0
+ add d1,d0
+ call fl_isdef,[d2,d3,a2],24
+ cmp 0,d0
+ beq 28f
+ inc d3
+ cmp 18,d3
+ bcs 21b
+ call fl_film,[],0                /* ... and the slot's WB shift, Blacks / Whites, Extras (pf_bt) */
+ mov (LPTR,a2),a0
+ asl 6,d0
+ add d0,a0
+ add 32,a0
+ mov a2,a1
+ mov d2,d0
+ asl 6,d0
+ add d0,a1
+ add 56,a1                        /* slot + 24 */
+ clr d3
+22:
+ mov pf_bt,a2
+ add d3,a2
+ add d3,a2
+ movbu (a2),d0
+ movbu (1,a2),d1
+ movbu (d0,a0),d0
+ movbu (d1,a1),d1
+ cmp d1,d0
+ bne 28f
+ inc d3
+ cmp 11,d3
+ bcs 22b
+ clr d0
+ ret [d2,d3,a2],16
+28:
+ mov 1,d0
+ ret [d2,d3,a2],16
+9:
+ and 0xff,d2
+ mov fl_cvt,a0
+ add d2,a0
+ movbu (a0),d0
+ jmp ed_pmod
+
+/* fl_isdef <- the seven calls of stock "is at default" (call [d2,d3,a2],24; d0 id -> d0 1 default, 0 changed; build.py
+ * ISDEF_SITES): one of COLOR k's 18 settings (pf_ids: base + step x k, record offset) while COLOR k holds a film that
+ * is there -> "default" when it equals the film as built (LOOKS.BIN record j; a Saturation sector also needs its Hue
+ * and Light equal), so a film's '*' marks what was changed on it. Anything else: ed_isdef as before. Locals (4) id,
+ * (8) record offset. */
+fl_isdef:
+ mov d0,(4,sp)
+ PVAL 90f
+ mov (LPTR,a2),d1
+ cmp 0,d1
+ beq 90f
+ clr d2                           /* pf_ids entry */
+1:
+ mov pf_ids,a0
+ mov d2,d1
+ asl2 d1
+ add d1,a0
+ movhu (a0),d1
+ mov (4,sp),d0
+ exthu d0
+ sub d1,d0                        /* id - base */
+ blt 5f
+ movbu (2,a0),d1                  /* step */
+ clr d3
+2:
+ cmp 0,d0
+ beq 3f
+ sub d1,d0
+ blt 5f
+ inc d3
+ cmp 4,d3
+ bcs 2b
+ bra 5f
+3:
+ movbu (3,a0),d0
+ mov d0,(8,sp)
+ mov d3,d2                        /* k */
+ call fl_film,[],0
+ cmp 0,d0
+ blt 90f
+ mov d0,d3                        /* j */
+ mov (LPTR,a2),a0
+ call fl_has,[],0
+ cmp 0,d0
+ beq 90f
+ mov (4,sp),d0
+ call sget,[],4                   /* now (keeps d2, d3, a2) */
+ extb d0
+ mov (LPTR,a2),a0
+ mov d3,d1
+ asl 6,d1
+ add d1,a0
+ add 32,a0
+ mov (8,sp),d1
+ add d1,a0
+ movbu (a0),d1
+ extb d1
+ cmp d1,d0
+ bne 7f
+ mov (8,sp),d1                    /* a Saturation sector: its Hue and Light too */
+ cmp 24,d1
+ bcs 8f
+ cmp 36,d1
+ bcc 8f
+ add -24,d1
+ mov a2,a1
+ mov d2,d0
+ asl 6,d0
+ add d0,a1
+ add 32,a1
+ add d1,a1
+ mov (LPTR,a2),a0
+ mov d3,d0
+ asl 6,d0
+ add d0,a0
+ add 32,a0
+ add d1,a0
+ movbu (a1),d0
+ movbu (a0),d1
+ cmp d1,d0
+ bne 7f
+ movbu (12,a1),d0
+ movbu (12,a0),d1
+ cmp d1,d0
+ bne 7f
+8:
+ mov 1,d0
+ ret [d2,d3,a2],24
+7:
+ clr d0
+ ret [d2,d3,a2],24
+5:
+ inc d2
+ cmp 18,d2
+ bcs 1b
+90:
+ mov (4,sp),d0
+ jmp ed_isdef
 

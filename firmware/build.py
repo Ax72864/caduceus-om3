@@ -248,7 +248,7 @@ def build(defaults, testfile, out):
     for a in ISDEF_SITES:
         assert m[o(a)] == 0xdd and (a + struct.unpack_from('<i', m, o(a) + 1)[0]) & 0xffffffff == 0x6129bad6, hex(a)
         assert m[o(a) + 6] == 24, hex(a)
-        m[o(a) + 1:o(a) + 5] = struct.pack('<i', sy['ed_isdef'] - a)
+        m[o(a) + 1:o(a) + 5] = struct.pack('<i', sy['fl_isdef'] - a)     # v0.24 film test 6: fl_isdef, then ed_isdef
     ps = poly_sites(m, o)
     assert [v for _, v in ps] == [v for v in range(928, 976) if v not in (939, 951, 963)] and ps[-1][0] == 0x60b1d354, ps
     for a in (0x60b1d156, 0x60b1d1ff, 0x60b1d2a8):   # mov 939/951/963,d0; jmp 0x60b1d354 (the shared last read)

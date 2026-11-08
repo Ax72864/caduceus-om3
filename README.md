@@ -10,8 +10,9 @@
 > the big title (owner: "looks great"). Film test 3 (emulator only): the quick menu shows **FILM n** and the film's
 > name, and changes to a film are kept when you switch away. Film test 4 (camera-tested): COLOR 1–4 keep their own
 > settings too, changes live in a new camera-written file `EDITS.BIN` (the films as built stay in `LOOKS.BIN`), and
-> OK held resets COLOR 1–4 to factory and a film to how it was built. Film test 5 (emulator only): the Picture Mode
-> row keeps the film's name as its title after you adjust something. Notes: `research/NOTES.md` ("v0.24 film list").
+> OK held resets COLOR 1–4 to factory and a film to how it was built. Film test 5 (camera-tested): the Picture Mode
+> row keeps the film's name as its title. Film test 6 (emulator only): the row's left cell shows FILM n, and the '*'
+> means "changed": COLOR n from the factory, a film from how it was built. Notes: `research/NOTES.md` ("v0.24 film list").
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 
