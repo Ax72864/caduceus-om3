@@ -1058,3 +1058,20 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   base 0x611c84eb) with its own layout. Picture Mode's layout (vtable 0x615513cc) has no grid elements.
 - So an on-screen grid needs drawing added to Picture Mode's screen (its layout / compose), e.g. the WB screen's grid
   elements, or our own pictures (box, letters, dot) placed by the same mechanism. Not started.
+- (continued, 2026-11-08) How the camera draws the WB grid: it is a GUI scene of its own, element type 24813 (record
+  0x6136d9fc, class ctor 0x61192c01, vtable 0x6148d1ac, 15 children at +792 from records 0x6148ccd4.. (box 10904,
+  B/A boxes 10176/10177, G/M 10166/10167, lines, dot 10905 ...), child getter 0x61192c5d). Scene index 485 in the
+  scene-by-index switch 0x61121cec (table 0x6136f59c) creates it. Its update 0x61192dc6 reads property 256, an 18-byte
+  block the WB screen publishes from its +5188 (0x610cd5c4 = publish(d0 id, a0 src, d1 size, a1 flag)): bytes 0..3
+  B/A/G/M box picture states (3 normal, 2 lit), byte 6 A-B line on, h8 A-B line x, byte 10 G-M line on, h12 G-M
+  line y, h14 / h16 dot x / y (594 + 13 A-B, 280 - 13 G-M, +80 when 0x611d2941 = 1). Example (WB Auto, 0 / 0):
+  03030303 00000000 b502 0000 2b01 a202 1801.
+- Scenes live in holder elements (0x610cdf05 = load scene index d0 into holder a0; -1 empties; +768 index, +776 the
+  scene). At start-up the GUI fills ~25 top-layer holders (one with 485, captured by sc_cap); every screen empties
+  them (-1) when it opens and loads its own layers (Picture Mode: 497, 288, 287, 286, 285, 501, 502, 457, 456; WB
+  screen: 497, 456, 498, 457; the grid comes inside the WB screen's layer 498).
+- Tries (emulator, branch only): publishing property 256 from Picture Mode alone shows nothing (no grid scene there);
+  loading 485 into the start-up holder from Picture Mode's update crashed; doing it while Picture Mode loads its
+  layer 501 does not crash but no grid shows and the grid scene's update never runs (the scene-by-index path for 485
+  is not taken there; not understood yet). Next: find how layer 498 creates its grid child, or create element 24813
+  directly (0x6111caee with record 0x6136d9fc) under one of Picture Mode's layers.

@@ -52,6 +52,12 @@
  jmp gx_map                       /* v0.23 stock 0x610f6016 (after a screen handler: d0 = next state): mov d0,d3;
                                    * exthu d3; mov d3,d2; asr 8,d2 */
  .byte 0xcb
+.section .hook_sc,"ax"
+ jmp sc_cap                       /* v0.23 stock 0x610cdf05 (a holder gets its scene): mov d0,a3; mov a0,d3; mov 1,d0 */
+ .byte 0xcb
+.section .hook_pu,"ax"
+ jmp pu_hook                      /* v0.23 stock 0x611d04ec (Picture Mode update): mov (0x6037a360),d0 */
+ .byte 0xcb
 .section .hook_ic,"ax"
  jmp ic_get                       /* v0.23 stock 0x610f5611 (picture id -> its slot in the picture table): mov d0,d1;
                                    * exthu d1; cmp 0,d1; bne 0x610f561b */
@@ -3648,6 +3654,7 @@ sl_set:
  or 1,d3
  and 0x7f,d3
  movbu d3,(57,a3)
+ call gr_pub,[d2,d3,a2,a3],16     /* the on-screen grid follows */
  jmp s_dirty
 10:
  cmp 1,a3
@@ -3855,6 +3862,160 @@ rv_chk:
 .balign 4
 gr_flag:
  .long 0
+gx_d0:
+ .long 0
+gx_sh:
+ .long 0
+gr_cont:                          /* the WB grid's holder element (scene 485), captured at start-up (sc_cap) */
+ .long 0
+gr_blk:                           /* the grid's block (property 256, 18 B, as the WB screen's +5188 from 0x611d257a):
+                                   * B / A / G / M box states 3, flags, A-B line x, G-M line y, dot x / y */
+ .byte 3, 3, 3, 3, 0, 0, 0, 0
+ .short 0, 0, 0, 0, 0
+
+/* sc_cap <- jmp from 0x610cdf05 (a holder element gets its scene: a0 holder, d0 scene index; a1 free): remember the
+ * start-up holder of scene 485, the camera's WB fine-tune grid. It is one of the GUI's top layers, which every screen
+ * empties (-1) when it opens; on our row we load 485 into it again, and empty it when the row or the screen goes. */
+sc_cap:
+ cmp 485,d0
+ bne 1f
+ mov gr_cont,a1
+ mov a0,(a1)
+1:
+ cmp 501,d0                       /* TEST: Picture Mode opening (its layer 501): load the grid there and then */
+ bne 2f
+ mov gr_cont,a1
+ mov (a1),a1
+ cmp 0,a1
+ beq 2f
+ add -24,sp
+ mov d0,(8,sp)
+ mov d1,(12,sp)
+ mov a0,(16,sp)
+ mov a1,a0
+ mov 485,d0
+ call sc_set,[d2,d3,a2,a3],28
+ mov (8,sp),d0
+ mov (12,sp),d1
+ mov (16,sp),a0
+ add 24,sp
+2:
+ mov d0,a3
+ mov a0,d3
+ mov 1,d0
+ jmp sc_back                      /* 0x610cdf0b */
+
+/* gr_upd: `call gr_upd,[d2,d3,a2,a3],16`, a0 -> the Picture Mode screen's current item (u16). On our row on COLOR 1-4:
+ * gr_flag = look + 1, publish the grid block (gr_pub) and load the camera's WB grid scene (485) into its top-layer
+ * holder; else gr_flag = 0 and the holder is emptied. */
+gr_upd:
+ mov gr_cont,a1
+ mov (a1),d0
+ cmp 0,d0
+ beq 9f
+ movhu (a0),d0
+ cmp GR_IT,d0
+ bne 8f
+ mov 1,d1
+ call ch_id,[d2,d3,a2],20         /* picture mode -> 1..4, else 0 */
+ mov gr_flag,a1
+ movbu d0,(a1)
+ cmp 0,d0
+ beq 8f
+ call gr_pub,[d2,d3,a2,a3],16
+ bra 9f
+8:
+ clr d0
+ mov gr_flag,a1
+ movbu d0,(a1)
+9:
+ ret [d2,d3,a2,a3],16
+
+/* gr_pub: `call gr_pub,[d2,d3,a2,a3],16`: with gr_flag = look + 1, fill the grid block from the look's A-B / G-M as
+ * the WB screen does (0x611d257a: lines at 613 + 13 A-B / 299 - 13 G-M, dot at 594 + 13 A-B / 280 - 13 G-M, x + 80
+ * when 0x611d2941 says 1) and publish it (property 256). */
+gr_pub:
+ call wb_shift,[d2,a2],24         /* 1: the layout 80 px to the right (keeps only d2, a2) */
+ clr d1
+ cmp 1,d0
+ bne 4f
+ mov 80,d1
+4:
+ mov d1,(gx_sh)
+ movbu (gr_flag),d1
+ cmp 0,d1
+ beq 9f
+ add -1,d1
+ mov d1,d2                        /* k */
+ PVAL 9f                          /* a2 = P (uses d3) */
+ asl 6,d2
+ add 32,d2
+ add d2,a2                        /* the look's slot */
+ movbu (26,a2),d2
+ extb d2                          /* A-B */
+ movbu (27,a2),d3
+ extb d3                          /* G-M */
+ mov gr_blk,a2
+ clr d0
+ cmp 0,d2
+ beq 1f
+ mov 1,d0
+1:
+ movbu d0,(6,a2)
+ clr d0
+ cmp 0,d3
+ beq 2f
+ mov 1,d0
+2:
+ movbu d0,(10,a2)
+ clr d0
+ movbu d0,(11,a2)
+ mov (gx_sh),d1
+ mov d2,d0
+ asl 3,d0
+ mov d2,a1
+ add a1,a1
+ add a1,a1
+ add a1,d0
+ add d2,d0                        /* 13 A-B */
+ mov d0,a1
+ add 613,d0
+ add d1,d0
+ movhu d0,(8,a2)
+ mov a1,d0
+ add 594,d0
+ add d1,d0
+ movhu d0,(14,a2)
+ mov d3,d0
+ asl 3,d0
+ mov d3,a1
+ add a1,a1
+ add a1,a1
+ add a1,d0
+ add d3,d0                        /* 13 G-M */
+ mov d0,a1
+ mov 299,d0
+ sub a1,d0
+ movhu d0,(12,a2)
+ mov 280,d0
+ sub a1,d0
+ movhu d0,(16,a2)
+ mov 256,d0
+ mov gr_blk,a0
+ mov 18,d1
+ mov 1,a1
+ call prop_set,[d2,a2],16
+9:
+ ret [d2,d3,a2,a3],16
+
+/* pu_hook <- jmp from 0x611d04ec (the Picture Mode screen's update, after its per-row case; (4,sp) -> the current
+ * item; a3 = the screen): the WB grid for our row, then as stock `mov (0x6037a360),d0` -> 0x611d04f2. */
+pu_hook:
+ mov (4,sp),a0
+ call gr_upd,[d2,d3,a2,a3],16
+ mov (0x6037a360),d0
+ jmp pu_back
+
 /* gk_f <- row switch 0x61536f2c (the row's object), our row: as item 5398's case 0x611c2d19 (kind 7, key from its
  * picture-mode table) with key 1580, and gr_flag from the picture mode (COLOR 1-4 -> 1..4, else 0). */
 gk_f:
@@ -3882,6 +4043,16 @@ gx_map:
  bne 9f
  clr d1
  movbu d1,(a1)
+ mov (gr_cont),a0                 /* and hide the grid */
+ cmp 0,a0
+ beq 9f
+ mov (776,a0),d1
+ cmp 0,d1
+ beq 9f
+ mov d0,(gx_d0)
+ mov -1,d0
+ call sc_set,[d2,d3,a2,a3],28
+ mov (gx_d0),d0
 9:
  mov d0,d3
  exthu d3

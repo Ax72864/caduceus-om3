@@ -55,7 +55,9 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_rev': (0x611b21e8, bytes.fromhex('5c10f060fac8d501c927')),
          '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60')),
          '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906')),
-         '.hook_gx': (0x610f6016, bytes.fromhex('831f8ef8ca08'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_gx': (0x610f6016, bytes.fromhex('831f8ef8ca08')),
+         '.hook_sc': (0x610cdf05, bytes.fromhex('f1e3f1d38001')),
+         '.hook_pu': (0x611d04ec, bytes.fromhex('fca460a33760'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
