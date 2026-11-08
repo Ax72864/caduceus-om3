@@ -54,7 +54,9 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_arw': (0x611d0be0, bytes.fromhex('5c148001fa507503')),
          '.hook_rev': (0x611b21e8, bytes.fromhex('5c10f060fac8d501c927')),
          '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60')),
-         '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906')),
+         '.hook_pme': (0x6125becc, bytes.fromhex('cfb0f8fec4')),
+         '.hook_gx': (0x610f6016, bytes.fromhex('831f8ef8ca08'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
@@ -264,8 +266,8 @@ def build(defaults, testfile, out):
     for a, c in ((0x611d040d, 0x611d0422), (0x611d0846, 0x611d0859)):
         assert bytes(m[o(a):o(a) + 6]) == b'\xfc\xdc' + struct.pack('<I', IT) and bytes(m[o(c):o(c) + 2]) == b'\xa5\x11', hex(a)
         struct.pack_into('<I', m, o(a) + 2, sy['it_tab'])
-        m[o(c) + 1] = 21
-    NR_IT, VF_IT, BK_IT, WH_IT = 5394, 5389, 5386, 5385
+        m[o(c) + 1] = 22
+    NR_IT, VF_IT, BK_IT, WH_IT, GR_IT = 5394, 5389, 5386, 5385, 5384
     def sw_add(base, n, item, target):
         key = item - 6
         ents = [struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)]
@@ -300,7 +302,7 @@ def build(defaults, testfile, out):
                     (0x615510cc, 32), (sy['sw11_tab'], 32), (0x6155124c, 32), (sy['sw13_tab'], 32)):
         tg = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 5394]
         assert len(tg) == 1, hex(base)
-        for item, pre in ((NR_IT, 'nr'), (VF_IT, 'vf')):
+        for item, pre in ((NR_IT, 'nr'), (VF_IT, 'vf'), (GR_IT, 'wg')):
             t = sy[pre + '_' + OWN[base]] if base in OWN else sy['lc_' + pre] if base == 0x6155124c else tg[0]
             sw_add(base, n, item, t)
         # Blacks / Whites: slider rows, as item 7's case (key 1) except the bar object's id (f2c) and the left column
@@ -318,8 +320,8 @@ def build(defaults, testfile, out):
         at = [i for i in range(o(0x61455000), o(0x61456000), 4) if bytes(m[i:i + 8]) == pat]
         assert len(at) == 1, hex(L)
         struct.pack_into('<II', m, at[0], sy['ic_list'], sy['ic_lend'])
-        assert m[at[0] - 3] == 3, hex(L)          # the record's choice count (object +131): 3 -> 6
-        m[at[0] - 3] = 6
+        assert m[at[0] - 3] == 3, hex(L)          # the record's choice count (object +131): 3 -> 7
+        m[at[0] - 3] = 7
     sys.path.insert(0, str(ROOT / 'firmware'))
     import mkicons
     for st, d, p in zip(mkicons.streams(), ('ic_dbk', 'ic_dwh'), ('ic_pbk', 'ic_pwh')):

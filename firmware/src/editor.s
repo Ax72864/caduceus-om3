@@ -48,6 +48,13 @@
 .section .hook_rev,"ax"
  jmp rv_chk                       /* v0.23 stock 0x611b21e8 (a bar's value list top-down if its id is in 0x6152d6fe) */
  .byte 0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_pme,"ax"
+ jmp pm_ev                        /* v0.23 stock 0x6125becc (Picture Mode screen's event handler): movm [d2,a2,a3],(sp);
+                                   * add -60,sp */
+.section .hook_gx,"ax"
+ jmp gx_map                       /* v0.23 stock 0x610f6016 (after a screen handler: d0 = next state): mov d0,d3;
+                                   * exthu d3; mov d3,d2; asr 8,d2 */
+ .byte 0xcb
 .section .hook_ic,"ax"
  jmp ic_get                       /* v0.23 stock 0x610f5611 (picture id -> its slot in the picture table): mov d0,d1;
                                    * exthu d1; cmp 0,d1; bne 0x610f561b */
@@ -2960,9 +2967,9 @@ pm_color:
  jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
 .balign 4
 pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Blacks, Whites, Shading,
-                                   * Vignette Correction (= VigFix), Sharpness (= Sharp), Contrast, Noise Filter (= NR),
+                                   * A-B / G-M (opens the camera's WB grid), Vignette Correction (= VigFix), Sharpness (= Sharp), Contrast, Noise Filter (= NR),
                                    * Film Grain Effect (= Grain) */
- .long 111, 5397, 5398, BK_IT, WH_IT, 5399, VF_IT, 7, 8, NR_IT, 5400
+ .long 111, 5397, 5398, BK_IT, WH_IT, GR_IT, 5399, VF_IT, 7, 8, NR_IT, 5400
 .set PM_N, (. - pm_list) / 4
 
 /* Picture Mode rows of COLOR 1-4 that are Extras settings of the selected look (slot k = P + 32 + 64k):
@@ -2975,7 +2982,7 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
  *                   left column our icons "Blk" / "Wht" (IC_BK / IC_WH) and the camera's own value, as the stock slider rows)
  * Ids: our setting ids GRB/NRB/VFB + k for the rows' bars (only our facade handlers take them), and the rows' own
  * left-column ids 7, 998 (Film Grain's), NR_IT, VF_IT, answered by picture mode (54/55/56/64 = COLOR 1-4).
- * The new rows are choice rows like Film Grain Effect: item table entries (it_tab, 21 entries, build.py copies the
+ * The new rows are choice rows like Film Grain Effect: item table entries (it_tab, 22 entries, build.py copies the
  * stock 17) with their option lists, and entries in the column's 9 row switches (build.py: as item 5400's, except
  * where its case asks the Film Grain id: our stubs ch_* below). */
 .set GRB, 0x7e00
@@ -2983,14 +2990,17 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
 .set VFB, 0x7e20
 .set BKB, 0x7e30
 .set WHB, 0x7e40
+.set WGB, 0x7e50                  /* A-B / G-M row's one-option choice (its strip shows the WB± picture) */
 .set NR_IT, 5394
 .set VF_IT, 5389
 .set BK_IT, 5386
 .set WH_IT, 5385
+.set GR_IT, 5384                  /* A-B / G-M: OK opens the camera's WB fine-tune grid on the look's slot +26 / +27 */
 .set ST_VIG, 0x7f00               /* our string ids (st_get answers them; the camera's table has ~6000) */
 .set ST_STD, 0x7f01
 .set ST_BKS, 0x7f02                 /* "Blacks" */
 .set ST_WHS, 0x7f03                 /* "Whites" */
+.set ST_GR, 0x7f04                  /* "A-B / G-M" */
 .set IC_BK, 0x7f80                /* our picture ids (ic_get answers them; the camera's table has ~20000 slots) */
 .set IC_WH, 0x7f81
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
@@ -3010,6 +3020,8 @@ bk_tab:
  .long 54, BKB, 55, BKB + 1, 56, BKB + 2, 64, BKB + 3
 wh_tab:
  .long 54, WHB, 55, WHB + 1, 56, WHB + 2, 64, WHB + 3
+wg_tab:
+ .long 54, WGB, 55, WGB + 1, 56, WGB + 2, 64, WGB + 3
 .balign 8
 sw11_tab:                         /* the row switches 0x615511cc and 0x6155134c (16 entries, full with our rows) */
  .space 32 * 8                    /* re-hashed by build.py into 32 entries */
@@ -3021,11 +3033,15 @@ it_tab:                           /* the stock 17 item entries (filled by build.
  .long VF_IT, vf_title, vf_l0, 2, 0, vf_l1, 2, 0, vf_l2, 2
  .long BK_IT, 0, 0, 0, bk_title, 0, 5 << 16, 0, 0, 0           /* slider entries (as item 7's: +16 title, +26 the */
  .long WH_IT, 0, 0, 0, wh_title, 0, 6 << 16, 0, 0, 0           /* left icon: 5 / 6 = IC_BK / IC_WH in ic_list) */
+ .long GR_IT, gr_title, wg_l0, 1, 0, wg_l1, 1, 0, wg_l2, 1  /* a choice row of one option (as VF's), OK opens the grid */
 bk_title:
  .short 4, ST_BKS
  .long 0x6154b480
 wh_title:
  .short 4, ST_WHS
+ .long 0x6154b480
+gr_title:
+ .short 4, ST_GR
  .long 0x6154b480
 nr_title:
  .short 4, 188                    /* string 188 "Noise Filter" */
@@ -3065,6 +3081,12 @@ vf_l1:
 vf_l2:
  OPT 0, 3, VF_J0
  OPT 1, 3, VF_J1
+wg_l0:
+ OPT 0, 4, ST_GR                  /* title "A-B / G-M" */
+wg_l1:
+ OPT 0, 3, 12545                  /* the camera's WB± picture, in the strip ... */
+wg_l2:
+ OPT 0, 3, 12545                  /* ... and in the left column */
 nr_s2v:                           /* NR slot value 1..4 (index 0..3) -> Noise Filter value; 0 Camera: the camera's own */
  .byte 0, -1, -2, 1
 nr_v2s:                           /* Noise Filter value -2..+1 (index + 2) -> slot value */
@@ -3098,8 +3120,14 @@ gr_lc:
  bra 9f
 4:
  cmp WH_IT,d0
- bne 9f
+ bne 5f
  mov wh_tab,a3
+ mov 4,d2
+ bra 9f
+5:
+ cmp GR_IT,d0
+ bne 9f
+ mov wg_tab,a3
  mov 4,d2
 9:
  jmp lc_back                      /* 0x611d19b4: cmp 0,a3 */
@@ -3127,6 +3155,11 @@ st_get:
  mov whs_str,a0
  ret [d2],8
 4:
+ cmp ST_GR,d0
+ bne 5f
+ mov grs_str,a0
+ ret [d2],8
+5:
  mov d0,d2
  call str_lang,[],0
  jmp str_back
@@ -3135,6 +3168,8 @@ bks_str:
  .short 66, 108, 97, 99, 107, 115, 0
 whs_str:
  .short 87, 104, 105, 116, 101, 115, 0
+grs_str:                          /* "A-B / G-M" */
+ .short 65, 45, 66, 32, 47, 32, 71, 45, 77, 0
  .balign 16
 std_str:                          /* "Std" */
  .short 83, 116, 100, 0
@@ -3183,11 +3218,19 @@ ch_id:
  CHC vf_c, VFB, chc_back
  CHC vf_d, VFB, chd_back
  CHC vf_f, VFB, chf_back
+ CHC wg_a, WGB, cha_back
+ CHC wg_b, WGB, chb_back
+ CHC wg_c, WGB, chc_back
+ CHC wg_d, WGB, chd_back
+ CHC wg_f, WGB, chf_back
  CHC bk_f, BKB, f2c_obj           /* slider rows: as item 7's case (0x611c2ce8: the bar object with this id) */
  CHC wh_f, WHB, f2c_obj
 
 /* lc_nr / lc_vf <- row switch 0x6155124c (the left column's cell): as Film Grain's case 0x611d0b57 (cell type 1, the
  * icon of the value from the item's list) but GetValue of our row's own id instead of 998 -> 0x611d0b72. */
+lc_wg:
+ mov GR_IT,d2
+ bra 1f
 lc_nr:
  mov NR_IT,d2
  bra 1f
@@ -3211,6 +3254,22 @@ lc_vf:
 sl_slot:
  mov d0,d3
  exthu d3
+ mov gr_flag,a0                   /* the WB grid opened from our A-B / G-M row: its stills ids answer the look */
+ movbu (a0),d2
+ cmp 0,d2
+ beq 3f
+ add -1,d2
+ mov 7,d1
+ mov d3,a2
+ add -1580,a2                     /* A-B 1580..1592 (one per WB mode, table 0x615d1944) */
+ cmp 13,a2
+ bcs 2f
+ mov 8,d1
+ mov d3,a2
+ add -1593,a2                     /* G-M 1593..1605 */
+ cmp 13,a2
+ bcs 2f
+3:
  mov 1,d1
  mov d3,d2
  add -904,d2
@@ -3241,6 +3300,11 @@ sl_slot:
  add -WHB,d2
  cmp 4,d2
  bcs 2f
+ mov 9,d1
+ mov d3,d2
+ add -WGB,d2
+ cmp 4,d2
+ bcs 2f
  mov 1,d1
  cmp 7,d3
  beq 1f
@@ -3258,6 +3322,9 @@ sl_slot:
  beq 1f
  mov 6,d1
  cmp WH_IT,d3
+ beq 1f
+ mov 9,d1
+ cmp GR_IT,d3                     /* A-B / G-M row's cell: no value of its own (0) */
  bne 8f
 1:
  mov d1,d3                        /* the class, over the getter */
@@ -3291,6 +3358,23 @@ sl_slot:
 
 /* sl_val: d1 class, a0 slot -> d0 the row's value (Sharp -5..+2, Grain 0..3, NR -2..+1, VigFix -1..0). */
  .macro SL_VAL
+ cmp 7,d1
+ bne 81f
+ movbu (26,a0),d0                 /* A-B */
+ extb d0
+ bra 99f
+81:
+ cmp 8,d1
+ bne 82f
+ movbu (27,a0),d0                 /* G-M */
+ extb d0
+ bra 99f
+82:
+ cmp 9,d1
+ bne 83f
+ clr d0
+ bra 99f
+83:
  cmp 2,d1
  bne 91f
  movbu (53,a0),d0
@@ -3345,6 +3429,15 @@ sl_slot:
 sl_get:
  cmp 0,a1
  beq 9f
+ cmp 2148,d0                      /* the Picture Mode column's row memory: ours when it was one of our rows */
+ bne 1f
+ movhu (gr_row),d1
+ cmp 0,d1
+ beq 1f
+ mov d1,(a1)
+ clr d0
+ rets
+1:
  movm [d2,d3,a2,a3],(sp)
  add -4,sp                        /* (0,sp): the return address slot of our own call */
  mov d0,d2
@@ -3412,7 +3505,32 @@ sl_get:
  exthu d2
  add -WHB,d2
  cmp 4,d2
+ bcs 90f
+ mov 9,a3
+ mov d0,d2
+ exthu d2
+ add -WGB,d2
+ cmp 4,d2
+ bcs 90f
+ mov gr_flag,a2                   /* the WB grid opened from our row: A-B class 7, G-M class 8, k = flag - 1 */
+ movbu (a2),d3
+ cmp 0,d3
+ beq \miss
+ add -1,d3
+ mov 7,a3
+ mov d0,d2
+ exthu d2
+ add -1580,d2
+ cmp 13,d2
+ bcs 89f
+ mov 8,a3
+ mov d0,d2
+ exthu d2
+ add -1593,d2
+ cmp 13,d2
  bcc \miss
+89:
+ mov d3,d2
 90:
  PVAL \miss
  .endm
@@ -3421,6 +3539,12 @@ sl_get:
 sl_cnt:
  movm [d2,d3,a2,a3],(sp)
  REAL 8f
+ mov 1,d0                         /* the A-B / G-M row's one option */
+ cmp 9,a3
+ beq 6f
+ mov 15,d0                        /* A-B / G-M -7..+7 */
+ cmp 7,a3
+ bcc 6f
  mov 8,d0
  cmp 1,a3
  beq 6f
@@ -3440,6 +3564,14 @@ sl_cnt:
 
 /* the class's lowest value (d0) and count (d1) for index <-> value: Sharp -5/8, Grain 0/4, NR -2/4, VigFix -1/2 */
  .macro LOWCNT
+ clr d0
+ mov 1,d1
+ cmp 9,a3
+ beq 99f                          /* the A-B / G-M row: 0, 1 */
+ mov -7,d0
+ mov 15,d1
+ cmp 7,a3
+ bcc 99f                          /* A-B / G-M -7, 15 */
  mov -5,d0
  mov 8,d1
  cmp 1,a3
@@ -3503,9 +3635,53 @@ sl_sel:
 /* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
  * d2/d3/a2/a3 saved by the call, frame 68): our bar ids -> the slot byte, then ed_set's dirty + manager refresh. */
 sl_set:
+ cmp 2148,d0                      /* the column's row memory (the stock setting refuses our row ids 5384..5394) */
+ bne 1f
+ movbu (gr_hold),d2
+ cmp 0,d2
+ beq 4f
+ clr d2
+ movbu d2,(gr_hold)
+ bra 1f
+4:
+ mov d1,d2
+ exthu d2
+ add -5384,d2
+ cmp 11,d2
+ bcc 2f
+ mov d1,d2
+ bra 3f
+2:
+ clr d2
+3:
+ movhu d2,(gr_row)
+1:
  REAL 9f
  asl 6,d2
  add a2,d2                        /* d2 = P + 64k */
+ cmp 9,a3
+ beq 7f                           /* the A-B / G-M row's one option: nothing to store */
+ cmp 7,a3
+ bcs 10f
+ cmp -7,d1                        /* A-B / G-M -7..+7 -> +26 / +27, then wb_flags (+25): bit0 on, bit7 off */
+ blt 7f
+ cmp 7,d1
+ bgt 7f
+ mov 58,d3
+ cmp 7,a3
+ beq 11f
+ mov 59,d3
+11:
+ add d2,d3
+ mov d3,a3
+ movbu d1,(a3)
+ mov d2,a3
+ movbu (57,a3),d3
+ or 1,d3
+ and 0x7f,d3
+ movbu d3,(57,a3)
+ jmp s_dirty
+10:
  cmp 1,a3
  bne 2f
  cmp -5,d1                        /* Sharp -5..+2 -> +54 */
@@ -3703,6 +3879,112 @@ rv_chk:
 3:
  jmp rv_back
 
+/* The A-B / G-M row opens the camera's WB fine-tune screen (GUI state 0x0408 ID_ST_MENU_FUNC_DIRECT_WB_REV, the one
+ * the WB screen 0x0417 opens from its WB± row on OK, 0x6125bc8b). While it is open from our row, gr_flag = look + 1
+ * and the facade answers its stills ids (A-B 1580..1592, G-M 1593..1605 by WB mode) from the look's slot +26 / +27
+ * (REAL, sl_slot); leaving it clears the flag, and MENU (stock: back to 0x0417) comes back to Picture Mode 0x0418. */
+.balign 4
+gr_flag:
+ .byte 0
+/* gr_hold: 1 from MENU in the grid to Picture Mode's first row-memory write (its reset to the top row, 111): that
+ * write keeps gr_row, so the cursor comes back to our row */
+gr_hold:
+ .byte 0
+gr_row:                           /* the Picture Mode column's row memory (setting 2148) when it is one of our rows */
+ .short 0
+/* pm_ev <- jmp from the Picture Mode handler 0x6125becc (calls: d0 event, d1, a0, a1): OK pressed (0x900c) on our row
+ * (row list = (0x6037dfa0) + 0x51a0: +94 cursor, +108 item ids) on COLOR 1-4 -> flag, d0 = 0x0408; else stock. */
+pm_ev:
+ movm [d2,d3,a2,a3],(sp)
+ add -24,sp                       /* (0,sp) our call's slot; d0, d1, a0, a1, mdr kept */
+ mov d0,(4,sp)
+ mov d1,(8,sp)
+ mov a0,(12,sp)
+ mov a1,(16,sp)
+ mov mdr,d2
+ mov d2,(20,sp)
+ cmp 0x900c,d0
+ bne 8f
+ mov (0x6037dfa0),a2
+ cmp 0,a2
+ beq 8f
+ add 0x51a0,a2
+ movhu (94,a2),d2
+ mov (108,a2),a3
+ cmp 0,a3
+ beq 8f
+ asl2 d2
+ add d2,a3
+ mov (a3),d2
+ cmp GR_IT,d2
+ bne 8f
+ mov 111,d0
+ call sget,[],4                   /* picture mode (keeps d2, d3) */
+ mov 1,d2
+ cmp 54,d0
+ beq 1f
+ inc d2
+ cmp 55,d0
+ beq 1f
+ inc d2
+ cmp 56,d0
+ beq 1f
+ inc d2
+ cmp 64,d0
+ bne 8f
+1:
+ mov gr_flag,a2
+ movbu d2,(a2)
+ mov (20,sp),d2
+ mov d2,mdr
+ add 24,sp
+ movm (sp),[d2,d3,a2,a3]
+ mov 0x0408,d0
+ mov 8,d1
+ rets
+8:
+ mov (20,sp),d2
+ mov d2,mdr
+ mov (4,sp),d0
+ mov (8,sp),d1
+ mov (12,sp),a0
+ mov (16,sp),a1
+ add 24,sp
+ movm (sp),[d2,d3,a2,a3]
+ movm [d2,a2,a3],(sp)
+ add -60,sp
+ jmp pme_back                     /* 0x6125bed1 */
+/* gx_map <- jmp from 0x610f6016 (the state dispatcher, d0 = a handler's next state, (8,sp) -> the GUI state bytes
+ * {parent, child}; a0 / a1 / d1 free here): leaving 0x0408 while gr_flag is set clears it; 0x0417 -> 0x0418. */
+gx_map:
+ mov gr_flag,a1
+ movbu (a1),d1
+ cmp 0,d1
+ beq 9f
+ mov d0,d1
+ exthu d1
+ cmp 0,d1
+ beq 9f
+ mov (8,sp),a0
+ movhu (a0),d1
+ cmp 0x0804,d1
+ bne 9f
+ clr d1
+ movbu d1,(a1)
+ mov d0,d1
+ exthu d1
+ cmp 0x0417,d1
+ bne 9f
+ mov 0x0418,d0
+ mov 1,d1
+ movbu d1,(1,a1)                  /* gr_hold */
+9:
+ mov d0,d3
+ exthu d3
+ mov d3,d2
+ asr 8,d2
+ jmp gx_back                      /* 0x610f601c */
+
 /* ic_get <- jmp from the picture lookup 0x610f5611 (`call ..,[],0`, d0 picture id -> a0 = its slot: a word holding
  * the picture's descriptor; 0 for id 0): our IC_BK / IC_WH -> ic_ebk / ic_ewh, else as stock ((0x60379740) + 4 id). */
 ic_get:
@@ -3734,7 +4016,7 @@ ic_get:
  * case 0x611d096e -> 0x61178939; 0x6128abe0 / 0x610dae2a ignore an index from the object's +131 on (the choice
  * count, from the layout record's byte before the list pointers). Stock lists 0x614548b4.. (5 slots): S, Contrast,
  * Saturation (count 3). build.py points the 5 slots' layout records (start, end, count 6) at ic_list: the stock three, S again
- * for 4 (item 5399's +26, Shading, which draws its own picture), then Blk 5, Wht 6. */
+ * for 4 (item 5399's +26, Shading, which draws its own picture), then Blk 5, Wht 6, WB± 7. */
 .balign 4
 ic_list:
  .long 0xffff, 7, 7, 11416
@@ -3743,6 +4025,7 @@ ic_list:
  .long 0xffff, 7, 7, 11416
  .long 0xffff, 7, 7, IC_BK
  .long 0xffff, 7, 7, IC_WH
+ .long 0xffff, 7, 7, 12545        /* the camera's own WB± picture (82 x 30), for A-B / G-M */
 ic_lend:
 ic_ebk:
  .long ic_dbk
