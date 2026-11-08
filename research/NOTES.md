@@ -945,3 +945,20 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Emulator: Blacks 0 -> -5, Whites +5 -> +2, bar ends and dots right, left column follows; other rows unchanged.
 - Package test 8: E1479999.BIN 21eb72c2…, GUIDES.BIN 6d109d75…, LABELS.BIN 903af75b… (as test 6). On the owner's card,
   checked by checksum. Camera result: pending.
+
+### A-B / G-M: the camera's WB grid (research started 2026-11-08; analysis + emulator observation)
+- Owner wants A-B / G-M on COLOR 1-4 as the camera's own WB fine-tune grid, not sliders ("research the grid first").
+- Where it is (emulator): SCP -> WB (right of the picture mode) -> OK = GUI `SS_MENU_LV/ID_ST_DIRECT_WB`. Left column:
+  WB mode, Keep Warm Color, **WB±**; on WB± the right side shows the grid (G top, M bottom, B left, A right, a dot).
+- How it is built (analysis): unlike the Picture Mode column (generic item table 0x6154c2a8 + row switches), the WB
+  screen is a bespoke class. Its draw code (around 0x611d1cbd..0x611d1e8x) branches on the screen object's own fields
+  (+5254 row index 0 / 1 / 4, +5256, +5240 a sub-object with a vtable, +5252 still/movie) and draws with the shared
+  helpers 0x611c7785 / 0x611c782f from tables 0x615513dc..0x61551490 and 0x61551c50.
+- Its values: per-axis id functions pick the camera's real WB compensation id for the current WB mode and still/movie:
+  0x611d27df A-B (1578 / 1579 by +5252), 0x611d2807 (1634 / 1635), 0x611d282f / 0x611d2919 / 0x611d28c7 (tables
+  0x615518a8 13 entries, 0x61551910); traced GetValue ids on the screen include 1578, 1584, 1597.
+- So the grid is not a row type the Picture Mode column can list (as Film Grain was). Ways to port, not yet tried:
+  1. Draw a grid row ourselves in the Picture Mode column with the same helpers (most work; looks native).
+  2. From an "A-B / G-M" row, open the camera's WB screen on WB±, with its A-B / G-M ids answered from the look's
+     slot (+26 A-B, +27 G-M) only while opened from our row (needs the screen transition and a context flag).
+  3. Two slider rows (as Blacks / Whites) as a fallback.
