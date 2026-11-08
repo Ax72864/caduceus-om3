@@ -1093,4 +1093,4 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   its own values, the camera's own WB screen unchanged afterwards. No value text (the fine-tune screen's "A3 . G2"
   header is not part of this scene).
 - Package test 13: E1479999.BIN e0efd67c…, GUIDES.BIN 83f72a22…, LABELS.BIN 903af75b… (unchanged). Card not connected
-  at packaging; not yet on the card. Camera result: pending.
+  at packaging; copied later and checked by checksum. Camera result: pending.
