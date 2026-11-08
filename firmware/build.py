@@ -265,6 +265,17 @@ def build(defaults, testfile, out):
         assert bytes(m[o(a):o(a) + 6]) == b'\xfc\xdc' + struct.pack('<I', IT) and bytes(m[o(c):o(c) + 2]) == b'\xa5\x11', hex(a)
         struct.pack_into('<I', m, o(a) + 2, sy['it_tab'])
         m[o(c) + 1] = 23
+    # v0.24 film list: item 111's option lists (title / left column / strip, 48 x 12 B) -> fl_l0..2 (the stock 48, then
+    # the films, written by editor.s), and setting 901's value table entry (COLOR 1-4) -> fl_rec, 4 + 20 records
+    e = struct.unpack_from('<10I', m, o(sy['it_tab']))
+    assert e[0] == 111 and (e[3], e[6], e[9]) == (48, 48, 48), e
+    for at, name in ((8, 'fl_l0'), (20, 'fl_l1'), (32, 'fl_l2')):
+        src = struct.unpack_from('<I', m, o(sy['it_tab']) + at)[0]
+        m[o(sy[name]):o(sy[name]) + 48 * 12] = m[o(src):o(src) + 48 * 12]
+        struct.pack_into('<II', m, o(sy['it_tab']) + at, sy[name], 48 + 20)
+    assert struct.unpack_from('<3I', m, o(0x6152f8dc)) == (901, 4, 0x6152f850)
+    assert bytes(m[o(0x6152f850):o(0x6152f850) + 80]) == bytes(m[o(sy['fl_rec']):o(sy['fl_rec']) + 80])
+    struct.pack_into('<II', m, o(0x6152f8e0), 24, sy['fl_rec'])
     NR_IT, VF_IT, BK_IT, WH_IT, AB_IT, GM_IT = 5394, 5389, 5386, 5385, 5384, 5383
     def sw_add(base, n, item, target):
         key = item - 6

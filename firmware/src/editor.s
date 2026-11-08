@@ -2042,7 +2042,7 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
  * P+LIDX, the heap buffer, own frame. */
 .section .ext8,"ax"
 pf_load:
- mov PF_LEN,d0
+ mov PF_LEN + FL_SB,d0            /* v0.24: the file, then the film-name strings (fl_str) */
  call malloc,[],4
  cmp 0,a0
  beq 9f
@@ -3011,6 +3011,11 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set IC_N2, 0x7f88
 .set IC_N3, 0x7f89
 .set IC_END, 0x7f8a
+.set FV0, 100                     /* v0.24 film list: picture-mode values FV0 + j for film j (COLOR k = j / 5, look j % 5 + 1) */
+.set NF, 20
+.set FLB, 0x7e70                  /* FLB + j: "is film j there?" (the list's per-entry availability id) */
+.set ST_F0, 0x7f10                /* ST_F0 + j: film j's name */
+.set FL_SB, NF * 34               /* name strings (UTF-16, 16 + 1 shorts each) after the LOOKS.BIN copy */
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
 .set VF_I1, 480                   /* the camera's "On" icon */
 
@@ -3178,6 +3183,12 @@ st_get:
  mov gms_str,a0
  ret [d2],8
 2:
+ cmp ST_F0,d0                     /* v0.24: film names */
+ bcs 3f
+ cmp ST_F0 + NF,d0
+ bcc 3f
+ jmp fl_str
+3:
  mov d0,d2
  call str_lang,[],0
  jmp str_back
@@ -3430,6 +3441,8 @@ sl_slot:
 sl_get:
  cmp 0,a1
  beq 9f
+ jmp fl_get                       /* v0.24 film list: 901 for the list / left column, FLB + j (film j there?) */
+sl_gb:
  movm [d2,d3,a2,a3],(sp)
  add -4,sp                        /* (0,sp): the return address slot of our own call */
  mov d0,d2
@@ -3588,6 +3601,12 @@ sl_vbi:
 
 /* sl_sel <- facade +40 word 0x60e5749c (selectable: d0 id, d1 value, a0 -> d0 1 / 0); else stock 0x60b86a01. */
 sl_sel:
+ cmp 901,d0                       /* v0.24: the COLOR picture mode, our film values FV0 + j */
+ bne sl_sel0
+ cmp FV0,d1
+ blt sl_sel0
+ jmp fl_sel
+sl_sel0:
  movm [d2,d3,a2,a3],(sp)
  REAL 8f
  mov d1,d2                        /* value */
@@ -3607,6 +3626,10 @@ sl_sel:
 /* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
  * d2/d3/a2/a3 saved by the call, frame 68): our bar ids -> the slot byte, then ed_set's dirty + manager refresh. */
 sl_set:
+ cmp 901,d0                       /* v0.24: the COLOR picture mode (films and COLOR 1-4) */
+ bne sl_set0
+ jmp fl_set
+sl_set0:
  REAL 9f
  asl 6,d2
  add a2,d2                        /* d2 = P + 64k */
@@ -4030,3 +4053,369 @@ sl_dot:
 1:
  mul d0,d1
  jmp dot_back                     /* 0x611d1103: add d1,d2 */
+
+/* ------------------------------------------------------------------ v0.24 film list (test 1)
+ * The Picture Mode list on the COLOR position shows COLOR 1-4 and then every film (look) on the card, by name.
+ * The list is setting 901's value table (0x6152f8a0: {setting, count, records}; COLOR 1-4 = 4 records of 20 B at
+ * 0x6152f850 {value, availability id, value, 0, 0}). build.py points 901 at fl_rec (the stock four, then FV0 + j) and
+ * item 111's three option lists (title, left column, strip) at fl_l0 / fl_l1 / fl_l2 (the stock 48, then type-4
+ * strings ST_F0 + j). A film value is never stored: choosing it sets COLOR k and its look number (as the Film page),
+ * and only the list and the left column (GetValue 901 from 0x611b32ae / 0x611d1869) read the film value back. */
+.balign 4
+fl_rec:
+ .long 54, 1072, 54, 0, 0         /* the stock four (build.py checks them) */
+ .long 55, 1073, 55, 0, 0
+ .long 56, 1074, 56, 0, 0
+ .long 64, 1075, 64, 0, 0
+ .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+ .long FV0 + \j, FLB + \j, FV0 + \j, 0, 0
+ .endr
+ .macro FLOPT
+ .irp j, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+ .long FV0 + \j
+ .short 4, ST_F0 + \j
+ .long 0x6154b480
+ .endr
+ .endm
+fl_l0:                            /* item 111's title list: the stock 48 (build.py), then the films */
+ .space 48 * 12
+ FLOPT
+fl_l1:                            /* the left column */
+ .space 48 * 12
+ FLOPT
+fl_l2:                            /* the strip */
+ .space 48 * 12
+ FLOPT
+fl_cvt:                           /* COLOR k -> picture mode value */
+ .byte 54, 55, 56, 64
+.balign 2
+fl_none:                          /* "Film" (no bank) */
+ .short 70, 105, 108, 109, 0
+
+/* fl_k: `call fl_k,[],0`, d0 picture mode -> d0 COLOR k 0..3, else -1. */
+fl_k:
+ cmp 54,d0
+ bne 1f
+ clr d0
+ ret [],0
+1:
+ cmp 55,d0
+ bne 2f
+ mov 1,d0
+ ret [],0
+2:
+ cmp 56,d0
+ bne 3f
+ mov 2,d0
+ ret [],0
+3:
+ cmp 64,d0
+ bne 4f
+ mov 3,d0
+ ret [],0
+4:
+ mov -1,d0
+ ret [],0
+
+/* fl_has: `call fl_has,[],0`, d0 film j 0..19, a0 the LOOKS.BIN copy -> d0 1 when it has a name or any non-zero
+ * byte (as the Control Panel's Empty), else 0. Uses d1, a1. */
+fl_has:
+ mov d0,d1
+ asl 4,d1
+ mov a0,a1
+ add d1,a1
+ movbu (1312,a1),d1
+ cmp 0,d1
+ bne 3f
+ mov d0,d1
+ asl 6,d1
+ mov a0,a1
+ add d1,a1
+ add 32,a1
+ mov 64,d1
+1:
+ movbu (a1),d0
+ cmp 0,d0
+ bne 3f
+ inc a1
+ add -1,d1
+ bne 1b
+ clr d0
+ ret [],0
+3:
+ mov 1,d0
+ ret [],0
+
+/* fl_get <- sl_get (CALLS: d0 id, a0 facade, a1 out != 0, mdr return): FLB + j -> 1 / 0 (film j there?); 901 asked
+ * by the list builder (0x611b32ae) or the left column (0x611d1869) while COLOR k has look n -> FV0 + 5k + n - 1.
+ * Anything else: back to sl_gb with the registers as at entry. Stores: (a1), own frame. */
+fl_get:
+ movm [d2,d3,a2,a3],(sp)
+ add -20,sp                       /* (0) call slot, (4) return, (8) a0, (12) a1, (16) d0 */
+ mov mdr,d1
+ mov d1,(4,sp)
+ mov a0,(8,sp)
+ mov a1,(12,sp)
+ mov d0,(16,sp)
+ mov d0,d2
+ exthu d2
+ PVAL 8f
+ mov (LPTR,a2),a3
+ cmp 0,a3
+ beq 8f
+ cmp 901,d2
+ beq 1f
+ add -FLB,d2
+ cmp NF,d2
+ bcc 8f
+ mov d2,d0
+ mov a3,a0
+ call fl_has,[],0
+ bra 7f
+1:
+ mov (4,sp),d1
+ cmp 0x611b32ae,d1
+ beq 2f
+ cmp 0x611d1869,d1
+ bne 8f
+2:
+ mov 111,d0
+ call sget,[],4                   /* the picture mode (keeps d2, d3, a2, a3) */
+ call fl_k,[],0
+ cmp 0,d0
+ blt 8f
+ mov d0,d2                        /* k */
+ mov a2,a0
+ add d2,a0
+ movbu (LIDX,a0),d1
+ extb d1
+ cmp 1,d1
+ blt 8f
+ cmp 5,d1
+ bgt 8f
+ mov d2,d0
+ asl2 d0
+ add d2,d0
+ add d1,d0
+ add -1,d0                        /* j = 5k + n - 1 */
+ mov d0,d2
+ mov a3,a0
+ call fl_has,[],0
+ cmp 0,d0
+ beq 8f
+ mov d2,d0
+ add FV0,d0
+7:
+ mov (12,sp),a1
+ mov d0,(a1)
+ mov (4,sp),d1
+ mov d1,mdr
+ add 20,sp
+ movm (sp),[d2,d3,a2,a3]
+ clr d0
+ rets
+8:
+ mov (4,sp),d1
+ mov d1,mdr
+ mov (8,sp),a0
+ mov (12,sp),a1
+ mov (16,sp),d0
+ add 20,sp
+ movm (sp),[d2,d3,a2,a3]
+ jmp sl_gb
+
+/* fl_sel <- sl_sel (d0 901, d1 value >= FV0, a0; CALLS) -> d0 1 when film value - FV0 is there, else 0. */
+fl_sel:
+ movm [d2,d3,a2,a3],(sp)
+ add -4,sp
+ PVAL 8f
+ mov mdr,d3
+ mov (LPTR,a2),a0
+ cmp 0,a0
+ beq 8f
+ add -FV0,d1
+ cmp NF,d1
+ bcc 8f
+ mov d1,d0
+ call fl_has,[],0
+ mov d3,mdr
+ bra 9f
+8:
+ clr d0
+9:
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
+
+/* fl_set <- sl_set (as the settings manager: d0 901, d1 value, a0 inner, a1 mode; d2/d3/a2/a3 saved by the call,
+ * frame 68, its return address at (68,sp)). A film FV0 + j: COLOR k = j / 5 gets look n = j % 5 + 1 (pf_put, as the
+ * Film page), then the manager sets the picture mode to COLOR k. COLOR k itself: look 0 (none), then the manager.
+ * A film that is not there -> refused. Stores: P+LIDX+k, P+DIRTY, the camera settings (pf_put), own frame. */
+fl_set:
+ PVAL 9f
+ mov (LPTR,a2),a3
+ cmp 0,a3
+ beq 9f
+ add -28,sp                       /* (0) call slot, (4) d0, (8) a0, (12) a1, (16) k, (20) n, (24) d1 */
+ mov d0,(4,sp)
+ mov a0,(8,sp)
+ mov a1,(12,sp)
+ mov d1,(24,sp)
+ cmp FV0,d1
+ bge 1f
+ mov d1,d0                        /* COLOR k itself: no look */
+ call fl_k,[],0
+ cmp 0,d0
+ blt 6f
+ mov d0,(16,sp)
+ clr d0
+ mov d0,(20,sp)
+ bra 3f
+1:
+ add -FV0,d1
+ cmp NF,d1
+ bcc 5f
+ mov d1,(20,sp)
+ mov d1,d0
+ mov a3,a0
+ call fl_has,[],0
+ cmp 0,d0
+ beq 5f
+ mov (20,sp),d1
+ clr d0
+2:
+ cmp 5,d1
+ bcs 21f
+ add -5,d1
+ inc d0
+ bra 2b
+21:
+ inc d1
+ mov d0,(16,sp)                   /* k */
+ mov d1,(20,sp)                   /* n */
+3:
+ mov (16,sp),d2
+ mov a2,a0
+ add d2,a0
+ movbu (LIDX,a0),d0
+ extb d0
+ cmp 1,d0
+ blt 31f
+ cmp 5,d0
+ ble 32f
+31:
+ clr d0
+32:
+ mov (20,sp),d3
+ movbu d3,(LIDX,a0)
+ cmp d0,d3
+ beq 4f
+ mov (8,sp),a0
+ mov (12,sp),a1
+ call pf_put,[d2,d3,a2,a3],40     /* the look (0: neutral) into the slot and the camera's own settings */
+ mov 1,d1
+ movbu d1,(DIRTY,a2)
+4:
+ mov (16,sp),d0
+ mov fl_cvt,a0
+ add d0,a0
+ movbu (a0),d1                    /* COLOR k's picture mode */
+ bra 7f
+6:
+ mov (24,sp),d1                   /* not COLOR: as stock */
+7:
+ mov (4,sp),d0
+ mov (8,sp),a0
+ mov (12,sp),a1
+ add 28,sp
+ mov (68,sp),d2
+ mov d2,mdr
+ jmp manager
+5:
+ add 28,sp
+ jmp s_bad
+9:
+ cmp FV0,d1
+ blt 91f
+ jmp s_bad
+91:
+ jmp manager
+
+/* fl_str <- st_get (the string getter's frame: ret [d2],8; d0 = ST_F0 + j): film j's name as UTF-16 in its own
+ * buffer after the LOOKS.BIN copy; a film without a name reads "Look n" (n = j + 1); no bank -> "Film". */
+fl_str:
+ add -8,sp
+ mov d3,(0,sp)
+ mov a2,(4,sp)
+ mov d0,d2
+ add -ST_F0,d2                    /* j */
+ PVAL 8f
+ mov (LPTR,a2),a0
+ cmp 0,a0
+ beq 8f
+ mov d2,d1
+ asl 5,d1
+ add d2,d1
+ add d2,d1                        /* 34 j */
+ mov a0,a1
+ add d1,a1
+ add PF_LEN,a1                    /* out */
+ mov d2,d1
+ asl 4,d1
+ add d1,a0
+ add 1312,a0                      /* name */
+ mov a1,a2                        /* keep the start */
+ movbu (a0),d0
+ cmp 0,d0
+ beq 4f
+ mov 15,d1
+1:
+ movbu (a0),d0
+ cmp 0,d0
+ beq 3f
+ movhu d0,(a1)
+ inc a0
+ add 2,a1
+ add -1,d1
+ bne 1b
+ bra 3f
+4:                                /* "Look n" */
+ mov 76,d0
+ movhu d0,(a1)
+ mov 111,d0
+ movhu d0,(2,a1)
+ movhu d0,(4,a1)
+ mov 107,d0
+ movhu d0,(6,a1)
+ mov 32,d0
+ movhu d0,(8,a1)
+ add 10,a1
+ inc d2                           /* n = j + 1 (1..20) */
+ cmp 10,d2
+ bcs 5f
+ mov 49,d0                        /* "1" */
+ cmp 20,d2
+ bcs 6f
+ mov 50,d0                        /* "2" */
+ add -10,d2
+6:
+ add -10,d2
+ movhu d0,(a1)
+ add 2,a1
+5:
+ add 48,d2
+ movhu d2,(a1)
+ add 2,a1
+3:
+ clr d0
+ movhu d0,(a1)
+ mov a2,a0
+ bra 9f
+8:
+ mov fl_none,a0
+9:
+ mov (0,sp),d3
+ mov (4,sp),a2
+ add 8,sp
+ ret [d2],8
+

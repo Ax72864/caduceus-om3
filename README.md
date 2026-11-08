@@ -1,19 +1,13 @@
 # Caduceus for OM-3
 
 > [!CAUTION]
-> **Development branch: v0.23-alpha, picture-mode sliders. Test builds only; not a release.**
+> **Development branch: v0.24 film list. Test builds only; not a release.**
 >
-> This branch moves the Extras settings onto the camera's own Picture Mode rows (COLOR 1–4). Camera-tested
-> (test 7, 2026-11-08): **Sharp** on the Sharpness slider (−5 to +2), **Grain** on the camera's Film Grain Effect row
-> (Off / Low / Med / High), and two new rows: **Vignette Correction** (lens shading correction Off / On) and **Noise
-> Filter** (Off / Low / Std / High; High is new for looks). Tests 8–11: **Blacks** and **Whites** rows (−5 to +5,
-> stopping at the ends) with our own "Blk" / "Wht" icons next to the camera's value; owner: "this is perfect!".
-> All stay in step with the Extras wheel.
->
-> **Status:** code in the camera-proven 64 KiB section-6 extension. **A-B** and **G-M** slider rows (−7 to +7)
-> camera-tested (test 14). Test 15 (emulator only): side-bar titles for Noise Filter and Vignette Correction, a new
-> row order (look, tone, white balance, detail, lens, grain), and the Extras wheel down to Glow/Clarity (12 o'clock)
-> and Art Effect (6 o'clock).
+> Built on [`feature/v0.23-alpha-profile-sliders`](https://github.com/androidfanman/caduceus-om3/tree/feature/v0.23-alpha-profile-sliders).
+> The Picture Mode list on the COLOR position shows **COLOR 1–4 and then every film on the card**, by name; choosing
+> a film switches to the COLOR it is stored on and loads it. Film test 1: **emulator only** (camera test pending).
+> Known: long names are cut in the list's small cells, choosing COLOR n itself loads its factory settings, and a
+> film's tweaks still need OK held on the Film page to be kept (next test). Notes: `research/NOTES.md` ("v0.24 film list").
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 
