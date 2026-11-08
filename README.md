@@ -1,22 +1,15 @@
 # Caduceus for OM-3
 
 > [!CAUTION]
-> **Experimental development build: firmware space probe. Not a release. Do not use.**
+> **Experimental development build: firmware space probe, 64 KiB (GX2). Not a release. Do not use.**
 >
-> A diagnostic build on top of v0.21 that asks one question on the real camera: can Caduceus safely use the ~2.3 MiB
-> of empty space between the firmware's sections? It makes the camera's loader copy 4 KiB more of section 6, puts a
-> known pattern there, and on every half-press checks the pattern and the empty gaps, writing the result to
-> `OM3MOD/GAPTEST.BIN`. No `GAPTEST.BIN` on the card means the extra space was not loaded.
+> Step 2 of the firmware-space probe, on top of v0.21. GX1 (branch `experiment/firmware-space-probe`) proved on the
+> camera that moving section 6's loaded end by 4 KiB works. GX2 moves it by **64 KiB** (0x60f49800 -> 0x60f59800),
+> fills it with the probe and a 16248-word pattern, and on every half-press checks the pattern and sums one
+> never-loaded gap, writing `OM3MOD/GAPTEST.BIN` (magic `GXR2`). No `GAPTEST.BIN` = the extension was not loaded.
 >
-> Expected package: `DCOLYMP/E1479999.BIN` sha256 `0c936df9ff34d4c423f98bb349b44a94ed3d64455b344ebbabc306203dd23187`,
-> `OM3MOD/GUIDES.BIN` `f7fe50e04bfadd8b7b5042a7aa8fd403d47b3422b00148a37dae7f04650e9b9e` (build with
-> `firmware/build.py`). Emulator: 25 passes, no errors.
->
-> **Camera result (2026-11-07): the loader change works.** `GAPTEST.BIN` was written; 45 passes, the 4 KiB pattern
-> intact, no gap changed. Details: `research/NOTES.md` on `main`. Next: a larger extension.
->
-> The result decides where new features (such as the picture-mode sliders on
-> [`feature/v0.23-alpha-profile-sliders`](https://github.com/androidfanman/caduceus-om3/tree/feature/v0.23-alpha-profile-sliders)) can put their code.
+> Package: `DCOLYMP/E1479999.BIN` sha256 `3e154b3c6d49e305…`, `OM3MOD/GUIDES.BIN` `5a73b4bb6ab5beea…` (build with
+> `firmware/build.py`), with the v0.21 `LABELS.BIN`. Emulator: 39 passes, 0 bad, no gap changed.
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main).
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)

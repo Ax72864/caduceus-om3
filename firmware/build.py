@@ -212,8 +212,8 @@ def build(defaults, testfile, out):
     for a, v in ps:
         m[o(a):o(a) + 7] = b'\xdd' + struct.pack('<i', sy['ed_poly'] - a) + b'\x00\x04'
     m[o(EXT1[0]):o(EXT1[0]) + len(blobs['.ext1'])] = blobs['.ext1']
-    # GX1 space test: section 6 loads 4 KB more (the loader's end constant), holding the probe and a pattern
-    GX_LO, GX_HI = 0x60f49800, 0x60f4a800
+    # GX2 space test: section 6 loads 64 KB more (the loader's end constant), holding the probe and a pattern
+    GX_LO, GX_HI = 0x60f49800, 0x60f59800
     assert set(m[o(GX_LO):o(GX_HI)]) == {0xff}
     assert m[o(0x60045e9a):o(0x60045e9a) + 6] == b'\xfc\xcc' + struct.pack('<I', GX_LO)
     struct.pack_into('<I', m, o(0x60045e9c), GX_HI)

@@ -2896,8 +2896,8 @@ x_tagref:
  ret [d2,d3],12
 
 
-/* ================================================================== GX1 space test (not a release)
- * Section 6's load end is raised by 4 KB (0x60f49800 -> 0x60f4a800, build.py), so the loader copies the area below
+/* ================================================================== GX2 space test (not a release)
+ * Section 6's load end is raised by 64 KB (0x60f49800 -> 0x60f59800, build.py; GX1 proved 4 KB on the camera), so the loader copies the area below
  * from the update file into RAM. It holds a header, the probe and a known pattern. At every half-press (after the
  * settings load), gx_go calls the probe when the header is there, then goes on to ed_trig as before.
  * The probe (same task / media gate as the saves): 1. checks the pattern word by word (did the loader copy it, is it
@@ -2907,7 +2907,7 @@ x_tagref:
 .section .ext8,"ax"
 gx_go:                            /* call gx_go,[d2,d3,a2,a3],36 from pr_hook, in place of ed_trig */
  mov (gx_hdr),d0
- cmp 0x31545847,d0                /* 'GXT1': the extension was loaded */
+ cmp 0x32545847,d0                /* 'GXT2': the extension was loaded */
  bne 1f
  call gx_probe,[d2,d3,a2,a3],40
 1:
@@ -2915,7 +2915,7 @@ gx_go:                            /* call gx_go,[d2,d3,a2,a3],36 from pr_hook, i
 
 .section .gx,"ax"
 gx_hdr:
- .long 0x31545847, 0x1000, 0, 0
+ .long 0x32545847, 0x10000, 0, 0
 gx_probe:                         /* frame 40: (0) call slot, (4) handle, (12) tid */
  mov (SECBITS),d0
  and 0x3ff,d0
@@ -3031,9 +3031,9 @@ gx_out:
  .balign 4
 gx_rg:                            /* the never-loaded gaps (section 6's starts after this extension) */
  .long 0x60718800, 0x6075a800, 0x60820000, 0x60828000, 0x60a8f800, 0x60ad8000, 0x60adb800, 0x60adc000
- .long 0x60f4a800, 0x6103f000, 0x6164b000, 0x6169e800, 0x617e4800, 0x61809000, 0x619a9800, 0x619fd000
-gx_res:                           /* GAPTEST.BIN: 'GXR1', passes, bad pattern words (last pass), pattern words */
- .long 0x31525847
+ .long 0x60f59800, 0x6103f000, 0x6164b000, 0x6169e800, 0x617e4800, 0x61809000, 0x619a9800, 0x619fd000
+gx_res:                           /* GAPTEST.BIN: 'GXR2', passes, bad pattern words (last pass), pattern words */
+ .long 0x32525847                 /* 'GXR2' */
 gx_pass:
  .long 0
 gx_bad:
@@ -3051,5 +3051,5 @@ gx_path:
 gx_mode:
  .asciz "w"
  .balign 16
-gx_pat:                           /* filled by build.py up to 0x60f4a800 */
- .set GX_NPAT, (0x1000 - (gx_pat - gx_hdr)) / 4
+gx_pat:                           /* filled by build.py up to 0x60f59800 */
+ .set GX_NPAT, (0x10000 - (gx_pat - gx_hdr)) / 4
