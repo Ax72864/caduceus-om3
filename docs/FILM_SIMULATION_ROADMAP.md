@@ -13,14 +13,15 @@ Efforts are estimates from what we know of the firmware today.
 
 **Gate for most items: firmware space.** The space proven safe is almost full. The firmware-space probe
 (branch [`experiment/firmware-space-probe`](../../../tree/experiment/firmware-space-probe)) ran on the camera on
-2026-11-07: moving a section's loaded end works (4 KiB proven), so the ~2.3 MiB of gaps can be opened up step by step.
+2026-11-07: moving a section's loaded end works. **64 KiB proven** (section 6, with photos, video and Wi-Fi in use), so
+new features have room; more can be opened up the same way.
 
 ## Next steps
 
-1. **Grow the proven space:** the same probe with a bigger extension (e.g. 64 KiB), camera-tested, with video and
-   Wi-Fi covered. (First probe: done 2026-11-07, 4 KiB loaded and intact, with photos, video and Wi-Fi in use.)
+1. **Move the picture-mode slider code into the proven 64 KiB** and make a safe sliders test build.
+   (Space probes done 2026-11-07: 4 KiB, then 64 KiB, loaded and intact on the camera.)
 2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
-   E-P7. (Split toning research done 2026-11-07: see the table; building it waits for code space.)
+   E-P7. (Split toning research done 2026-11-07: see the table; building it can now use the proven 64 KiB.)
 3. **White balance mode and exposure compensation per look:** quick wins that make a look behave like a roll.
 4. **Finish the picture-mode sliders** (branch
    [`feature/v0.23-alpha-profile-sliders`](../../../tree/feature/v0.23-alpha-profile-sliders)) once there is safe space for their code.
@@ -77,6 +78,7 @@ Newest first. Full details in [`research/NOTES.md`](../research/NOTES.md).
 
 | Date | Topic | Finding |
 |---|---|---|
+| 2026-11-07 | Firmware space (camera) | 64 KiB probe: section 6 loads 64 KiB more; all 16248 pattern words intact after photos and a video. New features can use that space. |
 | 2026-11-07 | Firmware space (camera) | Probe on the camera: moving section 6's loaded end by 4 KiB works; the code there ran, its pattern stayed intact over 45 checks (photos, video and Wi-Fi in use), and nothing wrote into any gap. Gaps hold no file bytes unless a loaded end is moved. |
 | 2026-11-07 | Split toning | Cross Process (and likely Vintage) tint by brightness with separate R/G/B tone curves in the RGB gamma stage. COLOR photos use one curve for all three; the job copies it, so our code could bend each channel after the copy. Emulator-checked on stock code; a design and preview model exist; building needs code space. |
 | 2026-11-07 | Firmware space | The camera does not load the empty stretches between firmware sections; the sliders test put code in one and must not be flashed. |

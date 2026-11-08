@@ -811,3 +811,17 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   s6 +4 KiB). Not yet proven: larger extensions (s6 has 1005568 B), other sections' end words, and which camera
   activities beyond those below. Next: a bigger extension
   (e.g. s6 +64 KiB) with the same probe, then move the slider code (ext11) there.
+
+## Firmware-space probe GX2, 64 KiB, on the camera (2026-11-07; camera-tested)
+- Branch `experiment/firmware-space-probe-64k` (on v0.21): section 6 loaded end 0x60f49800 -> 0x60f59800, 16248-word
+  pattern, magics GXT2 / GXR2. Package 3e154b3c…, GUIDES 5a73b4bb…, v0.21 LABELS. Emulator: 39 passes, 0 bad.
+- Camera: `GAPTEST.BIN` = GXR2 -> **the 64 KiB extension loads and the code in it runs.** The last run held one pass
+  (20:00:42), after 3 photos JPEG+ORF (19:59:00-02) and a video (PB071398.MOV, ended 20:00:08): **all 16248 pattern
+  words intact** after video recording. Owner noticed no problems. Only one pass after the last power-on, so this run
+  gives no gap-change data (GX1 already showed none over 45 passes).
+- Gap s2 sum differs from GX1's (0xa13fc1e6 vs 0x987fd2e7): unloaded RAM holds whatever is left there; another sign
+  the gaps are not loaded.
+- Conclusion: section 6 can grow by at least 64 KiB (0x60f49800..0x60f59800) for code and data, loaded from the
+  update file. Use it for test builds (each one camera-tested as usual); larger growth or other sections' end words
+  need their own probe. The sliders code (ext11) can move here.
+- Card restored to v0.22 (f53950c9…) with the owner's LOOKS / NAMES / BUNDLES unchanged.
