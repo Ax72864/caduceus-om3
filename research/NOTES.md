@@ -1356,4 +1356,10 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     now 175 x 50 (mkicons sat_pictures).
   - Emulator: Hue -> Saturation (one colour, "Saturation ■", "Saturation INFO") -> right stays one colour ->
     Luminance -> Hue -> Saturation; OK held on Saturation stays one colour.
+  - Package film test 11: E1479999.BIN 04ad3e83…, GUIDES.BIN 45d40212…, LABELS.BIN 903af75b…. On the owner's card,
+    checked by checksum. Camera result: pending.
+- NEXT (owner, 2026-11-08): grain as fast as the camera's MONO grain AND with Art Effects, Glow, Clarity and Shading.
+  Plan (analysis): project doc claude/fast-grain-plan.md. Order: (1) Shading: run combiner 33 as COLOR (context key 11)
+  on our key-12 stills (gl6 G1/G2 gave colour + full grain); (2) Art / Glow / Clarity: grain on the kind-3 0xf005
+  conversion pass (gl10, never measured), logging build if needed; (3) fallback: faster CPU grain (gs1).
 
