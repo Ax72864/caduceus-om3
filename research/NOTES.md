@@ -1436,3 +1436,17 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   xb_mark sets during a capture did not cause a save in run 1 or run 2 (possibly the capture runs on the other CPU
   and the write is not seen; not checked). Workaround for run 3: change a Picture Mode row (and back) before the first
   half-press and again before the last one, so the editor's own change flag triggers both saves.
+- fg2 camera run 3 (2026-11-08, owner; Blk changed and back before the first and the last half-press): GLOG.BIN
+  written (camera-tested log; kept outside the repo). Photos PB081439..441 (JPEG ~15 MB) before the save, 442 (~9 MB,
+  the size of run 2's COLOR + Grain High) after it. Header: 4 marks, 44 records, 1952 selector calls. Slots alternate
+  capture keys 0x00680201 / 0x00020000:
+  - key 0x00680201 (context key 0x01020068: Art 0x68 variant II, presumably Grainy Film II): kind-3 0xf002 x4, then
+    combiner 1 kind 0 stage 0x0100 (the development; not stage 0, so copy A missed it), then kind 3 stage 0x0101
+    (slot 0: combiner 9, effect 0x0200; slot 2: combiner 10, effect 0x0300 = the gl7 Frame combiner), then kind-3
+    stage-0 finals (+1095..1097 = 0a 55 08).
+  - key 0x00020000 (context 2, after each Art capture): kind 0 stage 0 x2, kind 3 stage 0 x2, kind 10 0xf006 (likely a
+    second, plain image per Art photo, e.g. the preview).
+  - Capture bytes +37691.. all read 02 (suspect: wrong base). No COLOR capture in the logged window.
+  Reading (analysis): Grainy Film develops in a stage-0x0100 pass and keeps its grain through a following kind-3 art
+  pass (0x0101), unlike our COLOR grain (lost on any extra pass, gl9). Next: a logger that copies the stage-0x0100
+  development and the 0x0101 art pass in full (fg3), and the owner's exact shot list for run 3.
