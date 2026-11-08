@@ -27,6 +27,10 @@
 .section .hook_dot,"ax"
  jmp sl_dot                       /* v0.23 stock 0x611d10fb: mov (8,sp),a0; mov a2,d1; mul 155,d1 */
  .byte 0xcb,0xcb,0xcb
+.section .hook_lc,"ax"
+ jmp gr_lc                        /* v0.23 stock 0x611d1982 (left-column id lookup): cmp 5400,d0; beq 0x611d19ac;
+                                   * bra 0x611d19b4 */
+ .byte 0xcb,0xcb,0xcb
 .section .hook_pmod,"ax"
  jmp ed_pmod                      /* stock 0x6129ba07: clr d3; mov 0x6037ec10,a2 (its first 5 bytes) */
 
@@ -2923,26 +2927,56 @@ pm_color:
  mov PM_N,d0
  jmp pm_back                      /* 0x611bd90f: stores the count, copies the list */
 .balign 4
-pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Shading, Sharpness (= Sharp), Contrast */
- .long 111, 5397, 5398, 5399, 7, 8
+pm_list:                          /* item ids: Picture Mode, the wheel, Highlight & Shadow, Shading, Sharpness (= Sharp), Contrast,
+                                   * Film Grain Effect (= Grain) */
+ .long 111, 5397, 5398, 5399, 7, 8, 5400   /* + the camera's Film Grain Effect row (MONO 1-4) = Grain */
 .set PM_N, (. - pm_list) / 4
 
 /* Sliders (v0.23): the stock Sharpness row of COLOR 1-4 (item 7; its slider is setting 904 + k) is the slot's Sharp
  * (+54, -5..+2). Facade answers for those ids: GetValue (sl_get), count 8 (sl_cnt), value by index -5..+2 (sl_vbi),
  * selectable (sl_sel), SetValue (sl_set: into the slot, dirty, then the manager for a refresh). Anything else: as before. */
 
-/* sl_slot: `call sl_slot,[d2,d3,a2],16`, d0 id -> a0 = slot k (P + 32 + 64k), or 0. 904..907: k = id - 904; 7 (the
- * row's own id): k from the picture mode (54/55/56/64 = COLOR 1-4). */
+/* Grain (v0.23 test 4): the camera's Film Grain Effect row (item 5400; Off / Low / Medium / High). Its setting id per
+ * picture mode comes from two 4-entry tables, MONO 1-4 only (0x6153670c for the row, 0x6154cc80 for its left-column
+ * icon: 999..1002); COLOR 1-4 got none. build.py points both lookups at gr_tab (8 entries): the stock four plus our
+ * own ids GRB + k on COLOR 1-4 (picture modes 54/55/56/64), which only the facade handlers below take: slot +53
+ * (0..3, the Extras Grain). */
+.set GRB, 0x7e00
+.balign 4
+gr_tab:
+ .long 57, 999, 58, 1000, 59, 1001, 65, 1002
+ .long 54, GRB, 55, GRB + 1, 56, GRB + 2, 64, GRB + 3
+
+/* gr_lc <- jmp from 0x611d1982 (the left column's item -> setting id lookup 0x611d1963, same frame; d0 item): the
+ * Film Grain Effect row searches gr_tab (8 entries) instead of the stock MONO-only 0x6154cc80 (4). */
+gr_lc:
+ cmp 5400,d0
+ bne 1f
+ mov gr_tab,a3
+ mov 8,d2
+1:
+ jmp lc_back                      /* 0x611d19b4: cmp 0,a3 */
+
+/* sl_slot: `call sl_slot,[d2,d3,a2],16`, d0 id -> a0 = slot k (P + 32 + 64k), or 0. 904..907 / GRB..GRB+3: k = id -
+ * base; 7 and 998 (the rows' left-column ids): k from the picture mode (54/55/56/64 = COLOR 1-4). */
 sl_slot:
  mov d0,d2
  exthu d2
  add -904,d2
  cmp 4,d2
  bcs 2f
+ mov d0,d2
+ exthu d2
+ add -GRB,d2
+ cmp 4,d2
+ bcs 2f                           /* GRB..GRB+3: k */
  mov d0,d3
  exthu d3
  cmp 7,d3
+ beq 1f
+ cmp 998,d3                       /* the left column's Film Grain Effect icon asks 998 (MONO: the mode's grain) */
  bne 8f
+1:
  mov 111,d0
  call sget,[],4                   /* picture mode */
  clr d2
@@ -2984,8 +3018,20 @@ sl_get:
  mov d1,mdr
  cmp 0,a0
  beq 8f
+ mov d2,d0
+ exthu d0
+ cmp 998,d0
+ beq 3f
+ add -GRB,d0
+ cmp 4,d0
+ bcc 1f
+3:
+ movbu (53,a0),d0                 /* Grain 0..3 */
+ bra 2f
+1:
  movbu (54,a0),d0
  extb d0
+2:
  mov d0,(a2)
  add 4,sp
  movm (sp),[d2,d3,a2,a3]
@@ -3010,12 +3056,27 @@ sl_get:
  PVAL \miss
  .endm
 
+/* GR_ID miss: d0 = GRB..GRB+3 and P valid (a2 = P, d2 = k). Uses d2, d3, a2. */
+ .macro GR_ID miss
+ mov d0,d2
+ exthu d2
+ add -GRB,d2
+ cmp 4,d2
+ bcc \miss
+ PVAL \miss
+ .endm
+
 /* sl_cnt <- facade +28 word 0x60e57490 (d0 id, a0 -> d0 count); else pf_cnt. */
 sl_cnt:
  movm [d2,d3,a2],(sp)
- SL_ID 8f
- movm (sp),[d2,d3,a2]
+ SL_ID 7f
  mov 8,d0
+ bra 6f
+7:
+ GR_ID 8f
+ mov 4,d0
+6:
+ movm (sp),[d2,d3,a2]
  rets
 8:
  movm (sp),[d2,d3,a2]
@@ -3024,7 +3085,7 @@ sl_cnt:
 /* sl_vbi <- facade +32 word 0x60e57494 (d0 id, d1 index, a0, a1 out or 0 -> d0 value, -1 none); else pf_vbi. */
 sl_vbi:
  movm [d2,d3,a2],(sp)
- SL_ID 8f
+ SL_ID 7f
  mov d1,d0
  cmp 8,d0
  bcs 1f
@@ -3032,6 +3093,13 @@ sl_vbi:
  bra 2f
 1:
  add -5,d0
+ bra 2f
+7:
+ GR_ID 8f
+ mov d1,d0                        /* Grain: index = value 0..3 */
+ cmp 4,d0
+ bcs 2f
+ mov -1,d0
 2:
  cmp 0,a1
  beq 3f
@@ -3046,11 +3114,20 @@ sl_vbi:
 /* sl_sel <- facade +40 word 0x60e5749c (selectable: d0 id, d1 value, a0 -> d0 1 / 0); else stock 0x60b86a01. */
 sl_sel:
  movm [d2,d3,a2],(sp)
- SL_ID 8f
+ SL_ID 7f
  clr d0
  cmp -5,d1
  blt 3f
  cmp 2,d1
+ bgt 3f
+ mov 1,d0
+ bra 3f
+7:
+ GR_ID 8f
+ clr d0
+ cmp 0,d1
+ blt 3f
+ cmp 3,d1
  bgt 3f
  mov 1,d0
 3:
@@ -3063,7 +3140,7 @@ sl_sel:
 /* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
  * d2/d3/a2/a3 saved by the call, frame 68). 904..907: -5..+2 into slot +54, then ed_set's dirty + manager refresh. */
 sl_set:
- SL_ID 9f
+ SL_ID 6f
  cmp -5,d1
  blt 7f
  cmp 2,d1
@@ -3072,6 +3149,17 @@ sl_set:
  mov a2,a3
  add d2,a3
  movbu d1,(86,a3)                 /* P + 64k + 32 + 54 */
+ jmp s_dirty
+6:
+ GR_ID 9f
+ cmp 0,d1
+ blt 7f
+ cmp 3,d1
+ bgt 7f
+ asl 6,d2
+ mov a2,a3
+ add d2,a3
+ movbu d1,(85,a3)                 /* P + 64k + 32 + 53: Grain */
  jmp s_dirty
 7:
  clr d0
@@ -3101,13 +3189,17 @@ sl_rng:
  jmp rng_back                     /* 0x611d1090: mov d0,(4,sp) */
 
 /* sl_dot <- jmp from 0x611d10fb (same frame): the dot's x = centre + value x step, stock step 155 px (a -2..+2 bar).
- * The Sharp bar (min -5, from sl_rng) steps 62 px like Shading's -5..+5 bar, so 0 stays in the middle. */
+ * The Sharp bar (min -5, from sl_rng) is split at 0, which stays on the centre mark: below 0 it steps 62 px (-5 at
+ * the left end, like Shading's bar), above 0 the stock 155 px (+2 at the right end). Camera test 2: one step size for
+ * the whole bar left +2 short of the end. */
 sl_dot:
  mov (8,sp),a0
  mov a2,d1
  mov 155,d0
  cmp -5,a3
  bne 1f
+ cmp 0,a2
+ bge 1f
  mov 62,d0
 1:
  mul d0,d1

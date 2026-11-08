@@ -43,7 +43,8 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_sh': (0x603e767f, bytes.fromhex('dd01bdc7ffc00c')),   # v0.22 Sharp: capture Sharpness read (key 0x8119)
          '.hook_cl': (0x604955f1, bytes.fromhex('dd48790900a00c')),
          '.hook_rng': (0x611d1041, bytes.fromhex('dd29599bff0004' '8007' 'ca16')),   # v0.23: the Sharpness slider bar's ends
-         '.hook_dot': (0x611d10fb, bytes.fromhex('5c08' 'f1d9' 'fb019b00'))}          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_dot': (0x611d10fb, bytes.fromhex('5c08' 'f1d9' 'fb019b00')),
+         '.hook_lc': (0x611d1982, bytes.fromhex('fac81815' 'c826' 'ca2c'))}          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
@@ -183,6 +184,12 @@ def build(defaults, testfile, out):
     for a, (stock, new) in DATA.items():
         assert bytes(m[o(a):o(a) + len(stock)]) == stock, hex(a)
         m[o(a):o(a) + len(stock)] = new
+    # v0.23 Grain: the Film Grain Effect row's two picture mode -> setting id tables (MONO 1-4) -> gr_tab (+ COLOR 1-4)
+    # (the row's own lookup 0x611c308a here; the left column's in gr_lc, since its count is shared with item 131)
+    assert bytes(m[o(0x611c30a0):o(0x611c30a6)]) == b'\xfc\xdc' + struct.pack('<I', 0x6153670c)
+    struct.pack_into('<I', m, o(0x611c30a2), sy['gr_tab'])
+    assert bytes(m[o(0x611c30b5):o(0x611c30b7)]) == b'\xaa\x04'
+    m[o(0x611c30b6)] = 8
     WB_SITES = [0x60457982, 0x6045799c, 0x60457b91, 0x60457ba9, 0x60457c4d, 0x60457c65, 0x60457ce5, 0x60457cff,
                 0x604631b2, 0x604631c5, 0x604876c3, 0x604876d8]
     for a in WB_SITES:
