@@ -3,6 +3,10 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.24 (withdrawn)
+Published and withdrawn on 2026-11-08: on the owner's camera, a photo with Film Grain High rebooted the camera.
+v0.22 is the current release again. The work continues on branch `feature/v0.24-film-list`.
+
 ## v0.22
 Sharpness as part of the look. Camera-tested.
 
