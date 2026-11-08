@@ -911,4 +911,9 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Emulator: both rows step through their choices, titles follow, the left column shows the chosen icon, Camera shows
   the camera's Standard; Sharpness and Film Grain unchanged. Not checked in the emulator: the Extras wheel's label
   pictures (the emulator does not draw them) and photos.
-- Package test 6: E1479999.BIN b0588834…, GUIDES.BIN a645f5c0…, **LABELS.BIN 903af75b… (new, must go with it)**.
+- Owner: "Shading Comp." reads too close to Shading. The row is titled **Vignette Correction** (our own string): the
+  camera's text table has no vignette wording, so the string getter 0x610f56a6 (`call ..,[d2],8`, d0 id -> a0 UTF-16
+  string; language index 0x610f56bd, table lookup 0x610f56ac) is hooked (hook_str, 6 B) to answer our id ST_VIG
+  0x7f00 with our string; every other id as stock. Emulator: the title shows; Shading Effect's own title unchanged.
+- Package test 6 (with the title): E1479999.BIN f786481c…, GUIDES.BIN e19b775c… and **LABELS.BIN 903af75b… (new, must go with
+  it)**.

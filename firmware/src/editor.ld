@@ -16,6 +16,7 @@ SECTIONS {
   .hook_rng     0x611d1041 : { *(.hook_rng) }
   .hook_dot     0x611d10fb : { *(.hook_dot) }
   .hook_lc      0x611d1982 : { *(.hook_lc) }
+  .hook_str     0x610f56a6 : { *(.hook_str) }
   .ext2         0x607187a8 : { *(.ext2) }
   .ext7         0x6164afd0 : { *(.ext7) }
   .ext3         0x6081fe10 : { *(.ext3) }
@@ -39,6 +40,8 @@ chd_back      = 0x611c2867;
 chf_back      = 0x611c2d03;
 lch_back      = 0x611d0b72;
 nf_get        = 0x60063380;
+str_lang      = 0x610f56bd;
+str_back      = 0x610f56ac;
 lc5_back      = 0x611d0a09;
 f2c_obj       = 0x611c2ce8;
 f2c_none      = 0x611c2d42;

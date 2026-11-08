@@ -27,6 +27,9 @@
 .section .hook_dot,"ax"
  jmp sl_dot                       /* v0.23 stock 0x611d10fb: mov (8,sp),a0; mov a2,d1; mul 155,d1 */
  .byte 0xcb,0xcb,0xcb
+.section .hook_str,"ax"
+ jmp st_get                       /* v0.23 stock 0x610f56a6 (string getter, d0 id): mov d0,d2; call 0x610f56bd,[],0 */
+ .byte 0xcb
 .section .hook_lc,"ax"
  jmp gr_lc                        /* v0.23 stock 0x611d1982 (left-column id lookup): cmp 5400,d0; beq 0x611d19ac;
                                    * bra 0x611d19b4 */
@@ -2948,6 +2951,7 @@ pm_list:                          /* item ids: Picture Mode, the wheel, Highligh
 .set VFB, 0x7e20
 .set NR_IT, 5394
 .set VF_IT, 5389
+.set ST_VIG, 0x7f00               /* our string id (st_get answers it; the camera's table has ~6000) */
 .set VF_I0, 358                   /* the camera's "Off" icon (owner-approved 2026-11-07) */
 .set VF_I1, 480                   /* the camera's "On" icon */
 .set VF_J0, 358
@@ -2969,8 +2973,8 @@ nr_title:
  .short 4, 188                    /* string 188 "Noise Filter" */
  .long 0x6154b480
 vf_title:
- .short 4, 254                    /* string 254 "Shading Comp." */
- .long 0x6154b480
+ .short 4, ST_VIG                 /* our string "Vignette Correction" (st_get); the camera's own would be 254 "Shading
+ .long 0x6154b480                 * Comp.", too close to Shading (owner, 2026-11-07) */
 /* option lists {value, type, id, 0x6154b480}: type 4 = string (the title while selected), 3 = icon. Noise Filter
  * takes the Film Grain Effect icons reversed (the owner's choice, knowing their words stay the grain's): Off = grain
  * High, Low = Med, Standard = Low, High = grain Off. Shading Comp.: the camera's Off / On icons (358 / 480). */
@@ -2995,8 +2999,8 @@ nr_l2:
  OPT 0, 3, 0x38e2
  OPT 1, 3, 0x38e0
 vf_l0:
- OPT 0, 4, 254                    /* the title stays "Shading Comp." */
- OPT 1, 4, 254
+ OPT 0, 4, ST_VIG                 /* the title stays "Vignette Correction" */
+ OPT 1, 4, ST_VIG
 vf_l1:
  OPT 0, 3, VF_I0
  OPT 1, 3, VF_I1
@@ -3029,6 +3033,21 @@ gr_lc:
  mov 4,d2
 9:
  jmp lc_back                      /* 0x611d19b4: cmp 0,a3 */
+
+/* st_get <- jmp from the string getter 0x610f56a6 (its frame: `call ..,[d2],8`; d0 id -> a0 the UTF-16 string):
+ * our own strings, else as stock (language index 0x610f56bd, then the table lookup at 0x610f56ac). */
+st_get:
+ cmp ST_VIG,d0
+ bne 1f
+ mov vig_str,a0
+ ret [d2],8
+1:
+ mov d0,d2
+ call str_lang,[],0
+ jmp str_back
+.balign 2
+vig_str:                          /* "Vignette Correction", UTF-16 */
+ .short 86, 105, 103, 110, 101, 116, 116, 101, 32, 67, 111, 114, 114, 101, 99, 116, 105, 111, 110, 0
 
 /* ch_id: `call ch_id,[d2,d3,a2],20`, d1 = our id base (NRB / VFB) -> d0 = base + k on COLOR 1-4 (picture modes
  * 54/55/56/64), else 0. As 0x611c308a (Film Grain's lookup) answers its callers. */

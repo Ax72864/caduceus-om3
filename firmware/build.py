@@ -44,7 +44,8 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_cl': (0x604955f1, bytes.fromhex('dd48790900a00c')),
          '.hook_rng': (0x611d1041, bytes.fromhex('dd29599bff0004' '8007' 'ca16')),   # v0.23: the Sharpness slider bar's ends
          '.hook_dot': (0x611d10fb, bytes.fromhex('5c08' 'f1d9' 'fb019b00')),
-         '.hook_lc': (0x611d1982, bytes.fromhex('fac81815' 'c826' 'ca2c'))}          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_lc': (0x611d1982, bytes.fromhex('fac81815' 'c826' 'ca2c')),
+         '.hook_str': (0x610f56a6, bytes.fromhex('82' 'cd16000000'))}          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
