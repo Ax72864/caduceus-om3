@@ -17,6 +17,10 @@ SECTIONS {
   .hook_dot     0x611d10fb : { *(.hook_dot) }
   .hook_lc      0x611d1982 : { *(.hook_lc) }
   .hook_str     0x610f56a6 : { *(.hook_str) }
+  .hook_pg      0x611d07a4 : { *(.hook_pg) }
+  .hook_pg2     0x611c3709 : { *(.hook_pg2) }
+  .hook_arw     0x611d0be0 : { *(.hook_arw) }
+  .hook_rev     0x611b21e8 : { *(.hook_rev) }
   .hook_bar     0x611d1035 : { *(.hook_bar) }
   .hook_rda     0x611d16b4 : { *(.hook_rda) }
   .hook_rdb     0x611d1725 : { *(.hook_rdb) }
@@ -43,6 +47,11 @@ chd_back      = 0x611c2867;
 chf_back      = 0x611c2d03;
 lch_back      = 0x611d0b72;
 nf_get        = 0x60063380;
+pg_back       = 0x611d07bd;
+pgm_back      = 0x611c3710;
+arw_back      = 0x611d0be8;
+rv_469        = 0x611b21f2;
+rv_back       = 0x611b2217;
 str_lang      = 0x610f56bd;
 str_back      = 0x610f56ac;
 lc5_back      = 0x611d0a09;

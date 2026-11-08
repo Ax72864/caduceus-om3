@@ -962,3 +962,18 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   2. From an "A-B / G-M" row, open the camera's WB screen on WB±, with its A-B / G-M ids answered from the look's
      slot (+26 A-B, +27 G-M) only while opened from our row (needs the screen transition and a context flag).
   3. Two slider rows (as Blacks / Whites) as a fallback.
+
+### Test 8 camera feedback; test 9 (emulator only)
+- Owner on test 8 (camera): (1) the Blacks / Whites left-column words look bad, want stock-looking icons; (2) the
+  arrows run backwards on Blacks / Whites; (3) several left-column cells highlighted at once.
+- (2) Cause: a bar's value list (0x611b2180..) is built top-down only when its setting id is in the camera's table
+  0x6152d6fe (322 u16 ids; 904 Sharpness is in it), else bottom-up, so the arrows flip. rv_chk (hook 0x611b21e8) also
+  sets top-down for our BKB / WHB ids. Emulator: Left -> -1, -2; Right -> +1.
+- (3) Cause: the Picture Mode column pages rows 5 at a time but assumes at most 2 pages (rows 0-4, then 5..n-1):
+  0x611d07a4 (first row / rows shown), 0x611c3709 (cursor -> slot = cursor - 5), 0x611d0bd3.. (scroll arrows). With
+  11 rows page 2 drew 6 rows into 5 slots (10 rows was fine in the emulator; test 7 had 9). pg_fix / pg_mod / pg_arw:
+  pages of 5, as many as needed; the middle page shows both arrows. Emulator: 3 pages, one highlight at a time.
+- (1) open: the type-4 slider cells only have icons 1 S, 2 Contrast, 3 Saturation; stock-looking Blacks / Whites
+  icons need our own pictures (owner's approval first) and a way to draw them in the cell.
+- Package test 9: E1479999.BIN 61288b36…, GUIDES.BIN 2467d8d3…, LABELS.BIN 903af75b…. On the owner's card, checked by
+  checksum. Camera result: pending.

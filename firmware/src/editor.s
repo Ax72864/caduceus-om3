@@ -36,6 +36,18 @@
 .section .hook_rdb,"ax"
  jmp rd_b                         /* v0.23 stock 0x611d1725 (readout digit): the same */
  .byte 0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_pg,"ax"
+ jmp pg_fix                       /* v0.23 stock 0x611d07a4 (left column window: 2 pages of 5 rows max) */
+ .fill 19, 1, 0xcb
+.section .hook_pg2,"ax"
+ jmp pg_mod                       /* v0.23 stock 0x611c3709 (cursor -> slot: cursor > 4 ? cursor - 5) */
+ .byte 0xcb,0xcb
+.section .hook_arw,"ax"
+ jmp pg_arw                       /* v0.23 stock 0x611d0be0 (scroll arrows: up on page 2, down on page 1) */
+ .byte 0xcb,0xcb,0xcb
+.section .hook_rev,"ax"
+ jmp rv_chk                       /* v0.23 stock 0x611b21e8 (a bar's value list top-down if its id is in 0x6152d6fe) */
+ .byte 0xcb,0xcb,0xcb,0xcb,0xcb
 .section .hook_str,"ax"
  jmp st_get                       /* v0.23 stock 0x610f56a6 (string getter, d0 id): mov d0,d2; call 0x610f56bd,[],0 */
  .byte 0xcb
@@ -3685,6 +3697,86 @@ rw_bar:
  mov -5,a3
  mov 5,d0
  jmp rng_back
+
+/* Picture Mode column paging (camera test 8: with 11 rows the second page drew 6 rows into 5 slots and left stale
+ * highlights). Stock pages are rows 0-4 and 5..n-1 (n <= 10). Ours: pages of 5, as many as needed. */
+/* pg_fix <- jmp from 0x611d07a4 (d2 = n rows, (104,sp) = cursor): d0 = first row shown, d2 = rows shown -> 0x611d07bd */
+pg_fix:
+ cmp 5,d2
+ bgt 1f
+ clr d0
+ jmp pg_back
+1:
+ movhu (104,sp),d1
+ clr d0
+2:
+ cmp 5,d1
+ bcs 3f
+ add -5,d1
+ add 5,d0
+ bra 2b
+3:
+ sub d0,d2                        /* rows left from this page's first */
+ cmp 5,d2
+ ble 4f
+ mov 5,d2
+4:
+ jmp pg_back
+/* pg_mod <- jmp from 0x611c3709 (d3 = cursor): the slot = cursor mod 5 in d0 and d3 -> 0x611c3710 */
+pg_mod:
+ cmp 5,d3
+ bcs 1f
+ add -5,d3
+ bra pg_mod
+1:
+ mov d3,d0
+ jmp pgm_back
+/* pg_arw <- jmp from 0x611d0be0 (cursor >= 5, more than 5 rows): the up arrow, and the down arrow too while rows follow
+ * this page -> 0x611d0be8 */
+pg_arw:
+ mov (20,sp),a0
+ mov 1,d0
+ movbu d0,(885,a0)
+ movhu (104,sp),d1
+ clr d0
+1:
+ cmp 5,d1
+ bcs 2f
+ add -5,d1
+ add 5,d0
+ bra 1b
+2:
+ add 5,d0                         /* the next page's first row */
+ mov (84,sp),d1                   /* n */
+ cmp d1,d0
+ bcc 3f
+ mov 1,d0
+ movbu d0,(887,a0)
+3:
+ jmp arw_back
+
+/* rv_chk <- jmp from 0x611b21e8 (a bar's value list: a2 = 1 builds it top-down, as the camera does for the ids in its
+ * table 0x6152d6fe, 904 Sharpness among them; else bottom-up, so the arrows ran backwards on Blacks / Whites, camera
+ * test 8). Our slider bar ids: a2 = 1 too. Then as stock: id 469 -> 0x611b21f2, else 0x611b2217. */
+rv_chk:
+ mov (16,sp),a0
+ movhu (a0),d0
+ add -BKB,d0
+ cmp 4,d0
+ bcs 1f
+ movhu (a0),d0
+ add -WHB,d0
+ cmp 4,d0
+ bcc 2f
+1:
+ mov 1,a2
+2:
+ movhu (a0),d0
+ cmp 469,d0
+ bne 3f
+ jmp rv_469
+3:
+ jmp rv_back
 
 /* rd_a / rd_b <- jmp from 0x611d16b4 / 0x611d1725 (the readout glyph lookups, d0 = item): 1011, 5397 (stock) and
  * Blacks / Whites take the 11-entry -5..+5 tables (0x611d16e6 / 0x611d1757), else none (0x611d16ee / 0x611d175f). */
