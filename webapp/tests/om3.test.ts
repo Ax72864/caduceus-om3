@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import libraryJson from '../src/data/library.json';
 import { blankLook, parsePack, type Look } from '../src/pack';
 import { fromLibrary } from '../src/reset';
-import { COLORS, PER, defaultBank, emptyBank, parseBank, profilesBin, readProfiles, slowGrain, toOm3, validateBank, type Bank } from '../src/om3';
+import { COLORS, PER, defaultBank, emptyBank, parseBank, monoGrain, profilesBin, readProfiles, slowGrain, toOm3, validateBank, type Bank } from '../src/om3';
 import { parseLook } from '../src/pack';
 import { FILMS, FILM_GROUPS, filmByName, filmLook } from '../src/om3films';
 import { validateProfile } from '../src/om3';
@@ -137,6 +137,14 @@ describe('OM-3 profile bank', () => {
     l.art_effect = 'frame'; expect(slowGrain(l)).toBe(true);
     l.art_effect = 'off'; l.effect = { type: 'clarity', strength: 1 }; expect(slowGrain(l)).toBe(true);
     delete l.film_grain; expect(slowGrain(l)).toBe(false);
+  });
+
+  it('v0.24.1: Shading is saved as 0 (with grain it turns the photo mono); older firmware keeps it', () => {
+    const l = blankLook('colour', 'S'); l.vignette = -3; l.film_grain = 1;
+    expect(monoGrain(l)).toBe(true);
+    expect(readProfiles(profilesBin([[l]], 23))[0][0]!.vignette).toBe(0);
+    expect(readProfiles(profilesBin([[l]], 22))[0][0]!.vignette).toBe(-3);
+    l.film_grain = 0; expect(monoGrain(l)).toBe(false);
   });
 
   it.skipIf(!existsSync(MK))('PROFILES.BIN is byte-identical to card/mkprofiles.py', () => {

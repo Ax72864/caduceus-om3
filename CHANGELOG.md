@@ -3,9 +3,25 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
-## v0.24
+## v0.24.1
+v0.24 with the reboot fixed and the Shading row hidden. Camera-tested (2026-11-08). Everything listed under v0.24
+below is in this version, except where this section says otherwise.
+
+- **Fixed:** with **Film Grain High**, taking a picture restarted the camera. The grain code no longer asks the
+  camera's settings for Shading while the photo is being taken (that call is what restarted it).
+- **Shading row hidden** on COLOR 1–4 for now: Shading together with Film Grain turned the photo black and white. A
+  Shading value set before flashing stays in effect, so set it to 0 first. Grain with Shading is therefore not added
+  the slow way any more (as in v0.22).
+- **Control Panel:** Export › Firmware on the camera: **v0.24.1 or later** saves every look with Shading 0; the editor
+  warns when a look has Grain together with Shading, and the slow-grain note is only about v0.20–v0.22.
+- `releases/v0.24` is removed (it rebooted the camera); v0.24.1 replaces it.
+
+## v0.24 (withdrawn)
+Published and withdrawn on 2026-11-08: on the owner's camera, a photo with Film Grain High rebooted the camera.
+Replaced by v0.24.1. What it added (all in v0.24.1):
+
 Your films in the camera's Picture Mode list, and the look's settings on the camera's own Picture Mode screen.
-Camera-tested (2026-11-08). v0.23 was never released on its own: its Picture Mode rows are part of this version.
+v0.23 was never released on its own: its Picture Mode rows are part of this version.
 
 **Films in the Picture Mode list**
 - After COLOR 1–4 the list shows every film on the card (`LOOKS.BIN`, up to five per COLOR) as **FILM 1, FILM 2, …**,

@@ -1394,3 +1394,19 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   on our key-12 stills (gl6 G1/G2 gave colour + full grain); (2) Art / Glow / Clarity: grain on the kind-3 0xf005
   conversion pass (gl10, never measured), logging build if needed; (3) fallback: faster CPU grain (gs1).
 
+
+## v0.24 withdrawn, v0.24.1 (2026-11-08; camera-tested; branch hotfix/v0.24.1)
+
+- v0.24 (firmware 80570ac6…, GUIDES 4b483bb9…) on the owner's camera: a photo with Film Grain High rebooted the
+  camera. fg1 log (branch experiment/fast-grain-log, details there): the capture was marked COLOR, but no development
+  request followed. Cause (analysis, confirmed by the fix): film test 11's Shading check in `xb_cap` calls the settings
+  getter AGET 0x603f039d during the capture. Fix: `XB_SHG 0` in `firmware/src/xblock.s` (the check left out: v0.22's
+  grain route). GUIDES-only hotfix 4b3bac02… with v0.24 firmware: camera-tested, High no longer reboots.
+- Without that check, Shading + Grain is mono again (combiner 33 MONO set-up). v0.24.1 hides the Shading row
+  (`pm_list` without 5399). Emulator: Picture Mode rows end Noise → Vignette → Grain, no crash. Camera-tested (owner,
+  2026-11-08: "it is working"). Firmware 6fbc80b8…, GUIDES 112e8f93… (7 bytes differ from 4b3bac02: addresses after
+  `pm_list`), LABELS 903af75b….
+- A Shading value already set on a COLOR, or loaded from a film's record +43, still applies (hidden). The Control
+  Panel's "v0.24.1 or later" export writes +43 = 0; the release notes ask owners to set Shading 0 before flashing.
+- `releases/v0.24` removed: the release workflow publishes every folder without a GitHub release, so keeping it would
+  re-create the deleted v0.24 release.

@@ -390,6 +390,20 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - The looks are only as good as the preview model (`src/preview.ts`) is of the camera; check a film on the camera
   before trusting it for anything critical.
 
+## v0.24.1 (branch hotfix/v0.24.1; camera-tested 2026-11-08)
+
+v0.24 (below) with two changes; v0.24 itself was withdrawn and `releases/v0.24` removed.
+
+- **Reboot fix (`firmware/src/xblock.s`, `XB_SHG 0`):** film test 11 made `xb_cap` call the settings getter `AGET`
+  (0x603f039d) for Shading (setting 911 + k) while the photo is taken; with Film Grain High that rebooted the camera
+  (the fg1 log showed the COLOR mark but no development request). The check is now behind `.if XB_SHG` and off, so the
+  grain route is v0.22's again (camera-tested: High no longer reboots).
+- **Shading row hidden (`firmware/src/editor.s`, `pm_list`):** 5399 left out of the Picture Mode rows (Shading with
+  the camera-route grain gives a mono photo: combiner 33 in its MONO set-up). Films still load their record `+43` into
+  setting 912 + k; the Control Panel writes 0 there for "v0.24.1 or later" (`profilesBin` fw 23).
+- Firmware `E1479999.BIN` 6fbc80b8…, `GUIDES.BIN` 112e8f93… (7 bytes differ from the GUIDES-only hotfix: code
+  addresses after `pm_list` moved by one word), `LABELS.BIN` unchanged.
+
 ## v0.24 films in the Picture Mode list (branch feature/v0.24-film-list; camera-tested 2026-11-08)
 
 Includes the v0.23 Picture Mode rows (never released alone). Full trail: `research/NOTES.md` ("Picture-mode sliders",

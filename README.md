@@ -8,7 +8,7 @@ Saturation), and adds the look's settings to the camera's own Picture Mode scree
 Noise Filter, lens vignette correction and film grain. Films are made in the browser with the **Caduceus Control
 Panel**; changes you make on the camera are kept per film.
 
-**Latest: v0.24** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
+**Latest: v0.24.1** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
 **[Using it](#using-it)** · **[Roadmap](ROADMAP.md)** · Caduceus for the E-P7: [cakelesscoder/caduceus-ep7](https://github.com/cakelesscoder/caduceus-ep7).
 
 > [!WARNING]
@@ -30,12 +30,12 @@ Panel**; changes you make on the camera are kept per film.
 
 | Feature | What you get | Status |
 |---|---|---|
-| **Films in the Picture Mode list** | After COLOR 1–4, Picture Mode lists your films as **FILM 1, FILM 2, …** (up to 20, five per COLOR, from `LOOKS.BIN`). The film's name is the big title; the quick menu and the shooting screen show FILM n. Choosing a film loads it onto its COLOR. | Camera-tested (v0.24) |
-| **Changes kept** | What you change on a film, or on COLOR 1–4, stays when you switch away and back (kept by the camera in `EDITS.BIN`). **Hold OK** on a film: back as built; on COLOR n: back to the factory. A `*` marks what is changed. | Camera-tested (v0.24) |
+| **Films in the Picture Mode list** | After COLOR 1–4, Picture Mode lists your films as **FILM 1, FILM 2, …** (up to 20, five per COLOR, from `LOOKS.BIN`). The film's name is the big title; the quick menu and the shooting screen show FILM n. Choosing a film loads it onto its COLOR. | Camera-tested (v0.24.1) |
+| **Changes kept** | What you change on a film, or on COLOR 1–4, stays when you switch away and back (kept by the camera in `EDITS.BIN`). **Hold OK** on a film: back as built; on COLOR n: back to the factory. A `*` marks what is changed. | Camera-tested (v0.24.1) |
 | **Hue and Luminance** | The Color Profile wheel (the **HSL** row) gains pages: **INFO** goes Color → Color All → Hue → Luminance. Hue turns a colour toward its neighbour; Luminance brightens or darkens it, for each of the 12 colours. | Camera-tested |
-| **Picture Mode rows** | On COLOR 1–4: **Blacks**, **Whites** (−5..+5), **A-B**, **G-M** (WB shift −7..+7, in every WB mode, Auto WB included), **Sharpness** (−5 Off..+2), **Noise Filter** (Off / Low / Std / High), **Vignette Correction** (the lens's vignette correction Off / On) and **Film Grain**, next to the camera's Contrast, Highlight & Shadow and Shading. | Camera-tested (v0.23 rows, released in v0.24) |
-| **Film grain on COLOR** | The camera's own Monochrome grain, at its Low / Med / High strengths, on colour photos, at no extra time. With **Shading** on, it is added a slower way (about 3 s more per photo, no fast burst). | Camera-tested |
-| **Glow, clarity and Art Effects** | Switched **off** in v0.24: with them, grain could only be added slowly. They stay in your looks and come back when fast grain works with them ([roadmap](ROADMAP.md)). v0.20–v0.22 have them. | Off in v0.24 |
+| **Picture Mode rows** | On COLOR 1–4: **Blacks**, **Whites** (−5..+5), **A-B**, **G-M** (WB shift −7..+7, in every WB mode, Auto WB included), **Sharpness** (−5 Off..+2), **Noise Filter** (Off / Low / Std / High), **Vignette Correction** (the lens's vignette correction Off / On) and **Film Grain**, next to the camera's Contrast and Highlight & Shadow. The **Shading** row is hidden in v0.24.1 (with grain it turned the photo black and white). | Camera-tested (v0.24.1) |
+| **Film grain on COLOR** | The camera's own Monochrome grain, at its Low / Med / High strengths, on colour photos, at no extra time. Not together with **Shading** (the photo turns black and white), which v0.24.1 hides for now. | Camera-tested |
+| **Glow, clarity and Art Effects** | Switched **off** in v0.24.1: with them, grain could only be added slowly. They stay in your looks and come back when fast grain works with them ([roadmap](ROADMAP.md)). v0.20–v0.22 have them. | Off in v0.24.1 |
 | **Saved on the card** | Your changes save to `OM3MOD` on the SD card at the next half-press, written to a new file and read back before the old one is replaced. | Camera-tested |
 | **Control Panel** | The Caduceus Control Panel, shared with Caduceus for the E-P7: a switch at the top picks **OM SYSTEM OM-3** or **Olympus PEN E-P7**. On the OM-3 it makes and previews looks on test photos (or your own), with 60 film sims, then saves them for the card. | Works in any browser |
 
@@ -130,8 +130,8 @@ in your browser. It is the same tool as Caduceus for the E-P7: the switch at the
   Whites), the camera's Contrast and Shading, the **Extras** (NR, lens vignette correction, Grain, Sharp,
   Glow ↔ Clarity, Art Effect) and the WB shift, with a live preview on test photos or your own (drag the line on the
   photo to compare before and after; grain, glow and clarity are previewed, Art Effects, NR and the lens correction
-  are not). Glow / Clarity and Art Effects are switched off on firmware v0.24 (the editor says so); a look that
-  combines Grain with Shading gets a note that it saves more slowly.
+  are not). Glow / Clarity and Art Effects are switched off on firmware v0.24.1 (the editor says so); a look that
+  combines Grain with Shading gets a note that the photo turns black and white (exports for v0.24.1 save Shading as 0).
 - **Export › Save to card…** (Chrome or Edge on a computer) writes `OM3MOD/LOOKS.BIN` and `NAMES.BIN` (the name
   pictures for the camera) straight onto the card; **Card folder (.zip)** downloads both.
 - **Open…** the card's `OM3MOD/LOOKS.BIN` to edit looks you made on the camera, then save them back.
@@ -155,7 +155,7 @@ OM3MOD/EDITS.BIN      the changes you made on the camera, per film and per COLOR
 OM3MOD/BUNDLES.BIN    the wheels' current values (the camera writes it; .NEW and .BAK are its safety copies)
 OM3MOD/GUIDES.BIN     the labels under the wheel + Caduceus code (from the release, with its firmware)
 OM3MOD/LABELS.BIN     labels (from the release)
-OM3MOD/NAMES.BIN      name pictures for v0.17–v0.22 (not needed by v0.24; harmless)
+OM3MOD/NAMES.BIN      name pictures for v0.17–v0.22 (not needed by v0.24.1; harmless)
 ```
 
 **Every time you switch on:** **half-press the shutter once.** That loads your films and changes from the card
@@ -168,7 +168,7 @@ screen show **FILM n**.
 
 **The rows** under Picture Mode: **HSL** (the colour wheel), Contrast, Highlight & Shadow, **Blk** (Blacks), **Wht**
 (Whites), **A-B**, **G-M**, Sharpness (Sharp, −5 = Off .. +2), **Noise Filter** (Off / Low / Std / High), **Vignette
-Correction** (Off = natural corners, On = the camera's correction), Shading and **Film Grain** (Off / Low / Med /
+Correction** (Off = natural corners, On = the camera's correction) and **Film Grain** (Off / Low / Med /
 High). They change the film or COLOR you're on, and the photo straight away.
 
 **The HSL wheel:** on the HSL row press **INFO**. INFO goes **Color** (the camera's saturation, one colour) → **Color
@@ -188,9 +188,10 @@ in `LOOKS.BIN`.
 A **`*`** means changed: after COLOR n, something differs from the factory settings; after FILM n, something differs
 from how the film was built. Rows show their own `*` too.
 
-**Grain and speed:** grain is added by the camera's image processor at no cost, except with **Shading** on in the same
-film or COLOR: then it is added afterwards in software (about 3 seconds more per photo, no fast burst). Glow /
-Clarity and Art Effects are switched off in v0.24 for the same reason. Making grain fast with every effect is on the
+**Grain:** grain is added by the camera's image processor at no cost. With **Shading** in the same film or COLOR it
+turns the photo black and white, so v0.24.1 hides the Shading row (set Shading to 0 before flashing: after that you
+can't see or change it). Glow / Clarity and Art Effects are switched off in v0.24.1: with them grain could only be added
+slowly. Making grain fast with every effect is on the
 [roadmap](ROADMAP.md).
 
 **Quick answers**
@@ -198,8 +199,9 @@ Clarity and Art Effects are switched off in v0.24 for the same reason. Making gr
 - *Settings change but nothing happens in the photo?* The card's `GUIDES.BIN` must come from the same release as the
   firmware. Copy the release's `GUIDES.BIN` again.
 - *My changes were lost?* They save at the next half-press, and only when the card has an `OM3MOD` folder.
-- *Photos take a few seconds to save?* That film has Grain together with Shading: set one of them to 0 / Off.
-- *New films from the Control Panel?* Export `LOOKS.BIN` (choose "v0.24 or later") and copy it to `OM3MOD`. A film
+- *Photos with grain come out black and white?* That film or COLOR has Shading: export it again from the Control
+  Panel for v0.24.1 (Shading 0), or set Shading to 0 on v0.22 before flashing.
+- *New films from the Control Panel?* Export `LOOKS.BIN` (choose "v0.24.1 or later") and copy it to `OM3MOD`. A film
   you changed in the Control Panel starts again as built; the others keep your camera changes. Deleting `EDITS.BIN`
   puts every film back as built.
 - *Monochrome?* Not supported: the MONO profiles keep the camera's own editor.
