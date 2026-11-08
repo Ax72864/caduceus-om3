@@ -2911,9 +2911,9 @@ x_tagref:
 9:
  ret [d2,d3],12
 
-/* ------------------------------------------------------------------ base-image tail (sliders, v0.23 test)
- * 0x60133000.. inside the FF run 0x60128e40..0x60134000 at the end of the image's first part (after its build-date
- * strings; nothing reads or writes it while the camera runs, emulator). */
+/* ------------------------------------------------------------------ section-6 extension (sliders, v0.23 test)
+ * 0x60f49800..0x60f59800: build.py raises section 6's load end (word 0x60045e9c) by 64 KiB so the camera copies
+ * this space into RAM at start-up (camera-proven by the GX2 probe, 2026-11-07). Never use the gaps between sections. */
 .section .ext11,"ax"
 
 /* pm_color <- the Picture Mode column builder 0x611bd814, its switch on the picture mode (table 0x61533520: the

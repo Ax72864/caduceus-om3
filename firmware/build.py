@@ -86,7 +86,7 @@ EXT1 = (0x6031e920, 0x6031eff0)          # section-1 tail (FF from 0x6031e910, e
 EXT4 = (0x60a8f100, 0x60a8f7f0)
 EXT10 = (0x61aa4300, 0x61aa47f0)
 EXT8 = (0x617e45f0, 0x617e47f0)            # section-8 tail (FF from 0x617e45e0, end 0x617e4800)
-EXT11 = (0x60133000, 0x60133f00)           # v0.23: base-image tail (FF from 0x60128e40, end 0x60134000)
+EXT11 = (0x60f49800, 0x60f59800)           # v0.23: section 6 extended by 64 KiB (loader end word 0x60045e9c raised; camera-proven GX2)
 EXT3 = (0x6081fe10, 0x6081fffc)            # section-3 tail (FF from 0x6081fe00, end 0x60820000)
 EXT5 = (0x60adb5b0, 0x60adb7f0)            # section-5 tail (FF from 0x60adb5a0, end 0x60adb800)
 EXT6 = (0x60f49590, 0x60f497f0)            # section-6 tail (FF from 0x60f49580, end 0x60f49800)          # section-10 tail (FF from 0x61aa42f0, end 0x61aa4800)          # section-4 tail (FF from 0x60a8f088, end 0x60a8f800)
@@ -170,7 +170,7 @@ def build(defaults, testfile, out):
     for a, (stock, name) in WORDS.items():
         assert struct.unpack_from('<I', m, o(a))[0] == stock, hex(a)
         assert bytes(m).count(struct.pack('<I', stock)) == sum(1 for v in WORDS.values() if v[0] == stock), hex(stock)
-    for (lo_, hi_), s, ff_from, end in ((EXT1, '.ext1', 0x6031e910, 0x6031f000), (EXT4, '.ext4', 0x60a8f088, 0x60a8f800), (EXT10, '.ext10', 0x61aa42f0, 0x61aa4800), (EXT6, '.ext6', 0x60f49580, 0x60f49800), (EXT5, '.ext5', 0x60adb5a0, 0x60adb800), (EXT3, '.ext3', 0x6081fe00, 0x60820000), (EXT8, '.ext8', 0x617e45e0, 0x617e4800), (EXT9, '.ext9', 0x619a966c, 0x619a9800), (EXT2, '.ext2', 0x607187a4, 0x60718800), (EXT7, '.ext7', 0x6164afcc, 0x6164b000), (EXT11, '.ext11', 0x60128e40, 0x60134000)):
+    for (lo_, hi_), s, ff_from, end in ((EXT1, '.ext1', 0x6031e910, 0x6031f000), (EXT4, '.ext4', 0x60a8f088, 0x60a8f800), (EXT10, '.ext10', 0x61aa42f0, 0x61aa4800), (EXT6, '.ext6', 0x60f49580, 0x60f49800), (EXT5, '.ext5', 0x60adb5a0, 0x60adb800), (EXT3, '.ext3', 0x6081fe00, 0x60820000), (EXT8, '.ext8', 0x617e45e0, 0x617e4800), (EXT9, '.ext9', 0x619a966c, 0x619a9800), (EXT2, '.ext2', 0x607187a4, 0x60718800), (EXT7, '.ext7', 0x6164afcc, 0x6164b000), (EXT11, '.ext11', 0x60f49580, 0x60f59800)):
         print('SIZE', s, len(blobs[s]), hi_ - lo_, file=sys.stderr)
         assert lo_ + len(blobs[s]) <= hi_, (s, len(blobs[s]))
         assert set(m[o(ff_from):o(end)]) == {0xff} and m[o(ff_from) - 1] != 0xff, s
@@ -236,6 +236,9 @@ def build(defaults, testfile, out):
     m[o(EXT9[0]):o(EXT9[0]) + len(blobs['.ext9'])] = blobs['.ext9']
     m[o(EXT2[0]):o(EXT2[0]) + len(blobs['.ext2'])] = blobs['.ext2']
     m[o(EXT7[0]):o(EXT7[0]) + len(blobs['.ext7'])] = blobs['.ext7']
+    # section 6 loads 64 KiB more: raise the loader's end constant (same patch as the camera-tested GX2 probe)
+    assert m[o(0x60045e9a):o(0x60045e9a) + 6] == b'\xfc\xcc' + struct.pack('<I', EXT11[0])
+    struct.pack_into('<I', m, o(0x60045e9c), EXT11[1])
     m[o(EXT11[0]):o(EXT11[0]) + len(blobs['.ext11'])] = blobs['.ext11']
     for a, (stock, name) in READOUT.items():
         assert m[o(a):o(a) + 2] == b'\xfc\xdc' and struct.unpack_from('<I', m, o(a) + 2)[0] == stock, hex(a)

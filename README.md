@@ -1,15 +1,15 @@
 # Caduceus for OM-3
 
 > [!CAUTION]
-> **Development branch: v0.23-alpha, picture-mode sliders. Untested on a camera. Do not flash builds from this branch.**
+> **Development branch: v0.23-alpha, picture-mode sliders. In camera testing. Do not flash builds from this branch.**
 >
 > This branch moves the Extras settings onto the camera's own Picture Mode slider rows (like Contrast and Shading),
 > one setting at a time. So far: **Sharp** runs on the restored Sharpness row (−5 to +2), kept in step with the Extras
 > wheel. Emulator-tested only.
 >
-> **Known issue (blocking):** the new code is placed in a part of the firmware image that the camera may not load into
-> memory (the emulator does). It must move to verified space before any camera test; see the
-> [`experiment/firmware-space-probe`](https://github.com/androidfanman/caduceus-om3/tree/experiment/firmware-space-probe) branch.
+> **Status:** the slider code now sits in the 64 KiB section-6 extension that the camera proved loads (GX2 probe,
+> [`experiment/firmware-space-probe-64k`](https://github.com/androidfanman/caduceus-om3/tree/experiment/firmware-space-probe-64k)).
+> Sliders test 2 is with the owner for a first camera test; no camera result yet.
 >
 > For the current release, use [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.22).
 
