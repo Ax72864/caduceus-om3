@@ -917,3 +917,6 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   0x7f00 with our string; every other id as stock. Emulator: the title shows; Shading Effect's own title unchanged.
 - Package test 6 (with the title): E1479999.BIN f786481c…, GUIDES.BIN e19b775c… and **LABELS.BIN 903af75b… (new, must go with
   it)**.
+- **Camera-tested (owner, 2026-11-08 05:05): test 6 works** (Vignette Correction Off / On, Noise Filter Off / Low /
+  Standard / High, Sharpness, Film Grain). Owner: the words under the Noise Filter icons must match (the grain icons'
+  words "High / Med / Low / Off" are part of the icon pictures, so Noise Filter Off reads "High").
