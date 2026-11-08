@@ -48,9 +48,6 @@
 .section .hook_rev,"ax"
  jmp rv_chk                       /* v0.23 stock 0x611b21e8 (a bar's value list top-down if its id is in 0x6152d6fe) */
  .byte 0xcb,0xcb,0xcb,0xcb,0xcb
-.section .hook_pme,"ax"
- jmp pm_ev                        /* v0.23 stock 0x6125becc (Picture Mode screen's event handler): movm [d2,a2,a3],(sp);
-                                   * add -60,sp */
 .section .hook_gx,"ax"
  jmp gx_map                       /* v0.23 stock 0x610f6016 (after a screen handler: d0 = next state): mov d0,d3;
                                    * exthu d3; mov d3,d2; asr 8,d2 */
@@ -3033,7 +3030,8 @@ it_tab:                           /* the stock 17 item entries (filled by build.
  .long VF_IT, vf_title, vf_l0, 2, 0, vf_l1, 2, 0, vf_l2, 2
  .long BK_IT, 0, 0, 0, bk_title, 0, 5 << 16, 0, 0, 0           /* slider entries (as item 7's: +16 title, +26 the */
  .long WH_IT, 0, 0, 0, wh_title, 0, 6 << 16, 0, 0, 0           /* left icon: 5 / 6 = IC_BK / IC_WH in ic_list) */
- .long GR_IT, gr_title, wg_l0, 1, 0, wg_l1, 1, 0, wg_l2, 1  /* a choice row of one option (as VF's), OK opens the grid */
+ .long GR_IT, 0, 0, 0, 0, 0x6154bd18, 27, 0, 0, 0              /* as item 5398's (Highlight & Shadow): the row's object is
+                                                                 * the camera's 2-D control (kind 7), here on WB key 1580 */
 bk_title:
  .short 4, ST_BKS
  .long 0x6154b480
@@ -3429,15 +3427,6 @@ sl_slot:
 sl_get:
  cmp 0,a1
  beq 9f
- cmp 2148,d0                      /* the Picture Mode column's row memory: ours when it was one of our rows */
- bne 1f
- movhu (gr_row),d1
- cmp 0,d1
- beq 1f
- mov d1,(a1)
- clr d0
- rets
-1:
  movm [d2,d3,a2,a3],(sp)
  add -4,sp                        /* (0,sp): the return address slot of our own call */
  mov d0,d2
@@ -3635,27 +3624,6 @@ sl_sel:
 /* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
  * d2/d3/a2/a3 saved by the call, frame 68): our bar ids -> the slot byte, then ed_set's dirty + manager refresh. */
 sl_set:
- cmp 2148,d0                      /* the column's row memory (the stock setting refuses our row ids 5384..5394) */
- bne 1f
- movbu (gr_hold),d2
- cmp 0,d2
- beq 4f
- clr d2
- movbu d2,(gr_hold)
- bra 1f
-4:
- mov d1,d2
- exthu d2
- add -5384,d2
- cmp 11,d2
- bcc 2f
- mov d1,d2
- bra 3f
-2:
- clr d2
-3:
- movhu d2,(gr_row)
-1:
  REAL 9f
  asl 6,d2
  add a2,d2                        /* d2 = P + 64k */
@@ -3879,83 +3847,26 @@ rv_chk:
 3:
  jmp rv_back
 
-/* The A-B / G-M row opens the camera's WB fine-tune screen (GUI state 0x0408 ID_ST_MENU_FUNC_DIRECT_WB_REV, the one
- * the WB screen 0x0417 opens from its WB± row on OK, 0x6125bc8b). While it is open from our row, gr_flag = look + 1
- * and the facade answers its stills ids (A-B 1580..1592, G-M 1593..1605 by WB mode) from the look's slot +26 / +27
- * (REAL, sl_slot); leaving it clears the flag, and MENU (stock: back to 0x0417) comes back to Picture Mode 0x0418. */
+/* A-B / G-M on the Picture Mode screen: the row's object is the camera's own 2-D control (object kind 7, ctor
+ * 0x61223340), the one the WB fine-tune screen uses, on the WB key 1580 (its children: bars 1580 A-B and 1593 G-M,
+ * table 0x615ae434; Highlight & Shadow is the same control on keys 5444..5451). While it is shown for a look,
+ * gr_flag = look + 1 and the facade answers the WB stills ids (A-B 1580..1592, G-M 1593..1605) from the look's slot
+ * +26 / +27 (REAL, sl_slot); leaving Picture Mode (0x0418) clears the flag (gx_map). */
 .balign 4
 gr_flag:
- .byte 0
-/* gr_hold: 1 from MENU in the grid to Picture Mode's first row-memory write (its reset to the top row, 111): that
- * write keeps gr_row, so the cursor comes back to our row */
-gr_hold:
- .byte 0
-gr_row:                           /* the Picture Mode column's row memory (setting 2148) when it is one of our rows */
- .short 0
-/* pm_ev <- jmp from the Picture Mode handler 0x6125becc (calls: d0 event, d1, a0, a1): OK pressed (0x900c) on our row
- * (row list = (0x6037dfa0) + 0x51a0: +94 cursor, +108 item ids) on COLOR 1-4 -> flag, d0 = 0x0408; else stock. */
-pm_ev:
- movm [d2,d3,a2,a3],(sp)
- add -24,sp                       /* (0,sp) our call's slot; d0, d1, a0, a1, mdr kept */
- mov d0,(4,sp)
- mov d1,(8,sp)
- mov a0,(12,sp)
- mov a1,(16,sp)
- mov mdr,d2
- mov d2,(20,sp)
- cmp 0x900c,d0
- bne 8f
- mov (0x6037dfa0),a2
- cmp 0,a2
- beq 8f
- add 0x51a0,a2
- movhu (94,a2),d2
- mov (108,a2),a3
- cmp 0,a3
- beq 8f
- asl2 d2
- add d2,a3
- mov (a3),d2
- cmp GR_IT,d2
- bne 8f
- mov 111,d0
- call sget,[],4                   /* picture mode (keeps d2, d3) */
- mov 1,d2
- cmp 54,d0
- beq 1f
- inc d2
- cmp 55,d0
- beq 1f
- inc d2
- cmp 56,d0
- beq 1f
- inc d2
- cmp 64,d0
- bne 8f
-1:
- mov gr_flag,a2
- movbu d2,(a2)
- mov (20,sp),d2
- mov d2,mdr
- add 24,sp
- movm (sp),[d2,d3,a2,a3]
- mov 0x0408,d0
- mov 8,d1
- rets
-8:
- mov (20,sp),d2
- mov d2,mdr
- mov (4,sp),d0
- mov (8,sp),d1
- mov (12,sp),a0
- mov (16,sp),a1
- add 24,sp
- movm (sp),[d2,d3,a2,a3]
- movm [d2,a2,a3],(sp)
- add -60,sp
- jmp pme_back                     /* 0x6125bed1 */
+ .long 0
+/* gk_f <- row switch 0x61536f2c (the row's object), our row: as item 5398's case 0x611c2d19 (kind 7, key from its
+ * picture-mode table) with key 1580, and gr_flag from the picture mode (COLOR 1-4 -> 1..4, else 0). */
+gk_f:
+ mov a3,a0
+ mov 1,d1
+ call ch_id,[d2,d3,a2],20
+ mov gr_flag,a0
+ movbu d0,(a0)
+ mov 1580,d0
+ jmp gk_back                      /* 0x611c2d1f: mov d0,(4,sp); mov 7,d0; ... 0x6119a1f2 */
 /* gx_map <- jmp from 0x610f6016 (the state dispatcher, d0 = a handler's next state, (8,sp) -> the GUI state bytes
- * {parent, child}; a0 / a1 / d1 free here): leaving 0x0408 while gr_flag is set clears it; 0x0417 -> 0x0418. */
+ * {parent, child}; a0 / a1 / d1 free here): a state change while in Picture Mode (0x0418) clears gr_flag. */
 gx_map:
  mov gr_flag,a1
  movbu (a1),d1
@@ -3967,17 +3878,10 @@ gx_map:
  beq 9f
  mov (8,sp),a0
  movhu (a0),d1
- cmp 0x0804,d1
+ cmp 0x1804,d1
  bne 9f
  clr d1
  movbu d1,(a1)
- mov d0,d1
- exthu d1
- cmp 0x0417,d1
- bne 9f
- mov 0x0418,d0
- mov 1,d1
- movbu d1,(1,a1)                  /* gr_hold */
 9:
  mov d0,d3
  exthu d3

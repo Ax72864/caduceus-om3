@@ -1040,3 +1040,21 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   with the dials moving the dot, not on a separate screen. Next: study how the H&S curve row is built and drawn, and
   draw a grid there (the WB screen's grid helpers 0x611c7785 / 0x611c782f, tables 0x615513dc.., 0x61551c50, may help).
   The test 12 route stays in the code for now.
+
+### On-screen WB grid research (2026-11-08; emulator + analysis, nothing for the camera yet)
+- Object kind 7 (factory table 0x61502654, ctor 0x61223340) is the camera's generic 2-D control: Highlight & Shadow
+  (keys 5444..5451 by picture mode, table 0x6153672c) and the WB fine-tune (keys 1580..1618) both use it. Its children
+  come from table 0x615ae434 {key, n, list}: key 1580 -> bars 1580 (A-B) and 1593 (G-M). Tables 0x615aed5c (43 {key,
+  2039 WB / 1153 H&S}) and 0x615ae948 (87 {key, 0x13f, 500, 100}; a 208-byte panel 0x612233de) are read by its ctor.
+- Experiment (branch, not packaged): our A-B / G-M row with item 5398's cases and its row object = kind 7 on key 1580
+  (gk_f): the dials change the look's A-B / G-M (facade redirect while gr_flag is set), but the picture shows the H&S
+  curve: the curve is Picture Mode's own panel (+4920, a 548-byte subclass of the base screen 0x611c76db, ctor
+  0x61287fb4, vtable 0x615e6258), shown by its case 0x611d04e5 (0x611d15d7: +295 = 1, show). With item 7's case there
+  instead, nothing is drawn: the kind-7 object does not draw a grid by itself.
+- Where grids are drawn: the WB screen (0x0417, class vtable 0x61551c6c, 5260 B, base 0x611c76db) draws its grid as
+  part of its own layout: row type 2 (WB±) 0x611d257a sets +393 = 1 (grid on), +5188..5191 B/A/G/M box states,
+  +5194 / +5198 A-B / G-M non-zero, dot x = 594 + 13 A-B (+80 when 0x611d2941 = 1), y = 280 - 13 G-M, and lines at
+  613 + 13 A-B / 299 - 13 G-M. The fine-tune screen (0x0408) is another class (0x612900a5, 3188 B, vtable 0x615ee29c,
+  base 0x611c84eb) with its own layout. Picture Mode's layout (vtable 0x615513cc) has no grid elements.
+- So an on-screen grid needs drawing added to Picture Mode's screen (its layout / compose), e.g. the WB screen's grid
+  elements, or our own pictures (box, letters, dot) placed by the same mechanism. Not started.

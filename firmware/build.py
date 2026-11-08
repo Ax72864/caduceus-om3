@@ -55,7 +55,6 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_rev': (0x611b21e8, bytes.fromhex('5c10f060fac8d501c927')),
          '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60')),
          '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906')),
-         '.hook_pme': (0x6125becc, bytes.fromhex('cfb0f8fec4')),
          '.hook_gx': (0x610f6016, bytes.fromhex('831f8ef8ca08'))}       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
@@ -302,7 +301,7 @@ def build(defaults, testfile, out):
                     (0x615510cc, 32), (sy['sw11_tab'], 32), (0x6155124c, 32), (sy['sw13_tab'], 32)):
         tg = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 5394]
         assert len(tg) == 1, hex(base)
-        for item, pre in ((NR_IT, 'nr'), (VF_IT, 'vf'), (GR_IT, 'wg')):
+        for item, pre in ((NR_IT, 'nr'), (VF_IT, 'vf')):
             t = sy[pre + '_' + OWN[base]] if base in OWN else sy['lc_' + pre] if base == 0x6155124c else tg[0]
             sw_add(base, n, item, t)
         # Blacks / Whites: slider rows, as item 7's case (key 1) except the bar object's id (f2c) and the left column
@@ -311,6 +310,11 @@ def build(defaults, testfile, out):
         for item, pre in ((BK_IT, 'bk'), (WH_IT, 'wh')):
             t = sy[pre + '_f'] if base == 0x61536f2c else t7[0]     # left column: item 7's slider cell
             sw_add(base, n, item, t)
+        # A-B / G-M: as item 5398's (Highlight & Shadow) cases, the row's object from gk_f (kind 7 on the WB key)
+        t8 = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 5398 - 6]
+        assert len(t8) <= 1, hex(base)
+        if base == 0x61536f2c or t8:                                   # no case for 5398: the default, as for it
+            sw_add(base, n, GR_IT, sy['gk_f'] if base == 0x61536f2c else t7[0] if base == 0x615510cc else t8[0])
     assert sy['NR_IT'] == NR_IT if 'NR_IT' in sy else True
     # v0.23 Blacks / Whites icons: the left column's 5 slider-icon slots take ic_list (6 choices) instead of the stock
     # lists of 3 (layout records hold the list's start and end); the pictures from firmware/mkicons.py
