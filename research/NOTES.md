@@ -1383,6 +1383,10 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
     appends pass 0x604bbbd0 (the old combiner-grain pass, E-P7 stage 0x0901 style) when job+5356 != 0. If 0x01010071 is
     the camera's Grainy Film, that hardware pass could follow Glow / Art. Risks: the E-P7's mask route forces mono and
     its combiner-32 tests on colour showed nothing. -> lead 3, research.
+  - Owner (2026-11-08, camera): the OM-3 has the Grainy Film Art Filter; it saves very quickly, also with Art Effects
+    added on top, and keeps its grain. So the camera has a fast image-processor grain that survives the extra effect
+    passes -> lead 3 moves up: find Grainy Film's work list (which art key; candidates with grain passes: 0x01010071
+    handler 0x604b90ca -> passes 0x604bba9d / 0x604bbbd0 when job+5356 == 0) and whether its grain is colour-safe.
   - E-P7 ideas not yet tried here: stock additive combiner (E-P7 136, A + B gains 1.0) with a noise layer; needs a
     full-size noise buffer (CPU-filled: same memory cost) -> not "as quick as default".
 - NEXT (owner, 2026-11-08): grain as fast as the camera's MONO grain AND with Art Effects, Glow, Clarity and Shading.
