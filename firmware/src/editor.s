@@ -61,6 +61,9 @@
 .section .hook_rev,"ax"
  jmp rv_chk                       /* v0.23 stock 0x611b21e8 (a bar's value list top-down if its id is in 0x6152d6fe) */
  .byte 0xcb,0xcb,0xcb,0xcb,0xcb
+.section .hook_pme,"ax"
+ jmp pm_ev                        /* v0.25 stock 0x6125becc (Picture Mode's event handler): movm [d2,a2,a3],(sp);
+                                   * add -60,sp */
 .section .hook_gx,"ax"
  jmp gx_map                       /* v0.25 grid (as test 13): stock 0x610f6016 (after a screen handler: d0 = next
                                    * state): mov d0,d3; exthu d3; mov d3,d2; asr 8,d2 */
@@ -3647,6 +3650,15 @@ sl_slot:
 sl_get:
  cmp 0,a1
  beq 9f
+ cmp 2148,d0                      /* the Picture Mode column's row memory: ours when it was one of our rows */
+ bne 1f
+ movhu (gr_row),d1
+ cmp 0,d1
+ beq 1f
+ mov d1,(a1)
+ clr d0
+ rets
+1:
  jmp fl_get                       /* v0.24 film list: 901 for the list / left column, FLB + j (film j there?) */
 sl_gb:
  movm [d2,d3,a2,a3],(sp)
@@ -3883,6 +3895,27 @@ sl_sel0:
 /* sl_set <- .hook_set (the facade SetValue's manager call, entered as the manager: d0 id, d1 value, a0, a1 mode;
  * d2/d3/a2/a3 saved by the call, frame 68): our bar ids -> the slot byte, then ed_set's dirty + manager refresh. */
 sl_set:
+ cmp 2148,d0                      /* the column's row memory (the stock setting refuses our row ids 5381..5394) */
+ bne 1f
+ movbu (gr_hold),d2
+ cmp 0,d2
+ beq 4f
+ clr d2
+ movbu d2,(gr_hold)               /* after MENU from the fine-tune screen: keep our row once */
+ bra 1f
+4:
+ mov d1,d2
+ exthu d2
+ add -5381,d2
+ cmp 14,d2
+ bcc 2f
+ mov d1,d2
+ bra 3f
+2:
+ clr d2
+3:
+ movhu d2,(gr_row)
+1:
  cmp 901,d0                       /* v0.24: the COLOR picture mode (films and COLOR 1-4) */
  bne sl_set0
  jmp fl_set
@@ -4234,6 +4267,15 @@ gr_flag:
  .long 0
 gr_neg:
  .long 0
+gr_fine:                          /* 1 while the WB fine-tune screen is open from our row (pm_ev) */
+ .long 0
+gr_hold:                          /* 1 from MENU in it to Picture Mode's first row-memory write (as test 12) */
+ .long 0
+gr_row:                           /* the column's row memory (setting 2148) when it is one of our rows */
+ .long 0
+gr_wait:
+ .long 0
+.set GR_WAIT, 1
 gr_oid:
  .long 0
 gx_d0:
@@ -4281,6 +4323,9 @@ gr_id:
  mov ABB,d0
 2:
  add d3,d0
+ movbu (gr_fine),d2               /* the fine-tune screen: the camera's own directions */
+ cmp 0,d2
+ bne 9f
 3:
  mov 1,d2
  movbu d2,(gr_neg)
@@ -4324,8 +4369,27 @@ gr_now:
 sc_cap:
  cmp GLY,d0
  bne 1f
+ movbu (gr_fine),d3               /* not while the fine-tune screen is open from our row (its own 457 holder goes away;
+                                   * Picture Mode's stays) */
+ cmp 0,d3
+ bne 1f
  mov gr_cont,a1
  mov a0,(a1)
+ movbu (gr_wait),d3               /* back from the fine-tune screen: Picture Mode reloads its bottom bar (457) after
+                                   * its first update; on our row that load takes the grid (498) instead */
+ cmp 0,d3
+ beq 1f
+ clr d3
+ movbu d3,(gr_wait)
+ movbu (gr_flag),d3
+ cmp 0,d3
+ beq 1f
+ mov a0,(gx_d0)
+ mov d1,(gr_sv + 4)
+ call gr_pub,[d2,d3,a2,a3],16
+ mov (gr_sv + 4),d1
+ mov (gx_d0),a0
+ mov 498,d0
 1:
  mov d0,a3
  mov a0,d3
@@ -4336,27 +4400,26 @@ sc_cap:
  * gr_flag = look + 1, publish the grid block (gr_pub) and load the camera's WB grid scene (485) into its top-layer
  * holder; else gr_flag = 0 and the holder is emptied. */
 gr_upd:
- mov gr_cont,a1
- mov (a1),d0
- cmp 0,d0
- beq 9f
  movhu (a0),d0
  cmp AB_IT,d0
  bne 8f
  mov 1,d1
  call ch_id,[d2,d3,a2],20         /* picture mode -> 1..4, else 0 */
- mov gr_flag,a1
- movbu d0,(a1)
+ movbu d0,(gr_flag)
  cmp 0,d0
  beq 8f
+ movbu (gr_wait),d0               /* back from the fine-tune screen: sc_cap loads the grid with the bottom bar */
+ cmp 0,d0
+ bne 9f
+ mov (gr_cont),d0
+ cmp 0,d0
+ beq 9f
  call gr_pub,[d2,d3,a2,a3],16
- mov gr_cont,a1
- mov (a1),a0
+ mov (gr_cont),a0
  call gr_is,[d2],8                /* d0 = 1: the holder already shows the grid */
  cmp 1,d0
  beq 7f
- mov gr_cont,a1
- mov (a1),a0
+ mov (gr_cont),a0
  mov 498,d0
  call sc_set,[d2,d3,a2,a3],28     /* the holder takes the WB grid scene */
 7:
@@ -4364,15 +4427,12 @@ gr_upd:
  bra 9f
 8:
  clr d0
- mov gr_flag,a1
- movbu d0,(a1)
- mov gr_cont,a1
- mov (a1),a0
+ movbu d0,(gr_flag)
+ mov (gr_cont),a0
  call gr_is,[d2],8
  cmp 1,d0
  bne 9f
- mov gr_cont,a1
- mov (a1),a0
+ mov (gr_cont),a0
  mov GLY,d0
  call sc_set,[d2,d3,a2,a3],28     /* back to its own layer (the bottom bar) */
 9:
@@ -4511,23 +4571,110 @@ gk_f:
  movbu d0,(a0)
  mov 1580,d0
  jmp gk_back                      /* 0x611c2d1f: mov d0,(4,sp); mov 7,d0; ... 0x6119a1f2 */
+/* pm_ev <- jmp from the Picture Mode handler 0x6125becc (calls: d0 event, d1, a0, a1): on our WB row on COLOR 1-4
+ * (gr_flag set by gr_upd), the events that open the WB fine-tune screen from
+ * the camera's WB± row (0x6125bc8b: 0x900c OK, 0x9031 / 0x9032 dials, 0xf83c, 0x9755 with code 9; and left / right
+ * 0x9008 / 0x900a) -> gr_flag = look
+ * + 1, gr_fine = 1, d0 = 0x0408 (as sliders test 12; on the camera OK was not 0x900c there); else stock. */
+pm_ev:
+ movm [d2,d3,a2,a3],(sp)
+ add -40,sp                       /* (0,sp) our call's slot; d0, d1, a0, a1, mdr kept; (24..39) the event's data */
+ mov d0,(4,sp)
+ mov d1,(8,sp)
+ mov a0,(12,sp)
+ mov a1,(16,sp)
+ mov mdr,d2
+ mov d2,(20,sp)
+ movbu (gr_flag),d2               /* our row is the current one (gr_upd; the row list at (0x6037dfa0) + 0x51a0 is the
+                                   * fine-tune screen's after MENU back from it) */
+ cmp 0,d2
+ beq 8f
+ cmp 0x900c,d0
+ beq 2f
+ cmp 0x9008,d0                    /* left / right press: the same (no changes on the row itself) */
+ beq 2f
+ cmp 0x900a,d0
+ beq 2f
+ cmp 0x9031,d0
+ beq 2f
+ cmp 0x9032,d0
+ beq 2f
+ cmp 0xf83c,d0
+ beq 2f
+ cmp 0x9755,d0
+ bne 8f
+ mov sp,a0
+ add 24,a0
+ call ev_arg,[],0                 /* 0x6129b050: the event's data, (26,sp) its code */
+ movhu (26,sp),d0
+ cmp 9,d0
+ bne 8f
+2:
+ mov 1,d1
+ call ch_id,[d2,d3,a2],20         /* picture mode -> 1..4, else 0 */
+ cmp 0,d0
+ beq 8f
+ movbu d0,(gr_flag)
+ mov 1,d0
+ movbu d0,(gr_fine)
+ mov (20,sp),d2
+ mov d2,mdr
+ add 40,sp
+ movm (sp),[d2,d3,a2,a3]
+ mov 0x0408,d0
+ mov 8,d1
+ rets
+8:
+ mov (20,sp),d2
+ mov d2,mdr
+ mov (4,sp),d0
+ mov (8,sp),d1
+ mov (12,sp),a0
+ mov (16,sp),a1
+ add 40,sp
+ movm (sp),[d2,d3,a2,a3]
+ movm [d2,a2,a3],(sp)
+ add -60,sp
+ jmp pme_back                     /* 0x6125bed1 */
+
 /* gx_map <- jmp from 0x610f6016 (the state dispatcher, d0 = a handler's next state, (8,sp) -> the GUI state bytes
  * {parent, child}; a0 / a1 / d1 free here): a state change while in Picture Mode (0x0418) clears gr_flag. */
 gx_map:
- mov gr_flag,a1
- movbu (a1),d1
- cmp 0,d1
- beq 9f
  mov d0,d1
  exthu d1
  cmp 0,d1
  beq 9f
  mov (8,sp),a0
  movhu (a0),d1
- cmp 0x1804,d1
- bne 9f
+ cmp 0x0804,d1                    /* leaving the WB fine-tune screen (0x0408) */
+ bne 5f
+ movbu (gr_fine),d1
+ cmp 0,d1
+ beq 9f                           /* not opened from our row: stock */
  clr d1
- movbu d1,(a1)
+ movbu d1,(gr_fine)
+ mov d0,d1
+ exthu d1
+ cmp 0x0417,d1                    /* MENU: back to Picture Mode on our row, not to the WB screen */
+ bne 4f
+ mov 0x0418,d0
+ mov 1,d1
+ movbu d1,(gr_hold)
+ mov GR_WAIT,d1
+ movbu d1,(gr_wait)
+ bra 9f
+4:
+ clr d1
+ movbu d1,(gr_flag)
+ bra 9f
+5:
+ cmp 0x1804,d1                    /* leaving Picture Mode (0x0418) */
+ bne 9f
+ movbu (gr_fine),d1
+ cmp 0,d1
+ bne 6f                           /* to the fine-tune screen from our row: keep the look */
+ movbu d1,(gr_flag)
+6:
  mov (gr_cont),a0                 /* and give the holder its own layer back */
  cmp 0,a0
  beq 9f
@@ -4540,6 +4687,10 @@ gx_map:
  call sc_set,[d2,d3,a2,a3],28
 8:
  mov (gx_d0),d0
+ movbu (gr_fine),d1               /* to the fine-tune screen: Picture Mode and its holder stay (it comes back) */
+ cmp 0,d1
+ bne 9f
+ mov d1,(gr_cont)                 /* else the holder may go with the screen: captured again when 457 loads */
 9:
  mov d0,d3
  exthu d3

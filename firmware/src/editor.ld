@@ -29,6 +29,7 @@ SECTIONS {
   .hook_stp     0x611b201b : { *(.hook_stp) }
   .hook_ic      0x610f5611 : { *(.hook_ic) }
   .hook_gx      0x610f6016 : { *(.hook_gx) }
+  .hook_pme     0x6125becc : { *(.hook_pme) }
   .hook_sc      0x610cdf05 : { *(.hook_sc) }
   .hook_pu      0x611d04ec : { *(.hook_pu) }
   .hook_bar     0x611d1035 : { *(.hook_bar) }
@@ -70,7 +71,9 @@ sc_back       = 0x610cdf0b;
 sc_set        = 0x610cdf05;
 sc_ref        = 0x61192d6c;
 pu_back       = 0x611d04f2;
-gx_back       = 0x610f601c;         /* ft1: the still set-up (Grainy Film's texture is made here) */
+gx_back       = 0x610f601c;
+pme_back      = 0x6125bed1;
+ev_arg        = 0x6129b050;         /* ft1: the still set-up (Grainy Film's texture is made here) */
 arw_back      = 0x611d0be8;
 rv_469        = 0x611b21f2;
 rv_back       = 0x611b2217;
