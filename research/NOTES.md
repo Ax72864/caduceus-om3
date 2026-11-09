@@ -1711,3 +1711,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Whites).
 - Why test 13 was rejected (owner, asked 2026-11-08; not written down before): **no numbers shown**, and **the
   directions were reversed** (right moved the dot left, up moved it down).
+- Plan (analysis, 2026-11-08): port the test-13 grid (commit 4d5288b: scene 498 in Picture Mode's layer-457 holder via
+  sc_cap / gr_upd (hook 0x611d04ec) / gr_pub (property 256) / gr_ref, row object = the camera's 2-D control kind 7 on
+  key 1580 (gk_f), facade redirect of the grid ids 1580..1605 to the look's slot +26 / +27 while gr_flag, gx_map to
+  leave) onto v0.25, as one "WB" row replacing A-B + G-M. Fix the directions (owner: right moved the dot left, up
+  moved it down): negate the value in both redirect directions (the control then steps the other way) and keep the dot
+  at 594 + 13 A-B / 280 - 13 G-M, so right = A (+), up = G (+) as on the camera's own grid. Numbers: the row title as a
+  dynamic string ("WB  A3 · G2") from st_get, refreshed by gr_upd (to try). Then the Blacks / Whites grid: the same
+  scene with the box pictures B / A / G / M answered by our own (ic_get while the BW grid shows), redirect to slot
+  +47 / +48 clamped to -5..+5, title "Blk +2 · Wht -1". New pictures need the owner's approval.
