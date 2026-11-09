@@ -167,7 +167,8 @@ def build(defaults, testfile, out):
     assert table_ok(dflt, lo, span) and table_ok(test, lo, span)
     assert dflt == dflt[:16] + dflt[16:20] + header(0)[20:32] + bytes(512) and dflt[:16] == header(0)[:16]
     def_crc = struct.unpack_from('<I', dflt, 16)[0]      # test 17: sd_def builds the neutral defaults from sd_hdr + this CRC
-    (out / 'data4.inc').write_text(f' .equ DEF_CRC, 0x{def_crc:08x}\n' + 'sd_hdr:\n' + db(header(0)) + 'sd_lo:\n' + db(bytes(v & 0xff for v in lo)) +
+    import mkicons as _mk
+    (out / 'data4.inc').write_text(f' .equ DEF_CRC, 0x{def_crc:08x}\n .equ WBC_N, {len(_mk.WBC_CHARS)}\n' + 'sd_hdr:\n' + db(header(0)) + 'sd_lo:\n' + db(bytes(v & 0xff for v in lo)) +
                                    'sd_span:\n' + db(bytes(span)))
     (out / 'BUNDLES.BIN').write_bytes(test)
     sys.path.insert(0, str(ROOT / 'firmware'))
@@ -370,13 +371,13 @@ def build(defaults, testfile, out):
                     (0x615510cc, 32), (sy['sw11_tab'], 32), (0x6155124c, 32), (sy['sw13_tab'], 32)):
         tg = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 5394]
         assert len(tg) == 1, hex(base)
-        for item, pre in ((NR_IT, 'nr'), (VF_IT, 'vf'), (FR_IT, 'fr'), (AB_IT, 'wg')):   # v0.25: AB_IT = the WB grid row
+        for item, pre in ((NR_IT, 'nr'), (VF_IT, 'vf'), (FR_IT, 'fr'), (AB_IT, 'wg'), (BK_IT, 'bw')):   # v0.25 grid rows: AB_IT WB, BK_IT Blacks / Whites
             t = sy[pre + '_' + OWN[base]] if base in OWN else sy['lc_' + pre] if base == 0x6155124c else tg[0]
             sw_add(base, n, item, t)
         # Blacks / Whites: slider rows, as item 7's case (key 1) except the bar object's id (f2c) and the left column
         t7 = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 1]
         assert len(t7) == 1, hex(base)
-        for item, pre in ((BK_IT, 'bk'), (WH_IT, 'wh'), (GL_IT, 'gl')):
+        for item, pre in ((GL_IT, 'gl'),):                       # v0.25: no Blacks / Whites slider rows
             t = sy[pre + '_f'] if base == 0x61536f2c else t7[0]     # left column: item 7's slider cell
             sw_add(base, n, item, t)
     assert sy['NR_IT'] == NR_IT if 'NR_IT' in sy else True
@@ -467,6 +468,7 @@ def make_xblock(out, sy, xtag):
     sys.path.insert(0, str(ROOT / 'firmware'))
     import mkicons                                # v0.25 WB grid row: the left cell's glyphs (xblock xb_wbc)
     inc = ''.join(f'.set {k}, {getattr(mkicons, k)}\n' for k in ('WBC_IX', 'WBC_IY', 'WBC_TY', 'WBC_GH'))
+    inc += f'.set WBC_N, {len(mkicons.WBC_CHARS)}\n'
     subprocess.run([sys.executable, ROOT / 'card' / 'mklabels.py', out / 'LABELS.BIN'], check=True, capture_output=True)
     inc += f'.set XL_FILE, {(out / "LABELS.BIN").stat().st_size}\n'      # v0.25: LABELS.BIN v3 (+ the WB cell glyphs)
     (out / 'wbglyph.inc').write_text(inc)
