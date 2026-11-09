@@ -1641,3 +1641,8 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   (shared `xb_tex`, also used by xb_su, which now only marks a texture made earlier) and swaps to Grainy Film's list
   only when the texture exists. Frame never gets the texture on COLOR's list (xb_sw / xb_tart guard). Firmware
   ec1d0608…, GUIDES ada120aa…. Same test LOOKS as ft8.
+- **ft8b camera (2026-11-08, owner; PB081477..481; no restarts): Pin Hole, White Edge and Frame WITH fast grain.**
+  All five in colour with grain Y hp ~20: plain, Pin Hole (dark vignette), White Edge, **Frame (white frame, no
+  restart)**, Star. Grain fades in the darkest vignette corners (Y hp 2..4 at Y ~24, clipped at black). So COLOR +
+  Art Effect + grain works through Grainy Film's work list (texture made at list time). Left: Glow / Clarity and
+  Shading.
