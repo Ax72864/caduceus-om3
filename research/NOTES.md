@@ -1582,3 +1582,14 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   texture went in (xb_tx 2). GUIDES 51477b56…. Test LOOKS.BIN (card only; the owner's LOOKS / EDITS backed up outside
   the repo): COLOR 1 FILM 1-5 = Grain Low / Med / High / High + Frame / High + Pin Hole, COLOR 2 FILM 6-7 = High +
   Glow -3 / High + Star.
+- **ft5 camera (2026-11-08, owner; PB081458..463):** FILM 1-3 (Low / Med / High) = colour + grain, Y high-pass
+  **11 / 15 / 20** (strengths work; shadows a little lighter with more grain: dark patch mean 26 / 32 / 38, likely
+  grain clipped at black). **FILM 4 (High + Frame) restarted the camera** (no file). FILM 5 (Pin Hole, PB081461): no
+  grain - its development carries effect 0x0200 (combiner 9: the vignette is done there), so no texture and no CPU
+  grain any more. FILM 6 (Glow, PB081462): development effect 0x0400 -> no texture; Glow passes + the CPU grain (grain
+  in mid/bright areas only, Y hp 3..17, as the CPU grain's shape). FILM 7 (Star, PB081463): textured development
+  (combiner 1) then the Star passes (combiner 135): **colour + grain + Star** (Y hp ~20). The log starts after the
+  restart (slot 0 Pin Hole, 1 Glow, 2 Star).
+  Open: why Frame restarts (Frame = development effect 0 -> textured, then a kind-3 0xf005 pass with combiner 10;
+  in GF + Frame that pass also got the texture at +96 by the hook); Pin Hole / Glow / White Edge need the texture
+  somewhere else (their development has its own combiner).
