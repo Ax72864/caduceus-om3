@@ -1945,3 +1945,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   photo: split toning by curve bending is camera-proven.** Not answered yet: live view (owner could not tell).
 - Conclusion: the probe strength (~5 Cb/Cr units) is too subtle to see; the feature needs a range up to ~3x
   (Cross Process I reaches ~23 at its peak). Photos not kept in the repo (owner's).
+- Owner (2026-11-09): strength about 3x the probe; control = **two colour wheels**, one for shadows and one for
+  highlights, each setting colour and strength. Design (proposal, analysis): reuse our HSL wheel editor (it already
+  hosted non-HSL pages: Looks page axis 4, Extras page axis 5 with per-sector settings in v0.20-v0.22) for two new
+  pages / rows "Shadows" and "Highlights": front dial = colour (12 wheel colours), rear dial = strength 0..5, one
+  colour active per wheel. Storage 4 bytes per look (hue, strength x 2): LOOKS.BIN record +53..+56 (firmware's
+  range check to widen), EDITS.BIN the same, slot bytes to pick. Engine: st_run with K from a 12-hue table scaled
+  by strength, max ~24 Cb/Cr units at the peak (>> 7 or wider K), running max to keep curves rising. Control Panel:
+  two wheels (angle = colour, distance = strength) + preview (model.py). Space: ext11 ~2.7 KB left after st1;
+  GUIDES.BIN full.
