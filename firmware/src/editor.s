@@ -4273,9 +4273,8 @@ gr_hold:                          /* 1 from MENU in it to Picture Mode's first r
  .long 0
 gr_row:                           /* the column's row memory (setting 2148) when it is one of our rows */
  .long 0
-gr_wait:
+gr_wait:                          /* 1 from MENU back from the fine-tune screen until sc_cap has loaded the grid */
  .long 0
-.set GR_WAIT, 1
 gr_oid:
  .long 0
 gx_d0:
@@ -4375,15 +4374,12 @@ sc_cap:
  bne 1f
  mov gr_cont,a1
  mov a0,(a1)
- movbu (gr_wait),d3               /* back from the fine-tune screen: Picture Mode reloads its bottom bar (457) after
-                                   * its first update; on our row that load takes the grid (498) instead */
+ movbu (gr_flag),d3               /* on our row (entering Picture Mode, back from the fine-tune screen: its first
+                                   * update comes before it loads its bottom bar, 457) that load takes the grid (498) */
  cmp 0,d3
  beq 1f
  clr d3
  movbu d3,(gr_wait)
- movbu (gr_flag),d3
- cmp 0,d3
- beq 1f
  mov a0,(gx_d0)
  mov d1,(gr_sv + 4)
  call gr_pub,[d2,d3,a2,a3],16
@@ -4408,7 +4404,8 @@ gr_upd:
  movbu d0,(gr_flag)
  cmp 0,d0
  beq 8f
- movbu (gr_wait),d0               /* back from the fine-tune screen: sc_cap loads the grid with the bottom bar */
+ movbu (gr_wait),d0               /* back from the fine-tune screen: not before Picture Mode reloads its bottom bar
+                                   * (loading 498 at its first update crashed; sc_cap swaps that load instead) */
  cmp 0,d0
  bne 9f
  mov (gr_cont),d0
@@ -4660,12 +4657,13 @@ gx_map:
  mov 0x0418,d0
  mov 1,d1
  movbu d1,(gr_hold)
- mov GR_WAIT,d1
  movbu d1,(gr_wait)
  bra 9f
 4:
- clr d1
+ clr d1                           /* to anywhere else (OK, half-press: live view): Picture Mode and its holder are gone */
  movbu d1,(gr_flag)
+ movbu d1,(gr_wait)
+ mov d1,(gr_cont)
  bra 9f
 5:
  cmp 0x1804,d1                    /* leaving Picture Mode (0x0418) */
