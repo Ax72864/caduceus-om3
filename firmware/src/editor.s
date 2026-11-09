@@ -6626,12 +6626,11 @@ s_wl:
  mov d3,a0
  mov (a0),a0
  mov (5352,a0),d2
- mov a0,d1
  call xp,[],0
  beq 9f
  add 120,a1
  add 16,a1
- mov d1,a0
+ mov (4,sp),a0                    /* ft8b: S (the builder keeps it at (4,sp)) */
  calls (a1)
  cmp 0,d0
  beq 9f

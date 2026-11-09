@@ -528,7 +528,13 @@ xb_dev:
  bne 9f
  movhu (1756,a1),d1               /* ft5: without its own effect: the texture here */
  cmp 0,d1
- beq 4f
+ bne 9f
+ movbu (xb_tart),d1               /* ft8b: Frame only on Grainy Film's list (on COLOR's it restarted the camera) */
+ cmp 5,d1
+ bne 4f
+ movbu (xb_sw),d1
+ cmp 0,d1
+ bne 4f
  bra 9f                           /* ft8: its own effect in the development (ft7's conversion-pass texture hung) */
 2:
  bra 9f
@@ -587,11 +593,19 @@ xb_dev:
  * stored at job+8324 (released by the stock clean-up 0x604b9cd9); xb_dev then attaches it to the development. */
 xb_su:
  movm [d2,d3,a2,a3],(sp)
- add -16,sp                       /* (0) call slot, (4..9) the texture parameters */
- mov a0,a2
+ add -4,sp
  mov a0,(xb_S)
  clr d0
  movbu d0,(xb_tx)
+ call xb_tex,[d2,d3,a2,a3],32     /* a0 = S */
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
+
+/* xb_tex (ft8b): `call xb_tex,[d2,d3,a2,a3],32`, a0 = S. A COLOR still with Grain (no Glow / Clarity): the texture
+ * object at job+8324 (made here, or already by xb_wl) -> xb_tx = 1, xb_tl = Grain, xb_art = Art Effect. */
+xb_tex:
+ mov a0,a2
  mov (10276,a2),a1
  cmp 0,a1
  beq 9f
@@ -600,7 +614,11 @@ xb_su:
  bne 9f
  mov (8324,a1),d0
  cmp 0,d0
- bne 9f                           /* already has one */
+ beq 2f
+ mov 1,d0                         /* made already (xb_wl, before the set-up) */
+ movbu d0,(xb_tx)
+ bra 9f
+2:
  call xb_slot,[d2,d3],12
  cmp 0,a1
  beq 9f
@@ -611,6 +629,8 @@ xb_su:
  cmp 0,d1
  bne 9f
  movbu d0,(xb_tl)
+ movbu (50,a1),d1
+ movbu d1,(xb_tart)
  mov a2,a3
  add 4,a3                         /* the still's parameters */
  movhu (40,a3),d3
@@ -657,9 +677,7 @@ xb_su:
  mov 1,d0
  movbu d0,(xb_tx)
 9:
- add 16,sp
- movm (sp),[d2,d3,a2,a3]
- rets
+ ret [d2,d3,a2,a3],32
 
 /* xb_sel2 (ft3): jmp from s_sel2 = the selector call inside the combiner set-up 0x60504b2b (frame `call ..,[d2,a2],12`,
  * a0 = context). The textured COLOR development (xb_tx 2, request xb_rq) gets combiner 1 there too; else the stock
@@ -714,17 +732,18 @@ xb_tgain:
  * profile has Grain with Pin Hole (2), White Edge (4) or Frame (5) and no Glow / Clarity gets Grainy Film II's list
  * (handler 0x604b8ddc: development with the texture, then the effect as its own pass, as Grainy Film + Pin Hole /
  * Frame do on the camera). The job's key itself stays 11. d0 = the key to look up, 0 = keep. */
-xb_wl:
+xb_wl:                            /* a0 = S (ft8b: the builder's (4,sp)) */
  movm [d2,d3,a2,a3],(sp)
  add -4,sp
  clr d2
- mov a0,a2
+ movbu d2,(xb_sw)
+ mov a0,a3
+ mov (10276,a3),a2
+ cmp 0,a2
+ beq 9f
  mov (5352,a2),d0
  cmp 11,d0
  bne 9f
- mov (8324,a2),d0
- cmp 0,d0
- beq 9f
  call xb_slot,[d2,d3],12
  cmp 0,a1
  beq 9f
@@ -742,6 +761,13 @@ xb_wl:
  cmp 5,d0
  bne 9f
 8:
+ mov a3,a0                        /* ft8b: the list is built before the set-up: make the texture now */
+ call xb_tex,[d2,d3,a2,a3],32
+ mov (8324,a2),d0
+ cmp 0,d0
+ beq 9f                           /* no texture: keep COLOR's list (Grainy Film's hook would read it) */
+ mov 1,d0
+ movbu d0,(xb_sw)
  mov 0x01020068,d2
 9:
  mov d2,d0
@@ -2191,6 +2217,10 @@ xb_ck:                            /* ft3: 1 = xb_lg answers combiner 1 for this 
 xb_fx1:                           /* ft4: Grain level when combiner 1's set-up gets COLOR's chroma back, 0 none */
  .byte 0
 xb_k3:                            /* ft7: 1 = the texture goes to a conversion pass (keep its stage) */
+ .byte 0
+xb_sw:                            /* ft8b: 1 = this still got Grainy Film II's work list (xb_wl) */
+ .byte 0
+xb_tart:                          /* ft8b: this still's Art Effect (xb_tex) */
  .byte 0
  .balign 4
 xb_rq:                            /* ft2: the development request the texture went to */

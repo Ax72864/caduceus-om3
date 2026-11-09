@@ -1632,3 +1632,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Art Effect (not with Glow / Clarity: CPU grain there); Art + Grain never adds the Soft Focus pass. If the set-up
   runs after the list build, job+8324 is still 0 and nothing changes (safe). Firmware 235ecee0…, GUIDES 38408948….
   Test LOOKS: COLOR 1 FILM 1-5 = High / + Pin Hole / + White Edge / + Frame / + Star.
+- **ft8 camera (2026-11-08, owner; PB081473..476):** FILM 1 plain fast + grain (Y hp 20); FILM 2 Pin Hole and FILM 3
+  White Edge fast but **no grain** (Y hp 2..7); **FILM 4 Frame restarted** again; FILM 5 Star as before (grain, Star
+  always a little slower). Reading (analysis): the list swap never happened - the work list is built **before** the
+  set-up, so job+8324 was still 0 at xb_wl; Pin Hole / White Edge stayed in the development (no texture, no CPU
+  grain); Frame took the texture in the development on COLOR's list -> restart (as ft5).
+- **ft8b (firmware + GUIDES; emulator: boots):** s_wl passes S (the builder's (4,sp)); xb_wl makes the texture itself
+  (shared `xb_tex`, also used by xb_su, which now only marks a texture made earlier) and swaps to Grainy Film's list
+  only when the texture exists. Frame never gets the texture on COLOR's list (xb_sw / xb_tart guard). Firmware
+  ec1d0608…, GUIDES ada120aa…. Same test LOOKS as ft8.
