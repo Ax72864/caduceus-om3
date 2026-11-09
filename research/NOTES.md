@@ -1597,3 +1597,9 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - **ft6 (GUIDES only, firmware = ft4; emulator: boots):** the texture only for no Art Effect or Star Light and no
   Glow / Clarity; Frame, Pin Hole, White Edge and Glow / Clarity with Grain go back to the CPU grain (Soft Focus pass,
   ~3 s, as v0.22). GUIDES 705cf9b8…. Meant as the safe base for a release candidate; Frame + texture stays research.
+- **ft6 camera (2026-11-08, owner; PB081465..471; no restarts):** FILM 1-3 fast, colour + grain Y hp 12 / 15 / 20;
+  FILM 4 Frame, 5 Pin Hole, 6 Glow slow (owner) with the CPU grain (Y hp 3..18 by brightness, as the CPU grain's
+  shape), FILM 7 Star fast with texture grain (Y hp ~20). All in colour. => ft6 = a release candidate base: fast
+  colour-photo grain (plain, Star), Glow / Clarity / Art Effects back with the slower grain. Not yet checked: Shading
+  + Grain on ft6 (Shading's development has effect 0x0c00, so no texture and no MONO key: expect colour, no grain),
+  White Edge, Clarity, burst.
