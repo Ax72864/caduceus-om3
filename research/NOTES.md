@@ -1774,3 +1774,18 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   sc_cap loads 498 in place of 457 whenever our row is current (Picture Mode now comes back on the remembered row,
   setting 2148 / gr_row); gr_wait only after MENU. Emulator: half-press, OK and MENU exits, re-entry, OK again: no
   fault. Next: the left cell as a runtime-drawn picture (WB± over the values), then the Blacks / Whites grid.
+- Camera (owner, wbg2): no restarts; exits work. Owner: get the left-cell icon right, then the Blacks / Whites grid.
+- WB grid test 3 (wbg3; emulator only): the row is a one-option choice row again (test 12's: CHC wg_a..f, lc_wg,
+  WGB 0x7ec0 + k class 11, value 0, item entry with wb_l0 "WB" / wb_l1 IC_WB / wb_l2 12545); the 2-D control, its
+  inline negation and the title numbers are gone. Left cell = picture IC_WB 0x7f8f (100 x 76, wb_desc), drawn when
+  the left column reads the row's value (SL_VAL class 11 -> wb_draw -> block +144 xb_wbc, only when A-B / G-M
+  change): the camera's WB± picture (12545: descriptor = word at (0x60379740) + 4 id, type 11, 82 x 30) decoded row
+  by row at (9, 6), the values as the camera writes them ("A2.G1", "B1.0", blank at 0 / 0) from our glyphs (DejaVu
+  cap 18, the cells' 2 px edge; firmware/mkicons.py wbc_glyphs), packed into a malloc'd buffer (3200 + 112 B).
+  Glyphs travel in LABELS.BIN v3 (12160 B: 'WBG1' section after the 27 bitmaps; the block's XL_FILE comes from the
+  build) because GUIDES.BIN must stay <= 16448 B (malloc pool; now 16316 B); the token reader / packer (wb_wtk /
+  wb_wem, wb_v) are in ext11 for the same reason (ext11 65408 of 65536 B). The LABELS section is only 2-aligned
+  (first try faulted on a 32-bit read). With a choice row the bottom bar is layer 456 (457 is hidden): GLY = 456.
+  Emulator: cell "WB±" / "A2.G1" / "B2.M2" follows the fine-tune values, grid preview with "WB" under it, half-press /
+  OK / MENU exits and re-entry: no fault. Package wbg3: E1479999.BIN eba6b508…, GUIDES.BIN 58983837…, LABELS.BIN
+  d6c1b4ab… (new: always copy with this firmware), on the card, checked by checksum.
