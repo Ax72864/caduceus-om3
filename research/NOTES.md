@@ -1649,3 +1649,11 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - **ft9 (GUIDES only, firmware = ft8b; emulator: boots):** every COLOR Grain still except Star Light takes Grainy
   Film's list (plain, Shading, Glow / Clarity too); the texture also with Glow / Clarity (no CPU grain). Test LOOKS:
   COLOR 1 FILM 1-5 = High / Pin Hole / Frame / Shading -3 / Glow -3, COLOR 2 FILM 6 = Star. GUIDES c73e3e4f….
+- **ft9 camera (2026-11-08, owner; PB081482..487): EVERYTHING fast with colour grain, no freezes or restarts.**
+  Owner: "quick across the board". Measured: plain (Grainy Film's list now) Y hp 20; Pin Hole (dark vignette) 18..20;
+  Frame (white frame) 19..20; **Shading -3 (dark corners) 18..20**; **Glow -3 (soft glow) ~16** (the glow softens the
+  grain a little); Star 19..20 (COLOR's list). All full colour (Cb/Cr high-pass < 1). The grain fades in the darkest
+  corners (clipped at black).
+  => Goal reached in the test build: grain as fast as default, in colour, with Art Effects, Glow / Clarity and
+  Shading. Next: a clean release candidate (logger out, Shading row back, strengths, Control Panel), and the open
+  "COLOR 1 white frame" question (an Art Effect stored on COLOR 1 from the Extras era, no row to change it).
