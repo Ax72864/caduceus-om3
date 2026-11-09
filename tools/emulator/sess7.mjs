@@ -59,8 +59,9 @@ for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
   }
   else if (t === 'gc') { const { GUICALLER } = await import(EMU + '/src/lab/menu.mjs'); const gc = u32(GUICALLER); console.log('GC ' + GUICALLER.toString(16) + ' ' + gc.toString(16)); }
   else if (t === 'eng') { const r32 = (a) => u32(a); const tot = r32(0x8E000008); const ring = []; for (let i = 0; i < 16; i++) ring.push([r32(0x8E000100 + 16 * i), r32(0x8E000104 + 16 * i), r32(0x8E000108 + 16 * i), r32(0x8E00010c + 16 * i)].map((x) => x.toString(16))); console.log('ENG ' + tot + ' ' + JSON.stringify(ring)); }
+  else if (t === 'eye' || t === 'tft') { s.display_input('eye', t === 'eye' ? 1 : 0); s.camapp.pump(); }
   else if (t.startsWith('shot:')) {
-    s.scene_frame(); s.a15_apply('tft'); const comp = lab.compose('tft', true, true); const w = comp.header.width, h = comp.header.height, px = comp.raw; const bpp = px.length / (w * h); console.log('shot', w, h, bpp, comp.status, comp.errors.length);
+    const dv = s.device || 'tft'; s.scene_frame(); s.a15_apply(dv); const comp = lab.compose(dv, true, true); const w = comp.header.width, h = comp.header.height, px = comp.raw; const bpp = px.length / (w * h); console.log('shot', w, h, bpp, comp.status, comp.errors.length);
     const raw = Buffer.alloc((w * 3 + 1) * h);
     for (let y = 0; y < h; y++) { raw[y * (w * 3 + 1)] = 0; for (let x = 0; x < w; x++) { const i = (y * w + x) * bpp, o = y * (w * 3 + 1) + 1 + x * 3; raw[o] = px[i]; raw[o + 1] = px[i + 1]; raw[o + 2] = px[i + 2]; } }
     const crcT = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crcT[n] = c >>> 0; }

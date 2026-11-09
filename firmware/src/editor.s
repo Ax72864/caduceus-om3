@@ -1094,8 +1094,7 @@ k_go:
  beq 6f
  clr d0
  movbu d0,(AXIS,a2)
- movbu d0,(DIRTY,a2)
- movbu d0,(STATUS,a2)
+ movbu d0,(STATUS,a2)             /* v0.25: DIRTY kept (a film chosen before this first use was never saved) */
  mov EMAGIC,d0
  mov d0,(EMARK,a2)
 6:
@@ -2802,8 +2801,7 @@ ei_page:
  cmp EMAGIC,d3
  beq 2f
  clr d3
- movbu d3,(DIRTY,a2)
- movbu d3,(STATUS,a2)
+ movbu d3,(STATUS,a2)             /* v0.25: DIRTY kept (as above) */
  mov EMAGIC,d3
  mov d3,(EMARK,a2)
 2:
@@ -3029,7 +3027,7 @@ pm_list:                          /* item ids, in the order the owner reads them
                                    * the colour wheel), tone (Contrast, Highlight & Shadow, Blacks, Whites), white balance
                                    * (A-B, G-M), detail (Sharpness, Noise Filter = NR), lens (Vignette Correction =
                                    * VigFix, Shading), finish (Film Grain Effect = Grain) */
- .long 111, 5397, 8, 5398, BK_IT, WH_IT, AB_IT, 7, NR_IT, VF_IT, 5399, GL_IT, FR_IT, 5400   /* v0.25: Shading back,
+ .long 111, 5397, 8, 5398, BK_IT, WH_IT, AB_IT, 7, NR_IT, VF_IT, 5399, GL_IT, 5400   /* v0.25: Shading back,
                                     Glow / Clarity and Frame rows; AB_IT = the WB grid (no G-M row) */
 .set PM_N, (. - pm_list) / 4
 
@@ -3375,8 +3373,8 @@ abs_str:                          /* v0.25 the WB grid row's title "WB" */
  .short 87, 66, 0
 gms_str:                          /* "G-M" */
  .short 71, 45, 77, 0
-glc_str:                          /* "Glow / Clarity" */
- .short 71, 108, 111, 119, 32, 47, 32, 67, 108, 97, 114, 105, 116, 121, 0
+glc_str:                          /* "Clarity" (v0.25: the row is named for its + side; - is Glow) */
+ .short 67, 108, 97, 114, 105, 116, 121, 0
 frm_str:                          /* "Frame" */
  .short 70, 114, 97, 109, 101, 0
  .balign 16
@@ -3678,11 +3676,15 @@ sl_slot:
 sl_get:
  cmp 0,a1
  beq 9f
- cmp 2148,d0                      /* the Picture Mode column's row memory: ours when it was one of our rows */
+ cmp 2148,d0                      /* the Picture Mode column's row memory: the top row (111) every time (owner,
+                                   * v0.25), but our row once after MENU from the WB fine-tune screen (gr_bk) */
  bne 1f
+ mov 111,d1
+ movbu (gr_bk),d0
+ cmp 0,d0
+ beq 2f
  movhu (gr_row),d1
- cmp 0,d1
- beq 1f
+2:
  mov d1,(a1)
  clr d0
  rets
@@ -3937,8 +3939,12 @@ sl_set:
  beq 4f
  clr d2
  movbu d2,(gr_hold)               /* after MENU from the fine-tune screen: keep our row once */
+ mov 1,d2
+ movbu d2,(gr_bk)
  bra 1f
 4:
+ clr d2
+ movbu d2,(gr_bk)
  mov d1,d2
  exthu d2
  add -5381,d2
@@ -4262,6 +4268,14 @@ ic_get:
  bcc 12f
  jmp fl_scp
 12:
+ cmp 16244,d1                     /* v0.25: the Shading icon, moved down (sh_build) */
+ bne 13f
+ mov (sh_desc + 12),a0
+ cmp 0,a0
+ beq 13f
+ mov sh_slot,a0
+ retf [],0
+13:
  cmp IC_WB,d1                     /* v0.25: the WB grid row's left cell; the camera's WB± until it is drawn */
  bne 14f
  mov (wb_desc + 12),d1
@@ -4315,6 +4329,8 @@ gr_hold:                          /* 1 from MENU in it to Picture Mode's first r
 gr_row:                           /* the column's row memory (setting 2148) when it is one of our rows */
  .long 0
 gr_wait:                          /* 1 from MENU back from the fine-tune screen until sc_cap has loaded the grid */
+ .long 0
+gr_bk:                            /* 1: the row memory answers gr_row (back from the fine-tune screen) */
  .long 0
 gr_oid:
  .long 0
@@ -4439,6 +4455,113 @@ wb_wem:
 .balign 4
 wb_v:
  .long 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+/* sh_build: `call sh_build,[d2,d3,a2,a3],16` (pu_hook, once): the Shading row's icon (the camera's picture 16244,
+ * 46 x 46, type 11) moved down SH_DY rows into sh_desc (owner, v0.25: its number sat lower than the icon; the row's
+ * own left cell puts the readout lower than the slider rows' cells do). ic_get answers 16244 with it. Uses the WB
+ * cell drawer's token reader / packer (wb_wtk / wb_wem, wb_v). */
+.set SH_DY, 6
+sh_build:
+ mov (sh_try),d0                  /* one try only */
+ cmp 0,d0
+ bne 9f
+ mov 1,d0
+ mov d0,(sh_try)
+ mov (0x60379740),a0
+ add 4 * 16244,a0
+ mov (a0),a2                      /* its descriptor */
+ cmp 0,a2
+ beq 9f
+ movhu (2,a2),d0
+ cmp 46,d0
+ bne 9f
+ movhu (4,a2),d0
+ cmp 46,d0
+ bne 9f
+ mov (16,a2),a3
+ cmp 0,a3
+ beq 9f
+ movbu (3,a3),d0
+ cmp 11,d0
+ bne 9f
+ mov 1024,d0
+ call malloc,[],4
+ cmp 0,a0
+ beq 9f
+ mov a0,(sh_buf)
+ mov (a3),d0                      /* the same header (46 x 46, type 11) */
+ mov d0,(a0)
+ add 4,a0
+ mov a0,(wb_v + 16)
+ add 1020,a0
+ mov a0,(wb_v + 32)
+ add 4,a3
+ mov a3,(wb_v)
+ mov 5,d0
+ mov d0,(wb_v + 12)
+ clr d0
+ mov d0,(wb_v + 28)
+ mov SH_DY * 3,d2                 /* SH_DY clear rows: 16 + 16 + 14 px */
+ mov 2,d3
+1:
+ mov 0x00f,d0
+ cmp 0,d3
+ bne 2f
+ mov 0x00d,d0
+ mov 3,d3
+2:
+ add -1,d3
+ call wb_wem,[],4
+ cmp 0,d0
+ beq 8f
+ add -1,d2
+ bne 1b
+ mov 46 * (46 - SH_DY),d2         /* then the picture's first 46 - SH_DY rows */
+3:
+ call wb_wtk,[],4
+ mov d0,d3
+ and 15,d3
+ inc d3
+ call wb_wem,[],4
+ cmp 0,d0
+ beq 8f
+ sub d3,d2
+ bgt 3b
+ mov (wb_v + 28),d0               /* the last word */
+ cmp 0,d0
+ beq 4f
+ mov (wb_v + 16),a0
+ mov (wb_v + 20),d0
+ mov d0,(a0)
+ mov (wb_v + 24),d0
+ mov d0,(4,a0)
+ add 8,a0
+ mov a0,(wb_v + 16)
+4:
+ mov (wb_v + 16),d0
+ mov (sh_buf),d1
+ sub d1,d0
+ mov d0,(sh_desc + 12)
+ mov d1,d0
+ and 0xf0000000,d1
+ cmp 0x60000000,d1                /* a cached address -> uncached, as the stock pictures' */
+ bne 5f
+ add 0x40000000,d0
+5:
+ mov d0,(sh_desc + 16)
+8:
+9:
+ ret [d2,d3,a2,a3],16
+.balign 4
+sh_try:
+ .long 0
+sh_buf:
+ .long 0
+sh_slot:
+ .long sh_desc
+sh_desc:
+ .short 14, 46, 46, 8, 0, 0
+ .long 0, 0, 0
 
 /* wb_draw: `call wb_draw,[d2,d3,a2,a3],16`, a0 = the look's slot: the WB grid row's left cell for its A-B (+26) /
  * G-M (+27), drawn by the code block (xb_wbc, +144) into its buffer, wb_desc pointing there; again only when the
@@ -4717,6 +4840,11 @@ gr_pub:
 /* pu_hook <- jmp from 0x611d04ec (the Picture Mode screen's update, after its per-row case; (4,sp) -> the current
  * item; a3 = the screen): the WB grid for our row, then as stock `mov (0x6037a360),d0` -> 0x611d04f2. */
 pu_hook:
+ mov (sh_desc + 12),d0            /* v0.25: the Shading icon moved down, once (sh_build) */
+ cmp 0,d0
+ bne 1f
+ call sh_build,[d2,d3,a2,a3],16
+1:
  mov (4,sp),a0
  call gr_upd,[d2,d3,a2,a3],16
  mov (0x6037a360),d0
@@ -4887,7 +5015,7 @@ ic_d\n:
  ICD 13
 .balign 8
 ic_pay:
- .space 18040                     /* v0.25: 14 pictures (build.py checks the fit; A-B / G-M blank now) */
+ .space 14704                     /* v0.25: 14 pictures (build.py checks the fit; A-B / G-M, Frame blank now) */
 ic_pend:
 
 /* st_chk <- jmp from 0x611b201b (bar setup, a3 = the bar, (16,sp) -> its id): the bar's +116 says whether the arrows
@@ -4948,6 +5076,8 @@ rd_a:
  beq 1f
  cmp GL_IT,d0
  beq 1f
+ cmp 5399,d0                      /* v0.25 Shading: these glyphs, in line with its picture (owner: its number sat low) */
+ beq 1f
  jmp rda_none
 1:
  jmp rda_11
@@ -4970,6 +5100,8 @@ rd_b:
  cmp WH_IT,d0
  beq 1f
  cmp GL_IT,d0
+ beq 1f
+ cmp 5399,d0                      /* v0.25 Shading (as rd_a) */
  beq 1f
  jmp rdb_none
 1:

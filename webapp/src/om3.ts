@@ -35,11 +35,11 @@ export const sharpLabel = (v: number) => (v <= SHARP.lo ? 'Off' : v > 0 ? `+${v}
 export type Fw = 20 | 21 | 22 | 23 | 24;
 /** v0.25: Grain is as fast as normal with every setting, except Glow / Clarity and Frame together (the slower route,
  * about 3 s per photo). */
-export const slowGrain = (l: Look) => !!l.film_grain && !!l.effect && l.art_effect === 'frame';
+export const slowGrain = (_l: Look) => false;   // v0.25: no Art Effect (Frame removed), so grain is fast with everything
 /** v0.24.1 only: Shading with grain turned the photo black and white (so that version hides Shading). */
 export const monoGrain = (l: Look) => !!l.film_grain && !!l.vignette;
 /** v0.25 shows Frame as its only Art Effect (Star Light, Pin Hole and White Edge are ignored there). */
-export const v25Art = (l: Look) => l.art_effect === 'frame' ? 'frame' : 'off';
+export const v25Art = (_l: Look) => 'off';      // v0.25 (owner): no Art Effect at all; Frame caused too many issues
 /** v0.20 Extras: NR byte <-> the Caduceus look's noise reduction (grain field), Art Effects the OM-3 renders. */
 export const OM3_NR: Grain[] = ['off', 'standard', 'fine', 'film', 'high'];  // 0 Camera, 1 Std, 2 Low, 3 Off, 4 High (v0.23)
 export const OM3_ARTS = ['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const;

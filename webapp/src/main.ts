@@ -1478,12 +1478,12 @@ function renderOm3Editor(l: Look) {
       return h('div', { class: 'srow plain', title: 'The camera\'s sharpening for photos with this look' }, h('span', { class: 'sname' }, 'Sharp'), inp, out);
     })(),
       h('p', { class: 'help' }, 'The camera\'s sharpening for photos with this look, in its own numbers: 0 is its normal, +1 and +2 crisper, −1 to −4 softer (−3 and −4 go past the camera\'s menu) and Off (−5) no sharpening at all. Extras sector 10 (firmware v0.22, which takes the Sharpness item off the COLOR screen). Shown roughly in the preview.')),
-    h('p', { class: 'warn' }, h('b', {}, 'Firmware v0.25: '), 'Glow / Clarity and Frame have their own rows on the camera\'s Picture Mode screen, and grain stays as fast as normal with them. Frame is the only Art Effect on v0.25 (Star Light, Pin Hole and White Edge are ignored there; Shading does the dark corners).'),
+    h('p', { class: 'warn' }, h('b', {}, 'Firmware v0.25: '), 'Glow / Clarity has its own row on the camera\'s Picture Mode screen (called Clarity: + is Clarity, − is Glow), and grain stays as fast as normal with it. Art Effects are not used on v0.25 (Shading does the dark corners).'),
     effectPanel(l, fxChanged),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
       h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; fxChanged(); } },
-        ...OM3_ARTS.filter((a) => a === 'off' || a === 'frame' || a === l.art_effect).map((a) => h('option', { value: a, selected: a === l.art_effect }, ({ off: 'Off', star_light: 'Star Light (not on v0.25)', pin_hole: 'Pin Hole (not on v0.25)', white_edge: 'White Edge (not on v0.25)', frame: 'Frame (white)' } as Record<string, string>)[a]))),
-      h('span', { class: 'help' }, 'The camera\'s own Art Effect on COLOR photos (Extras sector 5); Frame draws a clean white border. Shows in live view; not in this preview.')),
+        ...OM3_ARTS.filter((a) => a === 'off' || a === l.art_effect).map((a) => h('option', { value: a, selected: a === l.art_effect }, ({ off: 'Off', star_light: 'Star Light (not on v0.25)', pin_hole: 'Pin Hole (not on v0.25)', white_edge: 'White Edge (not on v0.25)', frame: 'Frame (not on v0.25)' } as Record<string, string>)[a]))),
+      h('span', { class: 'help' }, 'Not used on v0.25: looks saved for v0.25 always have it Off. Older firmware (v0.24.1 and before) ignores it too or uses it only as noted there.')),
     wbPanel(l, changed),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Notes'),
       h('textarea', {

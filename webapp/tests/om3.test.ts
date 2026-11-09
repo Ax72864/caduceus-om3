@@ -135,17 +135,17 @@ describe('OM-3 profile bank', () => {
     const l = blankLook('colour', 'G'); expect(slowGrain(l)).toBe(false);
     l.film_grain = 2; expect(slowGrain(l)).toBe(false);
     l.art_effect = 'frame'; expect(slowGrain(l)).toBe(false);
-    l.effect = { type: 'clarity', strength: 1 }; expect(slowGrain(l)).toBe(true);
+    l.effect = { type: 'clarity', strength: 1 }; expect(slowGrain(l)).toBe(false);   // v0.25: no Art Effect, never slow
     l.art_effect = 'off'; expect(slowGrain(l)).toBe(false);
     l.art_effect = 'frame'; delete l.film_grain; expect(slowGrain(l)).toBe(false);
   });
 
-  it('v0.25 export: Shading kept, Art Effect Frame or Off', () => {
+  it('v0.25 export: Shading kept, Art Effect always Off', () => {
     const l = blankLook('colour', 'F'); l.vignette = -2; l.film_grain = 3; l.art_effect = 'pin_hole';
     const b25 = readProfiles(profilesBin([[l]], 24))[0][0]!, b24 = readProfiles(profilesBin([[l]], 23))[0][0]!;
     expect(b25.vignette).toBe(-2); expect(b25.art_effect).toBe('off');
     expect(b24.vignette).toBe(0); expect(b24.art_effect).toBe('pin_hole');
-    l.art_effect = 'frame'; expect(readProfiles(profilesBin([[l]], 24))[0][0]!.art_effect).toBe('frame');
+    l.art_effect = 'frame'; expect(readProfiles(profilesBin([[l]], 24))[0][0]!.art_effect).toBe('off');   // owner: Frame removed
   });
 
   it('v0.24.1: Shading is saved as 0 (with grain it turns the photo mono); older firmware keeps it', () => {

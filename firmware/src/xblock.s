@@ -1,5 +1,6 @@
 /* v0.24 film test 7 (owner): the Extras page is hidden and its Glow / Clarity and Art Effect read 0 wherever they act
  * (XB_FX 0); the code stays: set XB_FX 1 to bring them back. */
+ .set XB_ART, 0                   /* v0.25 (owner): no Art Effect at all (Frame caused too many issues); 1 = Frame */
  .set XB_FX, 1                    /* ft5: Glow / Clarity / Art back on (grain by texture where the development allows) */
  .set XB_OWNOFF, 0                /* rc1: 1 = COLOR k's own Glow / Art Effect ignored (no rows then) */
  .set XB_LOG, 0                   /* v0.25: the fast-grain logger (GLOG.BIN) off */
@@ -90,10 +91,17 @@ xb_slot:
  mov 0,a1
  ret [d2,d3],12
 
+ .macro ARTB reg                  /* \reg = this look's Art Effect (S+50), 0 without XB_ART */
+ .if XB_ART
+ movbu (50,a1),\reg
+ .else
+ clr \reg
+ .endif
+ .endm
 /* xb_art: d1 |= the job flags of S's Art Effect (a1 = S). Uses d0, a0; returns through MDR. */
 xb_art:
  .if XB_FX
- movbu (50,a1),d0
+ ARTB d0
  .else
  clr d0
  .endif
@@ -140,7 +148,7 @@ xb_cap:
  cmp 0,d0
  bne 2f                           /* Glow / Clarity: the Soft Focus passes (+ CPU grain if Grain) */
  .if XB_FX
- movbu (50,a1),d0
+ ARTB d0
  .else
  clr d0
  .endif
@@ -649,12 +657,12 @@ xb_tex:
                                      PB081509..511): no texture there -> the CPU grain (slower), as v0.22 */
  cmp 0,d1
  beq 3f
- movbu (50,a1),d1
+ ARTB d1
  cmp 5,d1
  beq 9f
 3:
  movbu d0,(xb_tl)                 /* ft9: Glow / Clarity too (Grainy Film's list) */
- movbu (50,a1),d1
+ ARTB d1
  movbu d1,(xb_tart)
  mov a2,a3
  add 4,a3                         /* the still's parameters */
@@ -781,7 +789,7 @@ xb_wl:                            /* a0 = S (ft8b: the builder's (4,sp)) */
  movbu (53,a1),d0
  cmp 0,d0
  beq 9f
- movbu (50,a1),d0                 /* ft9: every Grain still but Star Light (fine on COLOR's list) takes Grainy Film's
+ ARTB d0                 /* ft9: every Grain still but Star Light (fine on COLOR's list) takes Grainy Film's
                                      list: plain, Shading, Glow / Clarity, Pin Hole, White Edge, Frame */
  cmp 1,d0
  beq 9f
