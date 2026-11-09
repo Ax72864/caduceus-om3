@@ -1720,3 +1720,24 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   dynamic string ("WB  A3 · G2") from st_get, refreshed by gr_upd (to try). Then the Blacks / Whites grid: the same
   scene with the box pictures B / A / G / M answered by our own (ic_get while the BW grid shows), redirect to slot
   +47 / +48 clamped to -5..+5, title "Blk +2 · Wht -1". New pictures need the owner's approval.
+
+### v0.25 WB grid row, first build (2026-11-08; emulator only)
+- Branch `feature/v0.25-fast-grain`, commit "WB grid row on v0.25": one WB row (AB_IT, item 5384) replaces A-B and
+  G-M. As test 13: item 5398-style entry (`0x6154bd18`, 27, +26 = 7), row switches as 5398's / item 7's left cell /
+  gk_f (kind-7 control on key 1580), scene 498 into the holder of Picture Mode's layer 457 (sc_cap / gr_upd via
+  hook 0x611d04ec), gx_map (0x610f6016) to leave. New: `gr_id` maps the grid's ids (1580..1605) to our ABB / GMB + k
+  in one place (sl_get, sl_cnt, sl_vbi, sl_sel, sl_set; MDR kept), and marks them `gr_neg`: values the other way
+  round (get negated, set negated). The row's own left-cell ids (AB_IT, ABB + k) are negated too and the readout's
+  sign table rd15_a is flipped, so the left cell shows the true A-B ("WB± -1" = B1). The left cell's picture is the
+  camera's WB± (12545, ic_list 7); the A-B / G-M slider pictures are blank now (ic_pay 18040). ext11 64448 B.
+- Directions (emulator): the camera's own WB± screen: right arrow = A, up arrow = G, sub+1 (front dial) = B,
+  main+1 = G. On our row the emulator sends right/left and both dials to the kind-7 control (ids 1580 / 1593);
+  up/down change rows. Owner (asked 2026-11-08): test 13 was used with the **arrow buttons**, and both axes went the
+  wrong way on the camera. So on the camera the arrows reach the control differently from the emulator; the build
+  negates both axes (analysis: camera arrows then right = A / dot right, up = G / dot up; to confirm on the camera).
+- Layers: the grid only draws in the holder of layer 457 (bottom bar). 286, 288, 456: no grid (the bottom bar's slider
+  shows instead, with no title).
+- Numbers: no text in scene 498 (string requests while it draws: none; its B / A / G / M letters are pictures,
+  probably 10324..10328). Owner: numbers "underneath like on the standard white balance screen". The camera's WB±
+  screen shows "WBAuto B1 . G2" with dial icons in the dial-guide readout (shared layer 497; Picture Mode shows "Sh /
+  Mid / Hi" there for Highlight & Shadow, "Color" / "Vivid" for the Color row). Next: find how a row sets that readout.
