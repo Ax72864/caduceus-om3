@@ -49,6 +49,8 @@ xb_base:
  .balign 8
  jmp xb_sel2                      /* +120 ft3: the combiner set-up's own selector call (s_sel2, frame [d2,a2],12) */
  .balign 8
+ jmp xb_c1e                       /* +128 ft4: end of combiner 1's set-up (s_c1e, `calls`, a2 = register image) */
+ .balign 8
 xb_nrel:
  .long 0                          /* relocation count (written by the build) */
 
@@ -651,10 +653,36 @@ xb_sel2:
  mov (xb_rq),d1
  cmp d0,d1
  bne 9f
+ movbu (xb_tl),d0                 /* ft4: Low / High: put COLOR's chroma back at the end of combiner 1's set-up */
+ cmp 2,d0
+ beq 1f
+ movbu d0,(xb_fx1)
+1:
  mov 1,d0
  ret [d2,a2],12
 9:
  jmp SEL
+
+/* xb_c1e (ft4): `calls` from s_c1e at the end of the set-up 0x605053ec..0x605053d0 (combiner 1's case), a2 = its
+ * register image (context+8)+7988. Combiner 1 writes +96 = 1024 and +100 = 0 where the default case writes
+ * 0x04000400 and 1024 (guess: the main input's chroma gains, zero = Grainy Film's mono). Flagged by xb_sel2:
+ * the default's values back (Grain Low); Grain High also +148 = 2048 (guess: the texture's gain, x2). */
+xb_c1e:
+ movbu (xb_fx1),d0
+ cmp 0,d0
+ beq 9f
+ clr d1
+ movbu d1,(xb_fx1)
+ mov 0x04000400,d1
+ mov d1,(96,a2)
+ mov 1024,d1
+ mov d1,(100,a2)
+ cmp 3,d0
+ bne 9f
+ mov 2048,d1
+ mov d1,(148,a2)
+9:
+ rets
 
 xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  rets
@@ -2094,6 +2122,8 @@ xb_tx:                            /* ft1: 1 = xb_su gave this still a texture, 2
 xb_tl:                            /* ft2: that still's Grain level (1 / 3: combiner 1 with key 11, 2: with GF II's key) */
  .byte 0
 xb_ck:                            /* ft3: 1 = xb_lg answers combiner 1 for this configuration */
+ .byte 0
+xb_fx1:                           /* ft4: Grain level when combiner 1's set-up gets COLOR's chroma back, 0 none */
  .byte 0
  .balign 4
 xb_rq:                            /* ft2: the development request the texture went to */

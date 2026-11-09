@@ -6594,3 +6594,21 @@ s_sel2:                           /* the selector's frame; a0 = context */
  jmp (a1)
 9:
  jmp SEL
+
+/* ft4: the end of the combiner set-up tail 0x605053ec (combiner 1's case and one other): `mov d0,(152,a2)` then
+ * code block +128 (xb_c1e: COLOR's chroma back when flagged), then the stock `ret [d2,d3,a2,a3],28`. */
+.section .hook_c1e,"ax"
+ jmp s_c1e                        /* stock 0x605053cc: mov d0,(152,a2); ret [d2,d3,a2,a3],28 */
+ nop
+ nop
+
+.section .ext11,"ax"
+s_c1e:
+ mov d0,(152,a2)
+ call xp,[],0
+ beq 9f
+ add 120,a1
+ add 8,a1
+ calls (a1)
+9:
+ ret [d2,d3,a2,a3],28

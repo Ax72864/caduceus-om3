@@ -1556,3 +1556,13 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - ft2 restart (owner): one brief restart on a Grain Low shot (probably the missing PB081451), not repeatable. Guess:
   in ft2 Low the request carried the texture and stage 0x0100 while the combiner set-up was the default one (the
   second selector call gave 0), a mismatch ft3 removes. Watch for it in ft3.
+- **ft3 camera (2026-11-08, owner; PB081454 Grain Low, PB081455 Med; no restart):** both saved, combiner 1 in the
+  log, key 11 for Low. **Both black and white with grain** (Cb = Cr = 128, Y high-pass ~20 on every patch). So the
+  mono is combiner 1's own set-up, not the key. Its case vs the default case (analysis): default `+96 = 0x04000400,
+  +100 = 1024` (+ 0x60504811), combiner 1 `+96 = 1024, +100 = 0`, `+144 = 0x2a0000, +148 = 1024, +152 = 0`,
+  `+8 = 3822`, signed ranges (0x605047c1). Guess: +96 high half and +100 are the main input's chroma gains (0 =
+  Grainy Film's mono), +144..+152 the texture's (luma 1024, chroma 0).
+- **ft4 (firmware + GUIDES; emulator: boots, live view fine):** `.hook_c1e` at 0x605053cc (the end of that set-up)
+  -> `s_c1e` -> block +128 `xb_c1e`: when xb_sel2 forced combiner 1 for Grain Low / High, +96 = 0x04000400 and
+  +100 = 1024 (the default's values); High also +148 = 2048 (texture gain guess). Med = ft2/ft3 control. Firmware
+  75a48eb7…, GUIDES 605f7b1a….

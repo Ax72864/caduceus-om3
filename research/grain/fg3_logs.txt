@@ -141,3 +141,25 @@ slot 1: 5 records, copies A1 B0 C0, capture key 0x000b0000
   2 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
   3 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
   4 combiner   1 kind  0 stage 0x0100 type 0x1000 effect 0x0000 context 0x1020068 request 0xb0000 | 00 00 00 00 00 00 00 00 00 00 00 00
+
+## ft3 camera run (PB081454 Grain Low, PB081455 Grain Med)
+header GLG3 total 57408 marks 2 current 1 selector calls 1596 records 15
+
+slot 0: 10 records, copies A1 B0 C1, capture key 0x000b0000
+  0 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  1 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  2 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  3 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  4 combiner   1 kind  0 stage 0x0100 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 00 00 00
+  5 combiner   1 kind  0 stage 0x0100 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 00 00 00
+  6 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 08
+  7 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 08
+  8 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 08
+  9 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 08
+
+slot 1: 5 records, copies A1 B0 C0, capture key 0x000b0000
+  0 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  1 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  2 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  3 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  4 combiner   1 kind  0 stage 0x0100 type 0x1000 effect 0x0000 context 0x1020068 request 0xb0000 | 00 00 00 00 00 00 00 00 00 00 00 00

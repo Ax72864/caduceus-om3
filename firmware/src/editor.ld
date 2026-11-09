@@ -8,6 +8,7 @@ SECTIONS {
   .hook_rsp     0x611c3cb5 : { *(.hook_rsp) }
   .hook_su      0x604b7730 : { *(.hook_su) }
   .hook_sel2    0x60504b5d : { *(.hook_sel2) }
+  .hook_c1e     0x605053cc : { *(.hook_c1e) }
   .hook_tone    0x605197d7 : { *(.hook_tone) }
   .hook_fx      0x60555e50 : { *(.hook_fx) }
   .hook_lv      0x6046b8bb : { *(.hook_lv) }
