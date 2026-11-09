@@ -1521,3 +1521,16 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   fg3 logger stays in (it shows the combiner and +780). Firmware 83ef2c01…, GUIDES 684d9e4e…. Camera questions: does
   the photo save; grain or not; colour or grey; the log's combiner for the COLOR development. Grain strength is not
   wired (Low / Med / High give the same texture).
+- **ft1 camera (2026-11-08, owner; PB081450, COLOR + Grain High):** the photo saved, in colour, **no visible grain**
+  (flat areas: Y high-pass ~5, Cb/Cr ~0.9; the MONO-grain photo PB081448: Y ~38). Log (camera-tested; decoded in
+  research/grain/fg3_logs.txt): the texture WAS attached (development request +780 = 0x4dfd4400, the same buffer GF
+  II used, +796..+812 as GF, +12 = 0x0100, key 11), but the selector chose **combiner 0**, not 1. The request was
+  configured a second time and our MONO route applied then (context 12, +1751 3) - no MONO grain came out either
+  (stage 0x0100 changes the path).
+- Selector 0x6052cf39 (analysis): kind 3 by stage; otherwise by the context key (48) via the hash table 0x606dc4dc
+  ({key - 11, handler}): GF I / GF II (0x01010068 / 0x01020068) -> 0x6052cfc6 = **combiner 1 when +12 == 0x0100**;
+  key 11 has no entry (default 0x6052d0c2). So combiner 1 needs GF's context key at selection time.
+- **ft2 (GUIDES only, firmware = ft1 83ef2c01; emulator: boots):** the textured request gets context 0x01020068 for
+  the selector on every configuration (combiner 1); Grain Low / High put the key back to 11 right after the selector
+  (combiner 1's set-up sees COLOR), Grain Med keeps GF II's key (to see what that set-up does). xb_gt cleared for that
+  still (no MONO key). GUIDES 55fcc753….

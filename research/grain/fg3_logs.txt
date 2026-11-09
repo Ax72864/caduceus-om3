@@ -104,3 +104,18 @@ copy A word diff (offset, one column per slot with a copy A)
  1844 32fd2f02 32ff2f03 32f82f00
  1848 406537de 406937e2 405937d2
  1852 201f2001 201f2001 20202001
+
+## ft1 camera run (COLOR + Grain High, PB081450)
+header GLG3 total 57408 marks 1 current 0 selector calls 1178 records 10
+
+slot 0: 10 records, copies A1 B0 C1, capture key 0x000b0000
+  0 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  1 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  2 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  3 combiner   0 kind  3 stage 0xf002 type 0x0000 effect 0x0000 context 0x0 request 0x0 | 00 00 00 00 00 00 00 00 00 00 00 00
+  4 combiner   0 kind  0 stage 0x0100 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 00 00 00
+  5 combiner   0 kind  0 stage 0x0100 type 0x1000 effect 0x0000 context 0xc request 0xc0000 | 00 00 00 00 00 00 00 03 00 00 00 00
+  6 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 07
+  7 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 07
+  8 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 07
+  9 combiner   0 kind  3 stage 0x0000 type 0x1000 effect 0x0000 context 0xb request 0xb0000 | 00 00 00 00 00 00 00 00 00 0a 55 07

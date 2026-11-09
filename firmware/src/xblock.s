@@ -493,7 +493,7 @@ xb_gs:                            /* `calls` (0,sp) = return, a0 = job */
  * own film grain on the direct-to-JPEG route, colour kept (combiner 33 is not used). Then the stock selector.
  * Uses d0, d1, a1. */
 xb_dev:
- movbu (xb_tx),d0                 /* ft1: a texture is ready for this still's COLOR development */
+ movbu (xb_tx),d0                 /* ft1: 1 = a texture is ready for this still's COLOR development, 2 = attached */
  cmp 0,d0
  beq 5f
  mov (4,a0),a1
@@ -508,8 +508,18 @@ xb_dev:
  movbu (10,a1),d1
  cmp 11,d1
  bne 9f
+ cmp 2,d0
+ bne 1f
+ mov (xb_rq),d1                   /* attached: the same request configured again -> combiner 1 again */
+ cmp a1,d1
+ bne 9f
+ bra 3f
+1:
+ mov 2,d0
+ movbu d0,(xb_tx)
+ mov a1,(xb_rq)
  clr d0
- movbu d0,(xb_tx)                 /* once per still */
+ movbu d0,(xb_gt)                 /* ft2: never the MONO key for this still */
  mov a0,a2                        /* (d2 / a2 are the s_cl frame's: free here) */
  mov a3,d2
  mov (xb_S),a0                    /* the stock hook 0x604bc0cf: a0 = S, a1 = request -> +780 texture, +12 = 0x0100 */
@@ -517,7 +527,16 @@ xb_dev:
  calls (a3)
  mov d2,a3
  mov a2,a0
- jmp xb_lg                        /* no MONO key: the texture is the grain */
+3:
+ mov 0x01020068,d0                /* ft2: Grainy Film II's context key for the selector -> combiner 1 (0x6052cfc6) */
+ mov d0,(48,a0)
+ movbu (xb_tl),d0                 /* Grain 2 (Med): keep that key for combiner 1's set-up; 1 / 3: back to 11 */
+ cmp 2,d0
+ beq 4f
+ mov 1,d0
+ movbu d0,(xb_ck)
+4:
+ jmp xb_lg
 5:
  movbu (xb_gt),d0
  cmp 0,d0
@@ -567,6 +586,7 @@ xb_su:
  movbu (53,a1),d0                 /* Grain 1..3 */
  cmp 0,d0
  beq 9f
+ movbu d0,(xb_tl)
  mov a2,a3
  add 4,a3                         /* the still's parameters */
  movhu (40,a3),d3
@@ -708,6 +728,14 @@ xb_lg:                            /* jmp from xb_dev in the frame of `call s_cl,
  mov a0,a2
  call SEL,[d2,a2],12              /* the stock selector (reads a0) */
  mov d0,d2                        /* its combiner */
+ movbu (xb_ck),d0                 /* ft2: the context key back to COLOR (11) after the selection */
+ cmp 0,d0
+ beq 1f
+ clr d0
+ movbu d0,(xb_ck)
+ mov 11,d0
+ mov d0,(48,a2)
+1:
  movm [d3,a3],(sp)
  add -4,sp                        /* (0) call slot for the leaves (above it: the saved d3, a3) */
  mov xb_lhdr,a0
@@ -2043,9 +2071,15 @@ xb_lpath:
  .balign 2
 xb_gt:                            /* camera-route grain level of the last capture (xb_cap -> xb_dev), 0 none */
  .byte 0
-xb_tx:                            /* ft1: 1 = xb_su gave this still a texture (xb_dev attaches it once) */
+xb_tx:                            /* ft1: 1 = xb_su gave this still a texture, 2 = attached to xb_rq */
+ .byte 0
+xb_tl:                            /* ft2: that still's Grain level (1 / 3: combiner 1 with key 11, 2: with GF II's key) */
+ .byte 0
+xb_ck:                            /* ft2: 1 = put the context key back to 11 after the selector */
  .byte 0
  .balign 4
+xb_rq:                            /* ft2: the development request the texture went to */
+ .long 0
 xb_S:                             /* ft1: the last still's context S (xb_su) */
  .long 0
 xb_lbuf:                          /* fg1: the log header once its buffers exist, else 0 */
