@@ -18,9 +18,8 @@ new features have room; more can be opened up the same way.
 
 ## Next steps
 
-1. **Fast grain with every effect** (owner's top request after v0.24): grain at no extra time with Shading (hidden in v0.24.1), Glow,
-   Clarity and Art Effects. Plan: project doc `fast-grain-plan` and `research/NOTES.md` ("Fast-grain review"):
-   Shading first (run combiner 33 in colour), then the Grainy Film Art Filter's grain path.
+1. **Our own grain texture** (after v0.25's fast colour grain with every setting): colour speckle and grain size from the
+   Grain Lab design, through the same texture route. Plan: project doc `fast-grain-plan`, `research/NOTES.md`.
 2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
    E-P7. (Split toning research done 2026-11-07: see the table; building it can now use the proven 64 KiB.)
 3. **White balance mode and exposure compensation per look:** quick wins that make a look behave like a roll.
@@ -64,6 +63,7 @@ new features have room; more can be opened up the same way.
 
 | Date | Item | What it gives film looks |
 |---|---|---|
+| 2026-11-08 | v0.25 fast colour grain | Film grain from the image processor in colour, as fast as no grain, with Shading, Glow / Clarity and Frame; Glow / Clarity and Frame rows. |
 | 2026-11-08 | v0.24.1 films in the list | Films (FILM n) in the Picture Mode list with their names; changes kept per film; the Extras as Picture Mode rows. Glow / Clarity and Art Effects off and the Shading row hidden for now. (v0.24 was withdrawn the same day: Film Grain High rebooted the camera.) |
 | 2026-11-07 | v0.22 Sharp | Sharpening per look, −5 (Off) to +2; film sims set it. |
 | 2026-11-07 | Photo-to-look instructions | A look built from any photo, loaded by a link. |

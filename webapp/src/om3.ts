@@ -29,14 +29,17 @@ export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5
 /** v0.22 Sharp (Extras sector 10): the camera's own numbers, 0 = its normal; -3..-4 softer than its menu goes, -5 = Off. */
 export const SHARP = { lo: -5, hi: 2 } as const;
 export const sharpLabel = (v: number) => (v <= SHARP.lo ? 'Off' : v > 0 ? `+${v}` : String(v));
-/** Firmware the LOOKS.BIN is for: 23 = v0.24.1 and later (NR High; Shading saved as 0: the row is hidden there),
- * 22 = v0.22 (Sharp), 21 (Grain, VigFix), 20 = v0.20 and older / PROFILES.BIN. */
-export type Fw = 20 | 21 | 22 | 23;
-/** v0.21 Grain: Glow / Clarity or an Art Effect send it the slow way (about 3 s per photo, no fast sequential shooting;
- * v0.20–v0.22 only: v0.24.1 switches Glow / Clarity and Art Effects off). */
-export const slowGrain = (l: Look) => !!l.film_grain && (!!l.effect || (l.art_effect !== 'off' && l.art_effect !== 'blur'));
-/** Grain with Shading: the camera's grain then turns the photo black and white (camera-tested on v0.24 test builds). */
+/** Firmware the LOOKS.BIN is for: 24 = v0.25 and later (fast colour grain with everything; Art Effect = Frame only),
+ * 23 = v0.24.1 (NR High; Shading saved as 0: the row is hidden there), 22 = v0.22 (Sharp), 21 (Grain, VigFix),
+ * 20 = v0.20 and older / PROFILES.BIN. */
+export type Fw = 20 | 21 | 22 | 23 | 24;
+/** v0.25: Grain is as fast as normal with every setting, except Glow / Clarity and Frame together (the slower route,
+ * about 3 s per photo). */
+export const slowGrain = (l: Look) => !!l.film_grain && !!l.effect && l.art_effect === 'frame';
+/** v0.24.1 only: Shading with grain turned the photo black and white (so that version hides Shading). */
 export const monoGrain = (l: Look) => !!l.film_grain && !!l.vignette;
+/** v0.25 shows Frame as its only Art Effect (Star Light, Pin Hole and White Edge are ignored there). */
+export const v25Art = (l: Look) => l.art_effect === 'frame' ? 'frame' : 'off';
 /** v0.20 Extras: NR byte <-> the Caduceus look's noise reduction (grain field), Art Effects the OM-3 renders. */
 export const OM3_NR: Grain[] = ['off', 'standard', 'fine', 'film', 'high'];  // 0 Camera, 1 Std, 2 Low, 3 Off, 4 High (v0.23)
 export const OM3_ARTS = ['off', 'star_light', 'pin_hole', 'white_edge', 'frame'] as const;
@@ -131,10 +134,10 @@ export function profilesBin(bank: Bank, fw: Fw = 22): Uint8Array {
     b[o + 36] = l.wb && (ab || gm) ? 1 : 0; s8(37, ab); s8(38, gm);
     s8(39, l.tone.blacks); s8(40, l.tone.whites);
     const sharp = l.advice.sharpness ?? 0;
-    s8(41, l.advice.contrast ?? 0); s8(42, fw >= 22 ? 0 : Math.max(-OM3.sharpness, Math.min(OM3.sharpness, sharp))); s8(43, fw >= 23 ? 0 : l.vignette);   // v0.24.1 hides Shading (with grain it turns the photo mono)
+    s8(41, l.advice.contrast ?? 0); s8(42, fw >= 22 ? 0 : Math.max(-OM3.sharpness, Math.min(OM3.sharpness, sharp))); s8(43, fw === 23 ? 0 : l.vignette);   // v0.24.1 hides Shading (with grain it turned the photo mono)
     s8(44, l.tone.shadows); s8(45, l.tone.midtones); s8(46, l.tone.highlights);
     s8(47, !l.effect ? 0 : l.effect.type === 'clarity' ? l.effect.strength : -l.effect.strength);
-    b[o + 48] = Math.max(0, (ARTS as readonly string[]).indexOf(l.art_effect === 'blur' ? 'off' : l.art_effect));
+    b[o + 48] = Math.max(0, (ARTS as readonly string[]).indexOf(fw >= 24 ? v25Art(l) : l.art_effect === 'blur' ? 'off' : l.art_effect));
     const nr = Math.max(0, OM3_NR.indexOf(l.grain));
     b[o + 49] = nr === 4 && fw < 23 ? 1 : nr;                                     // High needs v0.23: Standard before
     if (fw >= 21) { b[o + 50] = l.lens_correction ? 0 : 1; b[o + 51] = Math.max(0, Math.min(OM3.grain, l.film_grain ?? 0)); }

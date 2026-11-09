@@ -1,4 +1,4 @@
-# Using Caduceus for OM-3 on the camera (v0.24.1)
+# Using Caduceus for OM-3 on the camera (v0.25)
 
 > **Color profiles only:** this is for Picture Mode COLOR 1–4. The Monochrome profiles keep the camera's own editor.
 > For v0.20–v0.22 (Film page, Extras page on the wheel) see this page as it was at
@@ -9,7 +9,7 @@
 ## Films
 
 Make films (looks) in the [Control Panel](https://androidfanman.github.io/caduceus-om3/): up to five for each of
-COLOR 1–4. Export `LOOKS.BIN` with **Firmware on the camera: v0.24.1 or later** and copy it to `OM3MOD` on the card.
+COLOR 1–4. Export `LOOKS.BIN` with **Firmware on the camera: v0.25 or later** and copy it to `OM3MOD` on the card.
 
 On the camera, Picture Mode › the COLOR position: the top row lists **COLOR 1–4, then FILM 1, FILM 2, …** (the films
 on the card in order, empty numbers skipped). Turn to a film: its **name** is the big title, and it loads onto the
@@ -29,7 +29,10 @@ Every row under Picture Mode changes the film (or the COLOR) you're on, at once:
 | Sharpness | Sharp: the camera's sharpening, −5 = Off, −4..−1 softer, 0 its normal, +1 / +2 crisper |
 | **Noise Filter** | Off / Low / Std / High for photos with this film |
 | **Vignette Correction** | Off = the lens's natural corners, On = the camera's correction |
-| **Film Grain** | Off / Low / Med / High: the camera's grain on the colour photo |
+| Shading | The camera's own (darker or lighter corners) |
+| **Glow / Clarity** | −5..−1 Glow (a soft glow), +1..+5 Clarity (local contrast), 0 off |
+| **Frame** | Off / On: a white frame (the only Art Effect from v0.25) |
+| **Film Grain** | Off / Low / Med / High: film grain on the colour photo |
 
 **The HSL wheel:** on the HSL row press **INFO**. INFO goes **Color** (the camera's saturation, one colour at a time)
 → **Color All** → **Hue** → **Luminance** → Color. The front dial picks the colour, the rear dial the value. Colours
@@ -50,11 +53,9 @@ changed by the camera.
 
 ## Grain
 
-Grain is added by the camera's image processor at no cost. Together with **Shading** it turns the photo black and
-white, so v0.24.1 hides the Shading row for now: set Shading to 0 on COLOR 1–4 before flashing (afterwards you can't
-see or change it), and looks exported for v0.24.1 get Shading 0.
-**Glow / Clarity and Art Effects are switched off in v0.24.1**: with them grain could only be added slowly. They
-stay in your looks and work again on v0.20–v0.22. Fast grain with every effect is the next project.
+Grain is added by the camera's image processor while it develops the photo (the way its Grainy Film Art Filter adds
+grain), in colour and at no extra time, also with Shading, Glow / Clarity and Frame. Only Glow / Clarity **and** Frame
+**and** Grain together take a slower route: about 3 seconds more per photo, no fast burst.
 
 ## Card files
 

@@ -5,6 +5,7 @@ card files it needs, the expected checksums, and short notes. No OM firmware is 
 
 | Version | What's new | Status |
 |---|---|---|
+| [v0.25](v0.25/NOTES.md) | Fast colour film grain with every setting (image processor, Grainy Film's texture route); Shading row back; Glow / Clarity and Frame rows; Art Effects = Frame only | Camera-tested |
 | [v0.24.1](v0.24.1/NOTES.md) | Films in the Picture Mode list (FILM n, name as title, changes kept, hold OK = as built); the Extras as Picture Mode rows; Glow / Clarity and Art Effects off and the Shading row hidden for now. Replaces v0.24 (withdrawn: Film Grain High rebooted the camera) | Camera-tested |
 | [v0.22](v0.22/NOTES.md) | Sharp per look (Extras sector 10, −5 Off..+2); the stock Sharpness row leaves the COLOR screen | Camera-tested |
 | [v0.21](v0.21/NOTES.md) | Grain on COLOR, VigFix, hold OK on the Film page saves a look, `*` = differs from factory, WB shift with Auto WB | Camera-tested |
@@ -25,7 +26,7 @@ Always copy the version's own `GUIDES.BIN` (from v0.20 it carries code made for 
 
 **Going back to stock:** flash `SD card files/restore/E1479999.BIN`, the official firmware the patcher saved.
 
-Each version is also published on the repo's **Releases** page (tag `v0.16` … `v0.24.1`) with the whole project as
+Each version is also published on the repo's **Releases** page (tag `v0.16` … `v0.25`) with the whole project as
 it was at that version: a GitHub Action (`.github/workflows/releases.yml`) publishes every folder here once, so a
 new version only needs its folder.
 See [CHANGELOG.md](../CHANGELOG.md) for the full history.

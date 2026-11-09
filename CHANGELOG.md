@@ -3,6 +3,30 @@
 Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while they were tried on the camera; the
 same number is used here (test 17 = v0.17).
 
+## v0.25
+Fast colour film grain with every setting. Camera-tested (2026-11-08).
+
+**Film grain**
+- Film Grain on COLOR photos is now made by the camera's **image processor while it develops the photo**, the way the
+  Grainy Film Art Filter adds its grain (its ready-made grain texture), but kept in colour. It saves **as fast as a
+  photo without grain**, also with **Shading, Glow / Clarity and Frame**.
+- Three clearly different strengths (Low / Med / High). The texture's slight brightening is taken back, so grain no
+  longer lifts the photo, and colours stay as they are.
+- One slower combination: Glow / Clarity and Frame and Grain together use the older software grain (about 3 s more per
+  photo): the fast route wrote no picture there.
+- The v0.21–v0.24 grain (the camera's Monochrome grain forced on COLOR photos) is gone with its limits: no more black
+  and white with Shading, no grain lost with Glow or an Art Effect.
+
+**Picture Mode rows**
+- **Shading** is back (v0.24.1 hid it).
+- New rows after Shading: **Glow / Clarity** (−5 Glow … +5 Clarity) and **Frame** (Off / On).
+- **Art Effects: Frame only.** Star Light (slow), Pin Hole and White Edge are gone; Shading does the dark corners.
+
+**Control Panel**
+- Export › Firmware on the camera: **v0.25 or later** (new default; Shading kept, Art Effect saved as Frame or Off),
+  v0.24.1 (Shading 0), v0.22, v0.21, v0.20 or older. The Art Effect menu offers Off / Frame; the slow-grain note now
+  covers only Glow / Clarity + Frame + Grain.
+
 ## v0.24.1
 v0.24 with the reboot fixed and the Shading row hidden. Camera-tested (2026-11-08). Everything listed under v0.24
 below is in this version, except where this section says otherwise.

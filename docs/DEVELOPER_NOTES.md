@@ -390,6 +390,29 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - The looks are only as good as the preview model (`src/preview.ts`) is of the camera; check a film on the camera
   before trusting it for anything critical.
 
+## v0.25 fast colour grain (branch feature/v0.25-fast-grain; camera-tested 2026-11-08)
+
+Full trail: `research/NOTES.md` ("Grainy Film's grain path in the firmware", ft1..ft9, rc1..rc2c), decoded camera
+logs `research/grain/fg3_logs.txt`.
+
+- **Texture:** for a COLOR still with Grain, `xb_tex` gets Grainy Film's grain texture object (0x604cd921, the cached
+  texture builder, with Grainy Film's 6-byte parameter block) into job+8324; the stock clean-up 0x604b9cd9 releases it.
+- **Work list:** `.hook_wl` (0x604b8d91, the builder's key read) -> block +136 `xb_wl` (S at the builder's (4,sp)):
+  makes the texture there (the list is built before the set-up) and answers Grainy Film II's key 0x01020068 for the
+  list pick only (handler 0x604b8ddc: development with the texture hook 0x604bc0cf, then the effect as its own
+  stage-0x0101 pass). The job keeps key 11, so the colours stay COLOR's. Not with Glow / Clarity + Frame together.
+- **Development:** `xb_dev` (s_cl) re-attaches the texture (+780 descriptor, +12 = 0x0100) and answers combiner 1;
+  `.hook_sel2` (0x60504b5d, the combiner set-up's own selector call) -> block +120 answers combiner 1 there too;
+  `.hook_c1e` (0x605053cc, end of combiner 1's set-up) -> block +128 `xb_c1e` puts COLOR's chroma gains back (+96 =
+  0x04000400, +100 = 1024; Grainy Film's 1024 / 0 = its black and white), the texture gain (+148: Low 448, Med 832,
+  High 1280) and the Y offset (+180 low half = -0.102 x gain: the texture is not zero-mean).
+- **Set-up:** `.hook_su` (0x604b7730) -> block +112 `xb_su` (marks a texture made earlier, or makes it).
+- **Rows:** Glow / Clarity (GL_IT 5382, slider class 9, GLB 0x7ea0 + k, slot +49) and Frame (FR_IT 5381, choice class
+  10, FRB 0x7eb0 + k, slot +50 = 0 / 5); Shading (5399) back. Art Effects: `xb_art` only Frame (5).
+- **Fallback:** Glow / Clarity + Frame + Grain: no texture, COLOR's list, the CPU grain (xb_gs). The MONO-key grain
+  (xb_gt) remains only if the texture cannot be made.
+- Firmware `E1479999.BIN` 591fe72d…, `GUIDES.BIN` cbee5efc…, `LABELS.BIN` 903af75b…. ext11 64976 of 65536 B.
+
 ## v0.24.1 (branch hotfix/v0.24.1; camera-tested 2026-11-08)
 
 v0.24 (below) with two changes; v0.24 itself was withdrawn and `releases/v0.24` removed.
