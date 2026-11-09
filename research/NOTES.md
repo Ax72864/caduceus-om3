@@ -1935,3 +1935,13 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   (R+8.. must be 00 00 0b 00).
 - Package st1: E1479999.BIN 337bb2ff…, GUIDES.BIN 0457541…, LABELS.BIN d6c1b4ab… (= fx3). Not known: whether the
   ISP uses these tables for the photo (camera test), whether live view shows it.
+- **Camera (owner, 2026-11-09, st1): it works.** Owner: "if there was one, it was very very subtle". Measured
+  (PB091535 COLOR 3 / PB091536 COLOR 4, same exposure 1/40 f1.8 ISO 1000, manual WB, tungsten-lit room; aligned by
+  phase correlation, shift -9/-10 px at 1296 wide, r = 0.992; binned by Y): COLOR 4 - COLOR 3 =
+  Y 30-60 Cb +4.6 Cr -4.1, Y 60-90 Cb +5.5 Cr -4.1, Y 90-120 Cb +4.8 Cr -2.8 (teal shadows / low mids), Y 160-200
+  Cb 0 Cr +1.2, Y 200-235 Cb -3.3 Cr +1.0 (warmer highlights), black and white ~0. Close to the emulator's
+  prediction in the shadows (Cb +6.7 / Cr -4.5 at the curve's input 16), about half in the highlights (this scene's
+  highlights were already strongly yellow, Cb -36). Mids Y +3..+5. **So the ISP uses the job's R/G/B tables for the
+  photo: split toning by curve bending is camera-proven.** Not answered yet: live view (owner could not tell).
+- Conclusion: the probe strength (~5 Cb/Cr units) is too subtle to see; the feature needs a range up to ~3x
+  (Cross Process I reaches ~23 at its peak). Photos not kept in the repo (owner's).
