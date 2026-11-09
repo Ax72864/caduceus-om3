@@ -1512,3 +1512,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   set-up, or log them first), (b) give the COLOR development request the same attach as hook 0x604bc0cf (+780
   descriptor, +12 = 0x0100) instead of the MONO-key trick. If the blend keeps colour, grain becomes part of the
   developed image: as fast as default and kept through Art Effect / Glow / Clarity / Shading passes.
+- **ft1 build (2026-11-08; emulator: boots, menus and half-press fine; the emulator cannot take stills, so the new
+  code is untested until the camera):** flash hook `.hook_su` on the still set-up thunk 0x604b7730 -> `xs_su` (ext11):
+  stock set-up 0x604b97db, then code block +112 `xb_su` (a0 = S): COLOR still (job+5352 = 11) whose profile has Grain
+  -> texture object from 0x604cd921 with GF's 6-byte block and gate, stored at job+8324 (stock clean-up releases it),
+  `xb_tx` = 1. `xb_dev`: with `xb_tx`, the first COLOR development request (kind 0, +14 0x1000, +10 11) goes through
+  the stock hook 0x604bc0cf (a0 = S, a1 = request: +780 texture, +12 = 0x0100) and keeps key 11 (no MONO key). The
+  fg3 logger stays in (it shows the combiner and +780). Firmware 83ef2c01…, GUIDES 684d9e4e…. Camera questions: does
+  the photo save; grain or not; colour or grey; the log's combiner for the COLOR development. Grain strength is not
+  wired (Low / Med / High give the same texture).

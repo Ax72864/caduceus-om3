@@ -55,7 +55,8 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_rev': (0x611b21e8, bytes.fromhex('5c10f060fac8d501c927')),
          '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60')),
          '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906')),
-         '.hook_rsp': (0x611c3cb5, bytes.fromhex('5c14f8bc20f87058'))}   # film test 9: the reset keeps the strip's scroll       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
+         '.hook_rsp': (0x611c3cb5, bytes.fromhex('5c14f8bc20f87058')),
+         '.hook_su': (0x604b7730, bytes.fromhex('cdab20f088'))}   # ft1: still set-up -> code block +112 (grain texture)   # film test 9: the reset keeps the strip's scroll       # v0.23: Blacks / Whites bars top-down          # v0.23: our row title "Vignette Correction"          # v0.23: the bar's dot step   # v0.21 grain: request configuration -> selector
 XB_SRC = HERE / 'src' / 'xblock.s'
 XB_L1, XB_L2 = 0x10000000, 0x12345670          # the code block is linked at both; fields that move = relocations
 ROOT = HERE.parent                               # card files: card/mkguides.py (pictures), card/mklabels.py
@@ -454,7 +455,7 @@ def make_xblock(out, sy, xtag):
     ext = dict(getter=0x60063380, facade=0x60b8696a, fopen=0x608d4d22, fread=0x608d4eb7, fclose=0x608d4d2b, malloc=0x60024068, sd_crc=sy['sd_crc'], gd_mode=sy['gd_mode'], VDESC=0xa4cf688c, VSTOCK_P=0xa4cf6210, VSTOCK_S=1660, AXIS=684, EDK=687, fx_tail=sy['fx_tail'], fx_back=sy['fx_back'], lv_skip=sy['lv_skip'], c11_ret=0x60504edb,
                STATE=sy['STATE'], HMAX=sy['HMAX'], POOL=sy['POOL'], MAGIC=sy['MAGIC'], BUFIDX=0x604afdf9, SF_ENT=0x604be2aa, LOCK=0x60075f73, UNLOCK=0x60075fbc, WINMAP=0x60071018, FLUSH=0x60070e69, free=0x6002409a,
                SEL=0x6052cf39, fwrite=0x608d4da9, PF_CAPTO=sy['pf_capto'], PF_CAP=sy['pf_cap'], E_LK=sy['e_lk'], E_RET=sy['e_ret'], E_RST=sy['e_rst'], REFRESH=0x611b20ea, XT_TAB=sy['xt_tab'], EMARK=680, EMAGIC=0x45334d4f,
-               FL_HAS=sy['fl_has'], FACADE=0x60b8696a, AGET=0x603f039d, TWO=sy['TWO'], TW_LEN=sy['TW_LEN'], FV0=sy['FV0'])
+               FL_HAS=sy['fl_has'], FACADE=0x60b8696a, AGET=0x603f039d, TXGET=0x604cd921, TXATT=0x604bc0cf, TXPF=0x604b77fb, TWO=sy['TWO'], TW_LEN=sy['TW_LEN'], FV0=sy['FV0'])
     subprocess.run([P.AS, '-o', out / 'xb.o', XB_SRC], check=True)
     imgs, xs = [], None
     for L in (XB_L1, XB_L2):

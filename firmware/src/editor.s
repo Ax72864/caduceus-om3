@@ -6553,3 +6553,30 @@ fl_fch:
  mov 1,d0
  ret [d2,d3,a2,a3],28
 
+
+/* ---- ft1 (fast grain, texture route; experiment/fast-grain-log, 2026-11-08). The still set-up thunk 0x604b7730
+ * (`call 0x604b97db,[d2,d3,a2,a3],136`, a0 = S = the still's context, called `call ..,[],4` from 0x604b5896) jumps
+ * here: the stock set-up, then code block +112 (xb_su: a Grainy-Film-style grain texture for a COLOR still with
+ * Grain, research/NOTES.md "Grainy Film's grain path in the firmware"). Result d0 kept. */
+.section .hook_su,"ax"
+ jmp xs_su                        /* stock 0x604b7730: call 0x604b97db,[d2,d3,a2,a3],136 */
+
+.section .ext11,"ax"
+xs_su:
+ call xs_su2,[d2,a2],12
+ exthu d0
+ ret [],4
+xs_su2:                           /* a0 = S, a1 = the set-up's second argument (kept) */
+ mov a0,a2
+ call su_stock,[d2,d3,a2,a3],136
+ mov d0,d2
+ call xp,[],0
+ beq 9f
+ add 112,a1
+ mov a2,a0
+ add -4,sp                        /* a fresh return slot for `calls` ((0,sp) is ours) */
+ calls (a1)
+ add 4,sp
+9:
+ mov d2,d0
+ ret [d2,a2],12

@@ -6,6 +6,7 @@ SECTIONS {
   .hook_set     0x60b8798b : { *(.hook_set) }
   .hook_pmod    0x6129ba07 : { *(.hook_pmod) }
   .hook_rsp     0x611c3cb5 : { *(.hook_rsp) }
+  .hook_su      0x604b7730 : { *(.hook_su) }
   .hook_tone    0x605197d7 : { *(.hook_tone) }
   .hook_fx      0x60555e50 : { *(.hook_fx) }
   .hook_lv      0x6046b8bb : { *(.hook_lv) }
@@ -54,6 +55,7 @@ pg_back       = 0x611d07bd;
 pgm_back      = 0x611c3710;
 rsp_back      = 0x611c3cbd;
 sf_stock      = 0x604be2aa;
+su_stock      = 0x604b97db;         /* ft1: the still set-up (Grainy Film's texture is made here) */
 arw_back      = 0x611d0be8;
 rv_469        = 0x611b21f2;
 rv_back       = 0x611b2217;

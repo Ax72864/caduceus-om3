@@ -1,9 +1,10 @@
 # Caduceus for OM-3
 
 > [!CAUTION]
-> **Experiment: fast-grain logging build fg3. Not a release.** A `GUIDES.BIN` for v0.24.1 (firmware unchanged) that
-> logs how the camera processes Grainy Film photos (with and without Art Effects) into `OM3MOD/GLOG.BIN`, to find a
-> fast grain that works with every effect. Plan: `research/NOTES.md` ("Fast-grain review"). Current release:
+> **Experiment: fast grain, texture route ft1. Not a release.** Firmware + `GUIDES.BIN` that give COLOR photos with
+> Film Grain the same ready-made grain texture the Grainy Film Art Filter uses (instead of the MONO-key grain), plus
+> the fg3 log (`OM3MOD/GLOG.BIN`). Question: is that grain colour-safe and kept with every effect? Plan:
+> `research/NOTES.md` ("Grainy Film's grain path in the firmware"). Current release:
 > [`main`](https://github.com/androidfanman/caduceus-om3/tree/main) (v0.24.1).
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)

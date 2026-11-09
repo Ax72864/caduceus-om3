@@ -45,6 +45,8 @@ xb_base:
  .balign 8
  jmp xb_vbc                       /* +104 value by index of a cell (pf_vbi, `calls`) */
  .balign 8
+ jmp xb_su                        /* +112 ft1: after the still set-up (xs_su, `calls`, a0 = S): grain texture */
+ .balign 8
 xb_nrel:
  .long 0                          /* relocation count (written by the build) */
 
@@ -491,6 +493,32 @@ xb_gs:                            /* `calls` (0,sp) = return, a0 = job */
  * own film grain on the direct-to-JPEG route, colour kept (combiner 33 is not used). Then the stock selector.
  * Uses d0, d1, a1. */
 xb_dev:
+ movbu (xb_tx),d0                 /* ft1: a texture is ready for this still's COLOR development */
+ cmp 0,d0
+ beq 5f
+ mov (4,a0),a1
+ cmp 0,a1
+ beq 9f
+ movbu (16,a1),d1
+ cmp 0,d1
+ bne 9f
+ movhu (14,a1),d1
+ cmp 0x1000,d1
+ bne 9f
+ movbu (10,a1),d1
+ cmp 11,d1
+ bne 9f
+ clr d0
+ movbu d0,(xb_tx)                 /* once per still */
+ mov a0,a2                        /* (d2 / a2 are the s_cl frame's: free here) */
+ mov a3,d2
+ mov (xb_S),a0                    /* the stock hook 0x604bc0cf: a0 = S, a1 = request -> +780 texture, +12 = 0x0100 */
+ mov TXATT,a3
+ calls (a3)
+ mov d2,a3
+ mov a2,a0
+ jmp xb_lg                        /* no MONO key: the texture is the grain */
+5:
  movbu (xb_gt),d0
  cmp 0,d0
  beq 9f
@@ -512,6 +540,82 @@ xb_dev:
  mov d1,(48,a0)
 9:
  jmp xb_lg                        /* fg1: the stock selector, then the log */
+
+/* xb_su (ft1): `calls` from xs_su after the still set-up, a0 = S (S+4 the still's parameters, S+10276 the job,
+ * S+10280 the resource manager). A COLOR still (job+5352 = 11) whose COLOR profile has Grain gets the texture object
+ * Grainy Film gets (0x604cd921 with the same 6-byte block as 0x604b99c6..0x604b99f5, the same gate as 0x604b998b),
+ * stored at job+8324 (released by the stock clean-up 0x604b9cd9); xb_dev then attaches it to the development. */
+xb_su:
+ movm [d2,d3,a2,a3],(sp)
+ add -16,sp                       /* (0) call slot, (4..9) the texture parameters */
+ mov a0,a2
+ mov a0,(xb_S)
+ clr d0
+ movbu d0,(xb_tx)
+ mov (10276,a2),a1
+ cmp 0,a1
+ beq 9f
+ mov (5352,a1),d0
+ cmp 11,d0                        /* COLOR */
+ bne 9f
+ mov (8324,a1),d0
+ cmp 0,d0
+ bne 9f                           /* already has one */
+ call xb_slot,[d2,d3],12
+ cmp 0,a1
+ beq 9f
+ movbu (53,a1),d0                 /* Grain 1..3 */
+ cmp 0,d0
+ beq 9f
+ mov a2,a3
+ add 4,a3                         /* the still's parameters */
+ movhu (40,a3),d3
+ mov d3,d0
+ and 0xf0,d0
+ cmp 16,d0
+ beq 9f
+ cmp 32,d0
+ beq 9f
+ cmp 64,d0
+ beq 9f
+ mov d3,d1
+ and 0xf00,d1
+ cmp 0x100,d1
+ beq 9f
+ cmp 48,d0
+ bne 1f
+ mov d3,d1
+ and 15,d1
+ cmp 0,d1
+ beq 9f
+ cmp 1,d1
+ beq 9f
+1:
+ movhu d3,(4,sp)
+ movbu (44,a3),d0
+ movbu d0,(6,sp)
+ mov d3,d0
+ movbu (55,a3),d1
+ call TXPF,[],4
+ movbu d0,(7,sp)
+ movbu (55,a3),d0
+ movbu d0,(8,sp)
+ clr d0
+ movbu d0,(9,sp)
+ mov (10280,a2),a0
+ mov sp,a1
+ add 4,a1
+ call TXGET,[d2,d3,a2,a3],28
+ cmp 0,a0
+ beq 9f
+ mov (10276,a2),a1
+ mov a0,(8324,a1)
+ mov 1,d0
+ movbu d0,(xb_tx)
+9:
+ add 16,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
 
 xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  rets
@@ -1939,7 +2043,11 @@ xb_lpath:
  .balign 2
 xb_gt:                            /* camera-route grain level of the last capture (xb_cap -> xb_dev), 0 none */
  .byte 0
+xb_tx:                            /* ft1: 1 = xb_su gave this still a texture (xb_dev attaches it once) */
+ .byte 0
  .balign 4
+xb_S:                             /* ft1: the last still's context S (xb_su) */
+ .long 0
 xb_lbuf:                          /* fg1: the log header once its buffers exist, else 0 */
  .long 0
 xb_lhdr:                          /* fg1: log header (fg3: LB_HDR B; +32 the slot buffers) */
