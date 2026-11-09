@@ -1603,3 +1603,10 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   colour-photo grain (plain, Star), Glow / Clarity / Art Effects back with the slower grain. Not yet checked: Shading
   + Grain on ft6 (Shading's development has effect 0x0c00, so no texture and no MONO key: expect colour, no grain),
   White Edge, Clarity, burst.
+- Owner (2026-11-08): "Pin Hole is really just Shading": goal = Shading, Frame and Glow with the quick grain.
+- **ft7 (GUIDES only, firmware = ft4; emulator: boots):** when the development has its own effect (Pin Hole 0x0200,
+  Glow 0x0400, White Edge 0x0500, Shading 0x0c00) the texture waits (xb_tx 3) for the kind-3 **conversion pass**
+  (stage 0xf005, effect 0) and goes there: stock hook in its kind-3 form (texture at +96), its stage kept at 0xf005,
+  combiner 1 forced (xb_lg / xb_sel2 by request) with COLOR's chroma back (xb_c1e). Frame still CPU grain. No CPU
+  grain whenever a texture exists. Test LOOKS: COLOR 1 FILM 1-5 = High / + Pin Hole / + Glow -3 / + Shading -3 /
+  + White Edge, COLOR 2 FILM 6-7 = + Frame (CPU) / + Star. GUIDES 2b66efbc….

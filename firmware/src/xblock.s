@@ -165,9 +165,9 @@ xb_cap:
  movbu (53,a1),d0                 /* Art Effect + Grain: the Soft Focus passes for the CPU grain (w 1024), */
  cmp 0,d0
  beq 1f
- movbu (50,a1),d0                 /* ft6: except Star Light (1): its development takes the texture */
- cmp 1,d0
- beq 1f
+ movbu (50,a1),d0                 /* ft7: only Frame (5) keeps the CPU grain; the others take the texture */
+ cmp 5,d0
+ bne 1f
 2:
  or 128,d1
 1:
@@ -466,9 +466,9 @@ xb_gs:                            /* `calls` (0,sp) = return, a0 = job */
  movbu (53,a1),d0                 /* Grain 1..3 (older 4, 5 -> 3) */
  cmp 0,d0
  beq 90f
- movbu (xb_tx),d1                 /* ft5: the texture went into this still's development: no CPU grain */
- cmp 2,d1
- beq 90f
+ movbu (xb_tx),d1                 /* ft7: this still has a texture (development or conversion pass): no CPU grain */
+ cmp 0,d1
+ bne 90f
  cmp 3,d0
  bls 10f
  mov 3,d0
@@ -503,25 +503,13 @@ xb_gs:                            /* `calls` (0,sp) = return, a0 = job */
  * own film grain on the direct-to-JPEG route, colour kept (combiner 33 is not used). Then the stock selector.
  * Uses d0, d1, a1. */
 xb_dev:
- movbu (xb_tx),d0                 /* ft1: 1 = a texture is ready for this still's COLOR development, 2 = attached */
+ movbu (xb_tx),d0                 /* ft1: 1 = a texture is ready for this still, 2 = attached to xb_rq,
+                                     ft7: 3 = waiting for the conversion pass (the development has its own effect) */
  cmp 0,d0
  beq 5f
  mov (4,a0),a1
  cmp 0,a1
  beq 9f
- movbu (16,a1),d1
- cmp 0,d1
- bne 9f
- movhu (14,a1),d1
- cmp 0x1000,d1
- bne 9f
- movbu (10,a1),d1
- cmp 11,d1
- bne 9f
- movhu (1756,a1),d1               /* ft5: only a development without its own effect (Glow 0x0400, White Edge 0x0500
-                                     need their own combiner there) */
- cmp 0,d1
- bne 9f
  cmp 2,d0
  bne 1f
  mov (xb_rq),d1                   /* attached: the same request configured again -> combiner 1 again */
@@ -529,6 +517,37 @@ xb_dev:
  bne 9f
  bra 3f
 1:
+ movhu (14,a1),d1
+ cmp 0x1000,d1
+ bne 9f
+ movbu (16,a1),d1
+ cmp 0,d1
+ bne 2f
+ movbu (10,a1),d1                 /* kind 0: the COLOR development */
+ cmp 11,d1
+ bne 9f
+ movhu (1756,a1),d1               /* ft5: without its own effect: the texture here */
+ cmp 0,d1
+ beq 4f
+ mov 3,d1                         /* ft7: Pin Hole 0x0200, Glow 0x0400, White Edge 0x0500, Shading 0x0c00: later */
+ movbu d1,(xb_tx)
+ clr d1
+ movbu d1,(xb_gt)
+ bra 9f
+2:
+ cmp 3,d1                         /* ft7: kind 3, waiting: the conversion pass (stage 0xf005, effect 0) */
+ bne 9f
+ cmp 3,d0
+ bne 9f
+ movhu (12,a1),d1
+ cmp 0xf005,d1
+ bne 9f
+ movhu (1084,a1),d1
+ cmp 0,d1
+ bne 9f
+ mov 1,d1
+ movbu d1,(xb_k3)
+4:
  mov 2,d0
  movbu d0,(xb_tx)
  mov a1,(xb_rq)
@@ -536,11 +555,20 @@ xb_dev:
  movbu d0,(xb_gt)                 /* ft2: never the MONO key for this still */
  mov a0,a2                        /* (d2 / a2 are the s_cl frame's: free here) */
  mov a3,d2
- mov (xb_S),a0                    /* the stock hook 0x604bc0cf: a0 = S, a1 = request -> +780 texture, +12 = 0x0100 */
+ mov (xb_S),a0                    /* the stock hook 0x604bc0cf: a0 = S, a1 = request -> kind 0: +780, kind 3: +96;
+                                     +12 = 0x0100 */
  mov TXATT,a3
  calls (a3)
  mov d2,a3
  mov a2,a0
+ movbu (xb_k3),d0                 /* ft7: a conversion pass keeps its stage */
+ cmp 0,d0
+ beq 3f
+ clr d0
+ movbu d0,(xb_k3)
+ mov (xb_rq),a1
+ mov 0xf005,d0
+ movhu d0,(12,a1)
 3:
  mov 1,d0                         /* ft3: key stays 11; xb_lg answers combiner 1 instead of the selector */
  movbu d0,(xb_ck)
@@ -594,14 +622,9 @@ xb_su:
  movbu (53,a1),d0                 /* Grain 1..3 */
  cmp 0,d0
  beq 9f
- movbu (49,a1),d1                 /* ft6: the texture only without Glow / Clarity and with no Art Effect or Star
-                                     Light (Frame restarted the camera; Pin Hole / White Edge / Glow have their own
-                                     combiner in the development): those keep the CPU grain */
- cmp 0,d1
- bne 9f
- movbu (50,a1),d1
- cmp 1,d1
- bhi 9f
+ movbu (50,a1),d1                 /* ft7: no texture with Frame (it restarted the camera): CPU grain there */
+ cmp 5,d1
+ beq 9f
  movbu d0,(xb_tl)
  mov a2,a3
  add 4,a3                         /* the still's parameters */
@@ -2141,6 +2164,8 @@ xb_tl:                            /* ft2: that still's Grain level (1 / 3: combi
 xb_ck:                            /* ft3: 1 = xb_lg answers combiner 1 for this configuration */
  .byte 0
 xb_fx1:                           /* ft4: Grain level when combiner 1's set-up gets COLOR's chroma back, 0 none */
+ .byte 0
+xb_k3:                            /* ft7: 1 = the texture goes to a conversion pass (keep its stage) */
  .byte 0
  .balign 4
 xb_rq:                            /* ft2: the development request the texture went to */
