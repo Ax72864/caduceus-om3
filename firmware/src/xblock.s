@@ -625,10 +625,7 @@ xb_tex:
  movbu (53,a1),d0                 /* Grain 1..3 */
  cmp 0,d0
  beq 9f
- movbu (49,a1),d1                 /* ft8: no texture with Glow / Clarity (CPU grain there) */
- cmp 0,d1
- bne 9f
- movbu d0,(xb_tl)
+ movbu d0,(xb_tl)                 /* ft9: Glow / Clarity too (Grainy Film's list) */
  movbu (50,a1),d1
  movbu d1,(xb_tart)
  mov a2,a3
@@ -750,16 +747,10 @@ xb_wl:                            /* a0 = S (ft8b: the builder's (4,sp)) */
  movbu (53,a1),d0
  cmp 0,d0
  beq 9f
- movbu (49,a1),d0
- cmp 0,d0
- bne 9f
- movbu (50,a1),d0
- cmp 2,d0
- beq 8f
- cmp 4,d0
- beq 8f
- cmp 5,d0
- bne 9f
+ movbu (50,a1),d0                 /* ft9: every Grain still but Star Light (fine on COLOR's list) takes Grainy Film's
+                                     list: plain, Shading, Glow / Clarity, Pin Hole, White Edge, Frame */
+ cmp 1,d0
+ beq 9f
 8:
  mov a3,a0                        /* ft8b: the list is built before the set-up: make the texture now */
  call xb_tex,[d2,d3,a2,a3],32
