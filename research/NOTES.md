@@ -1534,3 +1534,11 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   the selector on every configuration (combiner 1); Grain Low / High put the key back to 11 right after the selector
   (combiner 1's set-up sees COLOR), Grain Med keeps GF II's key (to see what that set-up does). xb_gt cleared for that
   still (no MONO key). GUIDES 55fcc753….
+- **ft2 camera (2026-11-08, owner; PB081452 Grain Low, PB081453 Grain Med; 1451 missing; the owner saw one brief
+  restart, not repeatable):** both saved. Log: **combiner 1** chosen for the textured COLOR development in both.
+  - Low (key back to 11 after the selector): colour, **no grain** (flat areas Y hp 3.5..6.7, Cb/Cr ~0.9, as plain).
+  - Med (GF II's key kept for combiner 1's set-up): **black and white with grain** (Cb = Cr = 128 everywhere, Y hp
+    ~19 on every patch: a Grainy Film look on a COLOR still).
+  => The blend is switched on by combiner 1's set-up under Grainy Film's key, together with its mono conversion.
+  Next (emulator, no camera): run combiner 1's handler natively with key 11 and with 0x01020068 on the same request
+  and diff what it writes, to separate "blend the texture" from "make it mono" (as gl4..gl6 did for combiner 33).
