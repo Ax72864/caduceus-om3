@@ -64,7 +64,6 @@ rsp_back      = 0x611c3cbd;
 sf_stock      = 0x604be2aa;
 wl_back       = 0x604b8d99;         /* ft8: after the work-list key read */
 su_stock      = 0x604b97db;
-gk_back       = 0x611c2d1f;         /* v0.25 grid (as test 13) */
 prop_set      = 0x610cd5c4;
 wb_shift      = 0x611d2941;
 sc_back       = 0x610cdf0b;

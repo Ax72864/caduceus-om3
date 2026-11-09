@@ -379,3 +379,49 @@ if __name__ == '__main__':
             rgb = Image.new('RGB', (w, h)); rgb.putdata([pal[int(v)] for v in picture(l, w, h).flatten()])
             sheet.paste(rgb, (k * (CW + 10), 0))
         sheet.resize((sheet.width * 2, CH * 2), Image.NEAREST).save(a.preview)
+
+
+# v0.25 WB grid row: its left cell (100 x 76, as the camera's WB screen cell): the camera's own WB± picture (82 x 30,
+# picture 12545, copied by the firmware at run time) over the fine-tune values as the camera writes them ("A2.G2",
+# "B1.0"; blank when both are 0). The firmware (xblock xb_wbc) draws it from these glyphs: 0..7, A, B, G, M, '.'.
+WBC_CHARS = '01234567ABGM.'
+WBC_GH, WBC_BASE, WBC_CAP = 26, 22, 18          # glyph rows, baseline row in them, cap height
+WBC_IX, WBC_IY, WBC_TY = 9, 6, 40               # the WB± picture's place; the text glyphs' top row
+
+
+def wbc_glyphs():
+    """[array WBC_GH x w] per WBC_CHARS: our font, the cells' style (2 px dark edge), trimmed to the ink + edge."""
+    out = []
+    for ch in WBC_CHARS:
+        small, b = word(ch, WBC_CAP, 40, 0.92)
+        cov = np.zeros((WBC_GH, small.shape[1] + 4))
+        y0 = int(round(WBC_BASE - b))
+        cov[y0:y0 + small.shape[0], 2:2 + small.shape[1]] = small
+        out.append(quant(cov, (0.20, 0.40, 0.60)))
+    return out
+
+
+def wbc_text(ab, gm):
+    if ab == 0 and gm == 0:
+        return ''
+    f = lambda v, p, n: '0' if v == 0 else (p if v > 0 else n) + str(abs(v))
+    return f(ab, 'A', 'B') + '.' + f(gm, 'G', 'M')
+
+
+def wbc_cell(ab, gm, wbpm=None):
+    """the cell as the firmware draws it (wbpm: the WB± picture, 30 x 82, for previews only)"""
+    cell = np.zeros((CH, CW), dtype=np.uint8)
+    if wbpm is not None:
+        cell[WBC_IY:WBC_IY + 30, WBC_IX:WBC_IX + 82] = wbpm
+    gl = wbc_glyphs()
+    t = [gl[WBC_CHARS.index(c)] for c in wbc_text(ab, gm)]
+    tot = sum(g.shape[1] - 2 for g in t) + 2 if t else 0
+    x = (CW - tot) // 2
+    for g in t:
+        for yy in range(WBC_GH):
+            for xx in range(g.shape[1]):
+                v, d = g[yy, xx], cell[WBC_TY + yy, x + xx]
+                if v and (v != 7 or d in (0, 7)):
+                    cell[WBC_TY + yy, x + xx] = v
+        x += g.shape[1] - 2
+    return cell

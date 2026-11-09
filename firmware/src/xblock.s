@@ -55,6 +55,8 @@ xb_base:
  .balign 8
  jmp xb_wl                        /* +136 ft8: the still's work list key (s_wl, `calls`, a0 = job) -> d0 key or 0 */
  .balign 8
+ jmp xb_wbc                       /* +144 v0.25: the WB grid row's left cell picture (wb_draw, `calls`) */
+ .balign 8
 xb_nrel:
  .long 0                          /* relocation count (written by the build) */
 
@@ -1874,8 +1876,9 @@ xb_reloc:                         /* a2 = P (x_load) */
  * 30 rows x 9 bytes (70 px, MSB first, 1 = letter fill). One heap copy (XL_FILE B) and one 2 KB stream buffer; the
  * label is drawn and encoded (OSD type 11, 70 x 30) only when it changes. */
  .set XL_N, 27
+ .include "wbglyph.inc"           /* the build's: XL_FILE, the WB cell's layout (WBC_*) */
  .set XL_BM, 270
- .set XL_FILE, 16+XL_N*XL_BM
+ /* XL_FILE: the file's size, from the build (wbglyph.inc: v0.25 the WB cell glyphs after the bitmaps) */
  .set XL_OUT, 2048
 /* xb_lbl: `call xb_lbl,[d2,d3,a2,a3],24` once, after relocation. Locals (4) handle, (8) file buffer. Stores: xb_lb,
  * xb_lo, xb_lc (this block), the heap buffers, own frame. Anything wrong: no labels (xb_lb = 0). */
@@ -2317,5 +2320,336 @@ xb_cl:                            /* Clarity 1..5 -> w > 1024 on combiner 11 (un
  .hword 1100, 1180, 1260, 1340, 1420
 xb_nm:                            /* NR 1 Std, 2 Low, 3 Off, 4 High (v0.23) -> the stills Noise Filter value (stock -2..+1) */
  .byte 0, -1, -2, 1
+
+/* xb_wbc (v0.25 WB grid row): `calls` from wb_draw, d0 = A-B, d1 = G-M (-7..+7) -> a0 = the left cell's picture
+ * stream (100 x 76, OSD type 11), d0 = its length, or d0 = 0 (then the firmware shows the camera's WB± picture).
+ * The cell is drawn as the camera's WB screen cell: the camera's own WB± picture (12545, 82 x 30, type 11, read from
+ * its picture table at run time; WBC_IX / WBC_IY) over the values as the camera writes them ("A2.G2", "B1.0", blank
+ * when both are 0), from our glyphs (LABELS.BIN v3 after its bitmaps: 0..7, A, B, G, M, '.'), centred, one
+ * glyph's dark edge over the next's (2 px), an ink pixel replacing only clear or edge pixels. Row by row into
+ * xb_wrow, each row's runs (<= 16, never past the row's end) packed five 12-bit tokens a 64-bit word into xb_wbp.
+ * Static state in the block (no mul / div). */
+.set WBC_W, 100
+.set WBC_H, 76
+.set WB_MAX, 3200
+xb_wbc:
+ movm [d2,d3,a2,a3],(sp)
+ add -4,sp                        /* (0,sp): our calls' return address slot */
+ mov d0,(xb_wtv)
+ mov d1,(xb_wtv + 4)
+ mov (xb_wbp),d0                  /* the stream buffer, once (malloc: uncached, as the stock pictures') */
+ cmp 0,d0
+ bne 1f
+ mov WB_MAX + 112,d0
+ call malloc,[],4
+ cmp 0,a0
+ beq 90f
+ mov a0,(xb_wbp)
+1:
+ mov (xb_wbp),d0                  /* the row buffer after the stream's room; the room's end for wb_wem */
+ add WB_MAX,d0
+ mov d0,(xb_wrw)
+ mov d0,(WB_V + 32)
+ /* the source picture: the word at (0x60379740) + 4 x 12545 -> its descriptor {14, 82, 30, ..., size, payload} */
+ mov (0x60379740),a0
+ add 50180,a0
+ mov (a0),a0                      /* the descriptor */
+ cmp 0,a0
+ beq 90f
+ movhu (a0),d0
+ cmp 14,d0
+ bne 90f
+ movhu (2,a0),d0
+ cmp 82,d0
+ bne 90f
+ movhu (4,a0),d0
+ cmp 30,d0
+ bne 90f
+ mov (16,a0),a1
+ cmp 0,a1
+ beq 90f
+ movbu (3,a1),d0
+ cmp 11,d0
+ bne 90f
+ add 4,a1
+ mov a1,(WB_V + 0)
+ mov 5,d0
+ mov d0,(WB_V + 12)
+ /* the text: glyph indices into xb_wtx, count xb_wn */
+ mov xb_wtx,a2
+ clr d3
+ mov (xb_wtv),d0
+ mov (xb_wtv + 4),d1
+ or d1,d0
+ cmp 0,d0
+ beq 20f
+ mov xb_wtv,a1
+ mov xb_wtl,a3
+ clr d2
+1:
+ mov (a1),d0
+ cmp 0,d0
+ bne 2f
+ clr d1                           /* 0: the digit alone */
+ movbu d1,(a2)
+ inc a2
+ inc d3
+ bra 4f
+2:
+ blt 3f
+ movbu (a3),d1                    /* A / G */
+ bra 31f
+3:
+ movbu (1,a3),d1                  /* B / M */
+ not d0
+ inc d0
+31:
+ movbu d1,(a2)
+ inc a2
+ movbu d0,(a2)
+ inc a2
+ add 2,d3
+4:
+ cmp 0,d2
+ bne 20f
+ mov 12,d1                        /* '.' */
+ movbu d1,(a2)
+ inc a2
+ inc d3
+ inc d2
+ add 4,a1
+ add 2,a3
+ bra 1b
+20:
+ mov d3,(xb_wn)
+ /* glyph row pointers, widths, places: x0 = (100 - (sum (w - 2) + 2)) / 2 */
+ mov (xb_lb),a0                   /* the glyphs: LABELS.BIN after its bitmaps, 'WBG1' | u16 offset[13] | u8 width[13] */
+ cmp 0,a0
+ beq 90f
+ add 16 + XL_N * XL_BM,a0          /* 2-aligned only: halfword reads */
+ movhu (a0),d0
+ cmp 0x4257,d0                    /* 'WB' */
+ bne 90f
+ movhu (2,a0),d0
+ cmp 0x3147,d0                    /* 'G1' */
+ bne 90f
+ mov a0,(xb_wsec)
+ mov xb_wtx,a2
+ mov xb_wgp,a3
+ clr d2                           /* i */
+ mov 2,d3                         /* the width */
+5:
+ mov (xb_wn),d0
+ cmp d0,d2
+ bcc 6f
+ movbu (a2),d0                    /* glyph index */
+ mov (xb_wsec),a0
+ mov d0,d1
+ add d1,d1
+ add 4,d1
+ movhu (d1,a0),d1                 /* its offset */
+ mov a0,a1
+ add d1,a1
+ mov a1,(a3)                      /* xb_wgp[i] */
+ add 4 + 2 * 13,a0
+ movbu (d0,a0),d0
+ mov d0,(20,a3)                   /* xb_wgw[i] */
+ add d0,d3
+ add -2,d3
+ inc a2
+ add 4,a3
+ inc d2
+ bra 5b
+6:
+ mov WBC_W,d0
+ sub d3,d0
+ asr 1,d0                         /* x0 */
+ mov xb_wgp,a3
+ clr d2
+7:
+ mov (xb_wn),d1
+ cmp d1,d2
+ bcc 8f
+ mov d0,(40,a3)                   /* xb_wgx[i] */
+ mov (20,a3),d1
+ add d1,d0
+ add -2,d0
+ add 4,a3
+ inc d2
+ bra 7b
+8:
+ /* the stream header (h - 1 | w - 1 << 12 | 11 << 24) and the token packer */
+ mov (xb_wbp),a0
+ mov 0x0b06304b,d0                /* 100 x 76: 75 | 99 << 12 | 11 << 24 */
+ mov d0,(a0)
+ add 4,a0
+ mov a0,(WB_V + 16)
+ clr d0
+ mov d0,(WB_V + 28)
+ mov d0,(WB_V + 20)
+ mov d0,(WB_V + 24)
+ clr d3                           /* y */
+10:
+ mov d3,(xb_wy)
+ /* clear the row */
+ mov (xb_wrw),a0
+ clr d0
+ mov 28,d1
+11:
+ mov d0,(a0)
+ add 4,a0
+ add -1,d1
+ bne 11b
+ /* the WB± picture's rows */
+ mov d3,d0
+ add -WBC_IY,d0
+ cmp 30,d0
+ bcc 14f
+ mov (xb_wrw),a2
+ add WBC_IX,a2
+ clr d2                           /* x */
+12:
+ cmp 82,d2
+ bcc 14f
+ call wb_wtk,[],4                 /* d0 = the next token */
+ mov d0,d1
+ lsr 4,d1                         /* palette index */
+ and 15,d0
+ inc d0                           /* run */
+13:
+ movbu d1,(a2)
+ inc a2
+ inc d2
+ add -1,d0
+ bne 13b
+ bra 12b
+14:
+ /* the text's rows */
+ mov d3,d0
+ add -WBC_TY,d0
+ cmp WBC_GH,d0
+ bcc 18f
+ mov xb_wgp,a3
+ clr d2                           /* i */
+15:
+ mov (xb_wn),d0
+ cmp d0,d2
+ bcc 18f
+ mov (a3),a0                      /* this row of glyph i */
+ mov (20,a3),d1                   /* w */
+ mov a0,d0
+ add d1,d0
+ mov d0,(a3)                      /* the next row */
+ mov (xb_wrw),a1
+ mov (40,a3),d0
+ add d0,a1                        /* its place in the row */
+16:
+ movbu (a0),d0
+ cmp 0,d0
+ beq 17f
+ cmp 7,d0
+ bne 161f
+ movbu (a1),d0                    /* an edge pixel: only over clear / edge */
+ cmp 0,d0
+ beq 160f
+ cmp 7,d0
+ bne 17f
+160:
+ mov 7,d0
+161:
+ movbu d0,(a1)
+17:
+ inc a0
+ inc a1
+ add -1,d1
+ bne 16b
+ add 4,a3
+ inc d2
+ bra 15b
+18:
+ /* the row's runs */
+ mov (xb_wrw),a2
+ clr d2                           /* x */
+19:
+ cmp WBC_W,d2
+ bcc 30f
+ movbu (a2),d1                    /* v */
+ mov 1,d0                         /* r */
+21:
+ cmp 16,d0
+ bcc 22f
+ mov d2,a0
+ add d0,a0
+ cmp WBC_W,a0
+ bcc 22f
+ mov a2,a1
+ add d0,a1
+ movbu (a1),d3
+ cmp d1,d3
+ bne 22f
+ inc d0
+ bra 21b
+22:
+ add d0,d2
+ add d0,a2
+ asl 4,d1
+ add -1,d0
+ or d1,d0
+ call wb_wem,[],4                 /* d0 = the token; d0 = 0: the buffer is full */
+ cmp 0,d0
+ beq 90f
+ bra 19b
+30:
+ mov (xb_wy),d3
+ inc d3
+ cmp WBC_H,d3
+ bcs 10b
+ /* the last, partly filled word */
+ mov (WB_V + 28),d0
+ cmp 0,d0
+ beq 31f
+ mov (WB_V + 16),a0
+ mov (WB_V + 20),d0
+ mov d0,(a0)
+ mov (WB_V + 24),d0
+ mov d0,(4,a0)
+ add 8,a0
+ mov a0,(WB_V + 16)
+31:
+ mov (WB_V + 16),d0
+ mov (xb_wbp),a0
+ mov a0,d1
+ sub d1,d0
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
+90:
+ clr d0
+ mov 0,a0
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
+
+ .balign 4
+xb_wtv:                           /* A-B, G-M */
+ .long 0, 0
+xb_wtl:                           /* the glyphs A, B (A-B) and G, M (G-M) */
+ .byte 8, 9, 10, 11
+xb_wtx:                            /* the text's glyph indices */
+ .byte 0, 0, 0, 0, 0, 0, 0, 0
+xb_wn:
+ .long 0
+xb_wbp:                           /* the stream buffer (malloc) */
+ .long 0
+xb_wsec:                          /* the glyphs in LABELS.BIN */
+ .long 0
+xb_wrw:                           /* the row buffer (112 B after the stream's room) */
+ .long 0
+xb_wy:
+ .long 0
+xb_wgp:                           /* per glyph: row pointer (+0), width (+20), x (+40) */
+ .long 0, 0, 0, 0, 0
+ .long 0, 0, 0, 0, 0
+ .long 0, 0, 0, 0, 0
  .balign 4
 xb_end:

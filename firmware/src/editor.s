@@ -3054,6 +3054,8 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set ABB, 0x7e50                  /* A-B / G-M slider rows (v0.23 test 14): bar ids + k, classes 7 / 8, slot +26 / +27 */
 .set GMB, 0x7e60
 .set GLB, 0x7ea0                  /* v0.25 Glow / Clarity slider row (class 9, slot +49, -5 Glow .. +5 Clarity) */
+.set WGB, 0x7ec0                  /* v0.25 WB grid row: its one option's id + k (class 11, value 0; the left cell draws
+                                   * the values, wb_draw) */
 .set FRB, 0x7eb0                  /* v0.25 Frame choice row (class 10, slot +50: 0 Off / 5 Frame) */
 .set NR_IT, 5394
 .set VF_IT, 5389
@@ -3086,6 +3088,7 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set IC_F0, 0x7f8c
 .set IC_F1, 0x7f8d
 .set IC_END, 0x7f8e
+.set IC_WB, 0x7f8f                 /* v0.25 the WB grid row's left cell (wb_desc, drawn at run time) */
 .set FV0, 100                     /* v0.24 film list: picture-mode values FV0 + j for film j (COLOR k = j / 5, look j % 5 + 1) */
 .set NF, 20
 .set FLB, 0x7e70                  /* FLB + j: "is film j there?" (the list's per-entry availability id) */
@@ -3140,6 +3143,8 @@ ab_tab:
  .long 54, ABB, 55, ABB + 1, 56, ABB + 2, 64, ABB + 3
 gm_tab:
  .long 54, GMB, 55, GMB + 1, 56, GMB + 2, 64, GMB + 3
+wg_tab:
+ .long 54, WGB, 55, WGB + 1, 56, WGB + 2, 64, WGB + 3
 gl_tab:
  .long 54, GLB, 55, GLB + 1, 56, GLB + 2, 64, GLB + 3
 fr_tab:
@@ -3155,9 +3160,7 @@ it_tab:                           /* the stock 17 item entries (filled by build.
  .long VF_IT, vf_title, vf_l0, 2, 0, vf_l1, 2, 0, vf_l2, 2
  .long BK_IT, 0, 0, 0, bk_title, 0, 5 << 16, 0, 0, 0           /* slider entries (as item 7's: +16 title, +26 the */
  .long WH_IT, 0, 0, 0, wh_title, 0, 6 << 16, 0, 0, 0           /* left icon: 5 / 6 = IC_BK / IC_WH in ic_list) */
- .long AB_IT, 0, 0, 0, ab_title, 0x6154bd18, 27 + (7 << 16), 0, 0, 0  /* v0.25 WB grid: as item 5398's (Highlight &
-                                  * Shadow; +20/+24 its main-area list), +16 our title (the values), +26 = 7: the
-                                  * left cell's picture, the camera's WB± (ic_list) */
+ .long AB_IT, ab_title, wb_l0, 1, 0, wb_l1, 1, 0, wb_l2, 1      /* v0.25 WB grid row: one option (as test 12) */
  .long GM_IT, 0, 0, 0, gm_title, 0, 8 << 16, 0, 0, 0
  .long GL_IT, 0, 0, 0, gl_title, 0, 9 << 16, 0, 0, 0           /* v0.25: icon 9 = IC_GL */
  .long FR_IT, fr_title, fr_l0, 2, 0, fr_l1, 2, 0, fr_l2, 2      /* v0.25: as Vignette Correction */
@@ -3227,6 +3230,12 @@ fr_l1:                            /* the left column: "Frame" over Off / On */
 fr_l2:                            /* the strip: the camera's Off / On icons */
  OPT 0, 3, VF_I0
  OPT 1, 3, VF_I1
+wb_l0:                            /* v0.25 WB grid row: the title "WB" */
+ OPT 0, 4, ST_AB
+wb_l1:                            /* the left column: the WB± picture over the values (wb_draw) */
+ OPT 0, 3, IC_WB
+wb_l2:                            /* the strip (under the grid): the camera's WB± picture */
+ OPT 0, 3, 12545
 nr_s2v:                           /* NR slot value 1..4 (index 0..3) -> Noise Filter value; 0 Camera: the camera's own */
  .byte 0, -1, -2, 1
 nr_v2s:                           /* Noise Filter value -2..+1 (index + 2) -> slot value */
@@ -3267,7 +3276,7 @@ gr_lc:
 5:
  cmp AB_IT,d0
  bne 6f
- mov ab_tab,a3
+ mov wg_tab,a3
  mov 4,d2
  bra 9f
 6:
@@ -3362,8 +3371,8 @@ bks_str:
  .short 66, 108, 97, 99, 107, 115, 0
 whs_str:
  .short 87, 104, 105, 116, 101, 115, 0
-abs_str:                          /* v0.25 the WB grid row's title "A-B +3  G-M -2", its numbers filled by gr_pub */
- .short 65, 45, 66, 32, 32, 48, 32, 32, 71, 45, 77, 32, 32, 48, 0
+abs_str:                          /* v0.25 the WB grid row's title "WB" */
+ .short 87, 66, 0
 gms_str:                          /* "G-M" */
  .short 71, 45, 77, 0
 glc_str:                          /* "Glow / Clarity" */
@@ -3421,6 +3430,11 @@ ch_id:
  CHC bk_f, BKB, f2c_obj           /* slider rows: as item 7's case (0x611c2ce8: the bar object with this id) */
  CHC wh_f, WHB, f2c_obj
  CHC gl_f, GLB, f2c_obj           /* v0.25 Glow / Clarity slider */
+ CHC wg_a, WGB, cha_back          /* v0.25 WB grid row: as the Frame row, one option */
+ CHC wg_b, WGB, chb_back
+ CHC wg_c, WGB, chc_back
+ CHC wg_d, WGB, chd_back
+ CHC wg_f, WGB, chf_back
  CHC fr_a, FRB, cha_back          /* v0.25 Frame choice row */
  CHC fr_b, FRB, chb_back
  CHC fr_c, FRB, chc_back
@@ -3437,6 +3451,9 @@ lc_vf:
  bra 1f
 lc_fr:
  mov FR_IT,d2
+ bra 1f
+lc_wg:
+ mov AB_IT,d2
 1:
  mov (20,sp),a3
  mov 1,d0
@@ -3505,6 +3522,11 @@ sl_slot:
  add -FRB,d2
  cmp 4,d2
  bcs 2f
+ mov 11,d1
+ mov d3,d2
+ add -WGB,d2
+ cmp 4,d2
+ bcs 2f
  mov 1,d1
  cmp 7,d3
  beq 1f
@@ -3523,7 +3545,7 @@ sl_slot:
  mov 6,d1
  cmp WH_IT,d3
  beq 1f
- mov 7,d1
+ mov 11,d1
  cmp AB_IT,d3
  beq 1f
  mov 8,d1
@@ -3567,6 +3589,12 @@ sl_slot:
 
 /* sl_val: d1 class, a0 slot -> d0 the row's value (Sharp -5..+2, Grain 0..3, NR -2..+1, VigFix -1..0). */
  .macro SL_VAL
+ cmp 11,d1
+ bne 86f
+ call wb_draw,[d2,d3,a2,a3],16    /* v0.25 WB grid row: draw its left cell from the look's A-B / G-M */
+ clr d0
+ bra 99f
+86:
  cmp 9,d1
  bne 83f
  movbu (49,a0),d0                 /* v0.25 Glow -5..-1 / Clarity +1..+5 */
@@ -3675,12 +3703,6 @@ sl_gb:
  cmp 0,a0
  beq 8f
  SL_VAL
- movbu (gr_neg),d1                /* v0.25 grid: the control's values the other way round */
- cmp 0,d1
- beq 1f
- not d0
- inc d0
-1:
  mov d0,(a2)
  mov a3,d1
  mov d1,mdr                       /* again: SL_VAL may call the getter */
@@ -3759,6 +3781,12 @@ sl_gb:
  exthu d2
  add -FRB,d2
  cmp 4,d2
+ bcs 90f
+ mov 11,a3
+ mov d0,d2
+ exthu d2
+ add -WGB,d2
+ cmp 4,d2
  bcc \miss
 90:
  PVAL \miss
@@ -3773,6 +3801,9 @@ sl_cnt:
  mov a3,d2
  mov d2,mdr
  REAL 8f
+ mov 1,d0                         /* v0.25: 11 the WB grid row's one option */
+ cmp 11,a3
+ beq 6f
  mov 11,d0                        /* v0.25: 9 Glow / Clarity -5..+5 */
  cmp 9,a3
  beq 6f
@@ -3802,6 +3833,10 @@ sl_cnt:
 
 /* the class's lowest value (d0) and count (d1) for index <-> value: Sharp -5/8, Grain 0/4, NR -2/4, VigFix -1/2 */
  .macro LOWCNT
+ clr d0                           /* v0.25: 11 the WB grid row 0, 1 */
+ mov 1,d1
+ cmp 11,a3
+ beq 99f
  mov -5,d0                        /* v0.25: 9 Glow / Clarity -5, 11; 10 Frame 0, 2 */
  mov 11,d1
  cmp 9,a3
@@ -3929,6 +3964,8 @@ sl_set0:
  mov (gr_oid),d0                  /* the id as asked (s_dirty refreshes it) */
  asl 6,d2
  add a2,d2                        /* d2 = P + 64k */
+ cmp 11,a3                        /* v0.25 WB grid row: nothing to store */
+ beq 7f
  cmp 9,a3
  bne 12f
  cmp -5,d1                        /* v0.25 Glow / Clarity -5..+5 -> +49 */
@@ -3960,12 +3997,6 @@ sl_set0:
  blt 7f                           * Extras wheel) */
  cmp 7,d1
  bgt 7f
- movbu (gr_neg),d3                /* v0.25 grid: its control steps the other way (right = A +, up = G +) */
- cmp 0,d3
- beq 15f
- not d1
- inc d1
-15:
  mov 58,d3
  cmp 7,a3
  beq 11f
@@ -4231,6 +4262,17 @@ ic_get:
  bcc 12f
  jmp fl_scp
 12:
+ cmp IC_WB,d1                     /* v0.25: the WB grid row's left cell; the camera's WB± until it is drawn */
+ bne 14f
+ mov (wb_desc + 12),d1
+ cmp 0,d1
+ bne 15f
+ mov 12545,d0
+ bra ic_stk
+15:
+ mov wb_slot,a0
+ retf [],0
+14:
  cmp IC_BK,d1
  bcs ic_stk
  cmp IC_END,d1
@@ -4254,18 +4296,17 @@ ic_stk:
  * count, from the layout record's byte before the list pointers). Stock lists 0x614548b4.. (5 slots): S, Contrast,
  * Saturation (count 3). build.py points the 5 slots' layout records (start, end, count 6) at ic_list: the stock three, S again
  * for 4 (item 5399's +26, Shading, which draws its own picture), then Blk 5, Wht 6. */
-/* v0.25 WB grid row (sliders test 13 again, owner 2026-11-08): the AB_IT row's object is the camera's own 2-D
- * control (object kind 7, ctor 0x61223340), the one the WB fine-tune screen uses, on the WB key 1580 (its children:
- * bars 1580 A-B and 1593 G-M, table 0x615ae434; Highlight & Shadow is the same control on keys 5444..5451). While it
- * shows for a look, gr_flag = look + 1 and the facade answers the WB stills ids (A-B 1580..1592, G-M 1593..1605)
- * from the look's slot +26 / +27 (gr_id -> ABB / GMB + k), the other way round (test 13 on the camera: right moved
- * the dot left, up moved it down); leaving Picture Mode (0x0418) clears the flag (gx_map). The title shows the
- * numbers (abs_str, gr_ch). */
-.set GLY, 457                     /* Picture Mode's bottom-bar layer: its holder takes the WB grid (498) on our row */
+/* v0.25 WB grid row (owner 2026-11-08): one row (AB_IT, a one-option choice row as sliders test 12) for the look's
+ * A-B / G-M. On it the Picture Mode screen shows the camera's WB grid (scene 498, element 24813) in the holder of its
+ * bottom-bar layer 457 (sc_cap, gr_upd from the screen's update 0x611d04ec; property 256 via gr_pub, as sliders
+ * test 13), and OK, left / right or a dial open the camera's own WB fine-tune screen (0x0408, pm_ev) with
+ * gr_flag = look + 1: the facade answers its stills ids (A-B 1580..1592, G-M 1593..1605 by WB mode) from the look's
+ * slot +26 / +27 (gr_id -> our ABB / GMB + k), so it shows and changes the look's values with the camera's own
+ * directions and numbers. gx_map: MENU there comes back to our row (0x0417 -> 0x0418, gr_hold / gr_row), any other
+ * way out or leaving Picture Mode clears the flag. The row's left cell is drawn from the values (wb_draw, xb_wbc). */
+.set GLY, 456                     /* Picture Mode's bottom-bar layer: its holder takes the WB grid (498) on our row */
 .balign 4
 gr_flag:
- .long 0
-gr_neg:
  .long 0
 gr_fine:                          /* 1 while the WB fine-tune screen is open from our row (pm_ev) */
  .long 0
@@ -4290,20 +4331,172 @@ gr_blk:                           /* the grid's block (property 256, 18 B, as th
  .byte 3, 3, 3, 3, 0, 0, 0, 0
  .short 0, 0, 0, 0, 0
 
+/* wb_wtk / wb_wem: the WB cell drawer's (xblock xb_wbc) token reader and packer, here for the GUIDES.BIN size cap.
+ * wb_v: +0 the source's next 64-bit word, +4 / +8 the current word, +12 the token in it (0..5), +16 the output's next
+ * word, +20 / +24 the word being packed, +28 its token count, +32 the output room's end. */
+/* wb_wtk: `call wb_wtk,[],4` -> d0 = the source picture's next 12-bit token. Uses d0, d1, a0. */
+wb_wtk:
+ mov (wb_v + 12),d1
+ cmp 5,d1
+ bcs 1f
+ mov (wb_v),a0
+ mov (a0),d0
+ mov d0,(wb_v + 4)
+ mov (4,a0),d0
+ mov d0,(wb_v + 8)
+ add 8,a0
+ mov a0,(wb_v)
+ clr d1
+1:
+ mov d1,d0
+ inc d0
+ mov d0,(wb_v + 12)
+ mov (wb_v + 4),d0
+ cmp 0,d1
+ beq 9f
+ lsr 12,d0
+ cmp 1,d1
+ beq 9f
+ mov (wb_v + 8),a0
+ cmp 2,d1
+ bne 3f
+ lsr 12,d0
+ mov a0,d1
+ asl 8,d1
+ or d1,d0
+ bra 9f
+3:
+ mov a0,d0
+ lsr 4,d0
+ cmp 3,d1
+ beq 9f
+ lsr 12,d0
+9:
+ and 0xfff,d0
+ ret [],4
+
+/* wb_wem: `call wb_wem,[],4`, d0 = a token -> packed; d0 = 0 when the room is full, else 1. Uses d0, d1, a0. */
+wb_wem:
+ mov (wb_v + 28),d1
+ cmp 0,d1
+ bne 1f
+ mov d0,(wb_v + 20)
+ clr d0
+ mov d0,(wb_v + 24)
+ bra 8f
+1:
+ cmp 1,d1
+ bne 2f
+ asl 12,d0
+ bra 7f
+2:
+ cmp 2,d1
+ bne 3f
+ mov d0,d1
+ lsr 8,d1
+ mov d1,(wb_v + 24)
+ asl 24,d0
+7:
+ mov (wb_v + 20),d1
+ or d1,d0
+ mov d0,(wb_v + 20)
+ bra 8f
+3:
+ cmp 3,d1
+ bne 4f
+ asl 4,d0
+ bra 6f
+4:
+ asl 16,d0
+6:
+ mov (wb_v + 24),d1
+ or d1,d0
+ mov d0,(wb_v + 24)
+8:
+ mov (wb_v + 28),d1
+ inc d1
+ cmp 5,d1
+ bcs 9f
+ mov (wb_v + 16),a0
+ mov a0,d0
+ add 8,d0
+ mov (wb_v + 32),d1
+ cmp d1,d0
+ bhi 91f
+ mov (wb_v + 20),d1
+ mov d1,(a0)
+ mov (wb_v + 24),d1
+ mov d1,(4,a0)
+ mov d0,(wb_v + 16)
+ clr d1
+9:
+ mov d1,(wb_v + 28)
+ mov 1,d0
+ ret [],4
+91:
+ clr d0
+ ret [],4
+.balign 4
+wb_v:
+ .long 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+/* wb_draw: `call wb_draw,[d2,d3,a2,a3],16`, a0 = the look's slot: the WB grid row's left cell for its A-B (+26) /
+ * G-M (+27), drawn by the code block (xb_wbc, +144) into its buffer, wb_desc pointing there; again only when the
+ * values change. Without the block (or a drawing) the cell stays the camera's WB± picture (ic_get). */
+wb_draw:
+ movbu (26,a0),d2
+ extb d2
+ movbu (27,a0),d3
+ extb d3
+ mov d2,d0
+ asl 8,d0
+ or d3,d0
+ exthu d0
+ mov (wb_last),d1
+ cmp d1,d0
+ beq 9f
+ mov d0,(wb_last)
+ call xp,[],0
+ beq 8f
+ add 120,a1
+ add 24,a1
+ mov d2,d0
+ mov d3,d1
+ calls (a1)
+ cmp 0,d0
+ beq 8f
+ mov wb_desc,a1
+ mov d0,(12,a1)
+ mov a0,d0
+ mov d0,d1
+ and 0xf0000000,d1
+ cmp 0x60000000,d1                /* a cached address -> uncached, as the stock pictures' */
+ bne 1f
+ add 0x40000000,d0
+1:
+ mov d0,(16,a1)
+ bra 9f
+8:
+ clr d0
+ mov d0,(wb_desc + 12)
+ mov -1,d0
+ mov d0,(wb_last)                 /* try again next time */
+9:
+ ret [d2,d3,a2,a3],16
+.balign 4
+wb_last:
+ .long -1
+wb_slot:
+ .long wb_desc
+wb_desc:                          /* format 14, 100 x 76, as our cell pictures; size, payload from xb_wbc */
+ .short 14, 100, 76, 8, 0, 0
+ .long 0, 0, 0
+
 /* gr_id: `call gr_id,[d2,d3],12`, d0 id -> d0: while the grid shows for look k (gr_flag = k + 1), its A-B ids
- * 1580..1592 -> ABB + k and G-M ids 1593..1605 -> GMB + k with gr_neg = 1; else d0 kept, gr_neg = 0. gr_oid = the id
+ * 1580..1592 -> ABB + k and G-M ids 1593..1605 -> GMB + k; else d0 kept. gr_oid = the id
  * as asked. Keeps d1, a0..a3 (not MDR: callers keep it). */
 gr_id:
  mov d0,(gr_oid)
- clr d2
- movbu d2,(gr_neg)
- mov d0,d2                        /* our grid row's own ids (its left cell: AB_IT, ABB + k): the same way round */
- exthu d2
- cmp AB_IT,d2
- beq 3f
- add -ABB,d2
- cmp 4,d2
- bcs 3f
  movbu (gr_flag),d3
  cmp 0,d3
  beq 9f
@@ -4322,31 +4515,8 @@ gr_id:
  mov ABB,d0
 2:
  add d3,d0
- movbu (gr_fine),d2               /* the fine-tune screen: the camera's own directions */
- cmp 0,d2
- bne 9f
-3:
- mov 1,d2
- movbu d2,(gr_neg)
 9:
  ret [d2,d3],12
-
-/* gr_ch: `call gr_ch,[],4`, d0 value -7..+7, a1 -> two UTF-16 characters: " 0", "+3", "-2". Uses d0, d1. */
-gr_ch:
- mov 32,d1
- cmp 0,d0
- beq 2f
- mov 43,d1
- cmp 0,d0
- bgt 2f
- mov 45,d1
- not d0
- inc d0
-2:
- movhu d1,(a1)
- add 48,d0
- movhu d0,(2,a1)
- ret [],4
 
 /* gr_now: `call gr_now,[d2,d3,a2,a3],16`: gr_pub and gr_ref, keeping d0, d1, a0, a1 (sl_set's s_dirty needs them). */
 gr_now:
@@ -4491,12 +4661,6 @@ gr_pub:
  extb d2                          /* A-B */
  movbu (27,a2),d3
  extb d3                          /* G-M */
- mov abs_str + 8,a1               /* v0.25: the title's numbers, "A-B +3  G-M -2" */
- mov d2,d0
- call gr_ch,[],4
- mov abs_str + 24,a1
- mov d3,d0
- call gr_ch,[],4
  mov gr_blk,a2
  clr d0
  cmp 0,d2
@@ -4558,16 +4722,6 @@ pu_hook:
  mov (0x6037a360),d0
  jmp pu_back
 
-/* gk_f <- row switch 0x61536f2c (the row's object), our row: as item 5398's case 0x611c2d19 (kind 7, key from its
- * picture-mode table) with key 1580, and gr_flag from the picture mode (COLOR 1-4 -> 1..4, else 0). */
-gk_f:
- mov a3,a0
- mov 1,d1
- call ch_id,[d2,d3,a2],20
- mov gr_flag,a0
- movbu d0,(a0)
- mov 1580,d0
- jmp gk_back                      /* 0x611c2d1f: mov d0,(4,sp); mov 7,d0; ... 0x6119a1f2 */
 /* pm_ev <- jmp from the Picture Mode handler 0x6125becc (calls: d0 event, d1, a0, a1): on our WB row on COLOR 1-4
  * (gr_flag set by gr_upd), the events that open the WB fine-tune screen from
  * the camera's WB± row (0x6125bc8b: 0x900c OK, 0x9031 / 0x9032 dials, 0xf83c, 0x9755 with code 9; and left / right
@@ -4822,9 +4976,8 @@ rd_b:
  jmp rdb_11
 
 .balign 4
-rd15_a:                           /* the readout's sign glyph for -7..+7 (as 0x6154caa0: 3 minus, 1 plus-minus, 2 plus);
-                                   * v0.25: the other way round, as the WB grid row's values (gr_id: AB_IT the other way) */
- .long -7, 2, -6, 2, -5, 2, -4, 2, -3, 2, -2, 2, -1, 2, 0, 1, 1, 3, 2, 3, 3, 3, 4, 3, 5, 3, 6, 3, 7, 3
+rd15_a:                           /* the readout's sign glyph for -7..+7 (as 0x6154caa0: 3 minus, 1 plus-minus, 2 plus) */
+ .long -7, 3, -6, 3, -5, 3, -4, 3, -3, 3, -2, 3, -1, 3, 0, 1, 1, 2, 2, 2, 3, 2, 4, 2, 5, 2, 6, 2, 7, 2
 rd15_b:                           /* ... and its digit (as 0x6154caf8) */
  .long -7, 7, -6, 6, -5, 5, -4, 4, -3, 3, -2, 2, -1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7
 

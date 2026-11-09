@@ -121,12 +121,31 @@ def pack(fill):
     return bytes(b)
 
 
+def wb_glyphs():
+    """v0.25 (LABELS.BIN v3): after the bitmaps, the WB grid row's cell glyphs (firmware/mkicons.py wbc_glyphs, drawn
+    from scratch in our font): 'WBG1' | u16 offset[13] (from 'WBG1') | u8 width[13] | pad to 4 | each glyph's rows,
+    one palette index a byte (0 clear, 7 dark edge, 10 / 11 / 12 fill). The firmware code block (xb_wbc) draws the cell
+    from them."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'firmware'))
+    import mkicons
+    gl = mkicons.wbc_glyphs()
+    head = 4 + 2 * len(gl) + len(gl)
+    head = (head + 3) & ~3
+    offs, data = [], b''
+    for g in gl:
+        offs.append(head + len(data))
+        data += bytes(int(v) for v in g.flatten())
+    return b'WBG1' + struct.pack('<%dH' % len(gl), *offs) + bytes(g.shape[1] for g in gl) + bytes(head - 4 - 3 * len(gl)) + data
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--preview')
     a = ap.parse_args()
     fills = [bitmap(t) for t in LABELS]
     imgs = [render(f) for f in fills]
-    body = struct.pack('<I', len(fills)) + b''.join(pack(f) for f in fills)
+    body = struct.pack('<I', len(fills)) + b''.join(pack(f) for f in fills) + wb_glyphs()
     out = b'OM3V' + struct.pack('<II', 12 + len(body), zlib.crc32(body) & 0xffffffff) + body
     open(a.out, 'wb').write(out); print(a.out, len(out), 'bytes; largest stream', max(len(encode11(bytes(i.flatten()), W, H)) for i in imgs))
     if a.preview:
