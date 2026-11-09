@@ -1575,3 +1575,10 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   => Fast colour-photo grain through Grainy Film's texture blend works. Next: strength levels (texture gain with the
   right offset: +8 3822, +144 0x2a0000, the signed ranges of 0x605047c1, or +148 below 1024 for Low), speed check,
   Art Effects / Glow / Clarity / Shading on top, then our own texture (colour speckle).
+- **ft5 (GUIDES only, firmware = ft4 75a48eb7…; emulator: boots, live view fine):** XB_FX 1 (Glow / Clarity / Art
+  back on). Texture gain +148 by Grain: Low 512, Med 768, High 1024. Texture only on a development without its own
+  effect (+1756 = 0: plain, Frame, Star, Pin Hole per gl7; Glow 0x0400 / White Edge 0x0500 keep their combiner and
+  fall back to the CPU grain). xb_cap: Art + Grain no longer adds the Soft Focus pass; xb_gs: no CPU grain when the
+  texture went in (xb_tx 2). GUIDES 51477b56…. Test LOOKS.BIN (card only; the owner's LOOKS / EDITS backed up outside
+  the repo): COLOR 1 FILM 1-5 = Grain Low / Med / High / High + Frame / High + Pin Hole, COLOR 2 FILM 6-7 = High +
+  Glow -3 / High + Star.

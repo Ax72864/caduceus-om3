@@ -1,6 +1,6 @@
 /* v0.24 film test 7 (owner): the Extras page is hidden and its Glow / Clarity and Art Effect read 0 wherever they act
  * (XB_FX 0); the code stays: set XB_FX 1 to bring them back. */
- .set XB_FX, 0
+ .set XB_FX, 1                    /* ft5: Glow / Clarity / Art back on (grain by texture where the development allows) */
  .set XB_SHG, 0                   /* film test 11's Shading check before the camera grain (1: on; rebooted on the camera) */
 /* Caduceus for OM-3 v0.20 test 5: the Extras code block (appended to GUIDES.BIN, our own code).
  *
@@ -162,9 +162,7 @@ xb_cap:
  movbu d0,(xb_gt)
  bra 1f
 3:
- movbu (53,a1),d0                 /* Art Effect + Grain: the Soft Focus passes for the CPU grain (w 1024) */
- cmp 0,d0
- beq 1f
+ bra 1f                           /* ft5: Art Effect + Grain: the texture in the development, no Soft Focus pass */
 2:
  or 128,d1
 1:
@@ -463,6 +461,9 @@ xb_gs:                            /* `calls` (0,sp) = return, a0 = job */
  movbu (53,a1),d0                 /* Grain 1..3 (older 4, 5 -> 3) */
  cmp 0,d0
  beq 90f
+ movbu (xb_tx),d1                 /* ft5: the texture went into this still's development: no CPU grain */
+ cmp 2,d1
+ beq 90f
  cmp 3,d0
  bls 10f
  mov 3,d0
@@ -512,6 +513,10 @@ xb_dev:
  movbu (10,a1),d1
  cmp 11,d1
  bne 9f
+ movhu (1756,a1),d1               /* ft5: only a development without its own effect (Glow 0x0400, White Edge 0x0500
+                                     need their own combiner there) */
+ cmp 0,d1
+ bne 9f
  cmp 2,d0
  bne 1f
  mov (xb_rq),d1                   /* attached: the same request configured again -> combiner 1 again */
@@ -532,14 +537,7 @@ xb_dev:
  mov d2,a3
  mov a2,a0
 3:
- movbu (xb_tl),d0                 /* ft3: Grain Med (2) = the ft2 control: Grainy Film II's context key (mono + grain) */
- cmp 2,d0
- bne 4f
- mov 0x01020068,d0
- mov d0,(48,a0)
- jmp xb_lg
-4:
- mov 1,d0                         /* ft3: Low / High: key stays 11; xb_lg answers combiner 1 instead of the selector */
+ mov 1,d0                         /* ft3: key stays 11; xb_lg answers combiner 1 instead of the selector */
  movbu d0,(xb_ck)
  jmp xb_lg
 5:
@@ -653,11 +651,8 @@ xb_sel2:
  mov (xb_rq),d1
  cmp d0,d1
  bne 9f
- movbu (xb_tl),d0                 /* ft4: Low / High: put COLOR's chroma back at the end of combiner 1's set-up */
- cmp 2,d0
- beq 1f
+ movbu (xb_tl),d0                 /* ft4: put COLOR's chroma back at the end of combiner 1's set-up (and the gain) */
  movbu d0,(xb_fx1)
-1:
  mov 1,d0
  ret [d2,a2],12
 9:
@@ -677,12 +672,21 @@ xb_c1e:
  mov d1,(96,a2)
  mov 1024,d1
  mov d1,(100,a2)
- cmp 3,d0
- bne 9f
- mov 2048,d1
+ cmp 3,d0                         /* ft5: the texture's gain (+148) by Grain: Low 512, Med 768, High 1024 (ft4: 1024 =
+                                     even, 2048 = darker) */
+ bls 1f
+ mov 3,d0
+1:
+ add d0,d0
+ mov xb_tgain-2,a0
+ add d0,a0
+ movhu (a0),d1
  mov d1,(148,a2)
 9:
  rets
+ .balign 2
+xb_tgain:
+ .hword 512, 768, 1024
 
 xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  rets
