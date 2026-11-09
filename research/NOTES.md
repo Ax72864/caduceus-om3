@@ -1703,3 +1703,11 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - **v0.25 release prepared (2026-11-08):** releases/v0.25 from the rc2c build (patch.py rebuilds 591fe72d… byte for
   byte), Control Panel "v0.25 or later" export (fw 24: Shading kept, Art Effect Frame / Off; the slow-grain note only
   for Glow / Clarity + Frame + Grain), docs. Waiting for the owner's go-ahead to publish.
+
+## WB grid again, and a Blacks / Whites grid (owner, 2026-11-08 evening; for v0.25)
+
+- Owner: go back to the WB grid ("we were close"); and a second grid for Blacks (horizontal) / Whites (vertical).
+  Both grids replace their slider rows (one "WB" grid row instead of A-B + G-M, one grid row instead of Blacks +
+  Whites).
+- Why test 13 was rejected (owner, asked 2026-11-08; not written down before): **no numbers shown**, and **the
+  directions were reversed** (right moved the dot left, up moved it down).
