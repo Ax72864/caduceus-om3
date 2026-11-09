@@ -1741,3 +1741,28 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   probably 10324..10328). Owner: numbers "underneath like on the standard white balance screen". The camera's WB±
   screen shows "WBAuto B1 . G2" with dial icons in the dial-guide readout (shared layer 497; Picture Mode shows "Sh /
   Mid / Hi" there for Highlight & Shadow, "Color" / "Vivid" for the Color row). Next: find how a row sets that readout.
+
+### WB grid test 1 for v0.25: OK opens the camera's WB fine-tune screen (2026-11-08; emulator only)
+- Owner (2026-11-08): "clicking ok to open and adjust the white balance grid, just like it is in the super menu would
+  be perfect. same for the blk/wht grid". Owner's photo of the camera's WB screen: the WB± cell shows the values
+  under its picture ("A2.G2").
+- Build (commit "WB grid row: OK opens..."): the WB row keeps the on-screen grid preview (test 13 route) and pm_ev
+  (hook 0x6125becc, as test 12) opens GUI state 0x0408 (the camera's WB fine-tune screen) on our row for OK 0x900c,
+  left / right 0x9008 / 0x900a, dials 0x9031 / 0x9032, and the WB screen's other openers 0xf83c and 0x9755 with
+  code 9 (0x6129b050 reads the event's data; the WB± handler 0x6125bc8b opens on these; test 12 caught only 0x900c,
+  which is likely why OK went to live view on the camera). Picture Mode events: up 0x9004, down 0x9006, left 0x9008,
+  right 0x900a, OK 0x900c, INFO 0x9014 (press; +1 = release).
+- In the fine-tune screen (gr_fine = 1) the facade answers the grid ids from the look without negation: the camera's
+  own directions and its "A2 . G1" header. Inline (on the Picture Mode row) the values stay negated (owner: test 13's
+  arrows went the wrong way on the camera).
+- MENU in it -> 0x0418 with gr_hold / gr_row (setting 2148) as test 12, back on our row. The row list at
+  (0x6037dfa0) + 0x51a0 then holds the fine-tune screen's list (Picture Mode resumes without rebuilding it), so pm_ev
+  uses gr_flag (gr_upd) for "our row". Loading 498 into the holder at the first update after MENU crashed the
+  emulator (fault at 0x610f3b82): Picture Mode reloads its bottom bar (457) right after; sc_cap now swaps that load
+  for 498 (gr_wait) and keeps the holder; sc_cap does not capture while gr_fine (the fine-tune screen's holders).
+- Emulator: row -> right / OK -> fine-tune with the look's values; arrows move the dot the natural way, header
+  numbers follow; MENU -> back on the row with the preview at the new values; up / down rows; OK from the fine-tune ->
+  live view. Left cell "WB± -2" for B2. Package wbg1: E1479999.BIN c3c195d2…, GUIDES.BIN 83674857…, LABELS.BIN
+  903af75b… (card not connected at packaging).
+- Still to do: Blacks / Whites grid the same way (the fine-tune screen shows B / A / G / M and WB letters: needs our
+  own pictures / header); docs.
