@@ -1675,3 +1675,7 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   12-bit field) and the output's Y offset (+180 low half; combiner 1's set-up leaves it 0 and puts 512 in the chroma
   offsets) = -0.102 x gain (10-bit): -46 / -85 / -131. Which offset field is Y is a guess: a colour cast instead of
   the fix would say it is chroma. GUIDES 7294c032….
+- **rc2a camera (2026-11-08, owner: "vastly better"; PB081500..503 Off / Low / Med / High, same scene):** brightness
+  lift gone - Y shift vs Off within -5..+5 on mid tones (shadows +1..+7, highlights -5..-16 at High: grain clipped at
+  black / white), **no colour cast** (Cb/Cr within ±1.2): +180 low half is the Y offset (confirmed). Grain high-pass
+  std **Low ~10, Med ~16, High ~24** (Off 2..8): clearly three steps.
