@@ -55,6 +55,9 @@ HOOKS = {'.hook_color': (0x60518615, bytes.fromhex('cd6cfdf060')),
          '.hook_rev': (0x611b21e8, bytes.fromhex('5c10f060fac8d501c927')),
          '.hook_stp': (0x611b201b, bytes.fromhex('009074f17c60')),
          '.hook_ic': (0x610f5611, bytes.fromhex('811da500c906')),
+         '.hook_gx': (0x610f6016, bytes.fromhex('831f8ef8ca08')),
+         '.hook_sc': (0x610cdf05, bytes.fromhex('f1e3f1d38001')),
+         '.hook_pu': (0x611d04ec, bytes.fromhex('fca460a33760')),
          '.hook_rsp': (0x611c3cb5, bytes.fromhex('5c14f8bc20f87058')),
          '.hook_su': (0x604b7730, bytes.fromhex('cdab20f088')),
          '.hook_sel2': (0x60504b5d, bytes.fromhex('dddc830200a00c')),
@@ -372,9 +375,15 @@ def build(defaults, testfile, out):
         # Blacks / Whites: slider rows, as item 7's case (key 1) except the bar object's id (f2c) and the left column
         t7 = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 1]
         assert len(t7) == 1, hex(base)
-        for item, pre in ((BK_IT, 'bk'), (WH_IT, 'wh'), (AB_IT, 'ab'), (GM_IT, 'gm'), (GL_IT, 'gl')):
+        for item, pre in ((BK_IT, 'bk'), (WH_IT, 'wh'), (GL_IT, 'gl')):
             t = sy[pre + '_f'] if base == 0x61536f2c else t7[0]     # left column: item 7's slider cell
             sw_add(base, n, item, t)
+        # v0.25 WB grid row (AB_IT; G-M has no row of its own now): as item 5398's (Highlight & Shadow) cases, the
+        # row's object from gk_f (the camera's 2-D control, kind 7, on the WB key 1580); as sliders test 13
+        t8 = [t for k, t in (struct.unpack_from('<II', m, o(base) + 8 * i) for i in range(n)) if k == 5398 - 6]
+        assert len(t8) <= 1, hex(base)
+        if base == 0x61536f2c or t8:                                   # no case for 5398: the default, as for it
+            sw_add(base, n, AB_IT, sy['gk_f'] if base == 0x61536f2c else t7[0] if base in (0x615510cc, 0x6155124c) else t8[0])
     assert sy['NR_IT'] == NR_IT if 'NR_IT' in sy else True
     # v0.23 Blacks / Whites icons: the left column's 5 slider-icon slots take ic_list (6 choices) instead of the stock
     # lists of 3 (layout records hold the list's start and end); the pictures from firmware/mkicons.py

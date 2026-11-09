@@ -28,6 +28,9 @@ SECTIONS {
   .hook_rev     0x611b21e8 : { *(.hook_rev) }
   .hook_stp     0x611b201b : { *(.hook_stp) }
   .hook_ic      0x610f5611 : { *(.hook_ic) }
+  .hook_gx      0x610f6016 : { *(.hook_gx) }
+  .hook_sc      0x610cdf05 : { *(.hook_sc) }
+  .hook_pu      0x611d04ec : { *(.hook_pu) }
   .hook_bar     0x611d1035 : { *(.hook_bar) }
   .hook_rda     0x611d16b4 : { *(.hook_rda) }
   .hook_rdb     0x611d1725 : { *(.hook_rdb) }
@@ -59,7 +62,15 @@ pgm_back      = 0x611c3710;
 rsp_back      = 0x611c3cbd;
 sf_stock      = 0x604be2aa;
 wl_back       = 0x604b8d99;         /* ft8: after the work-list key read */
-su_stock      = 0x604b97db;         /* ft1: the still set-up (Grainy Film's texture is made here) */
+su_stock      = 0x604b97db;
+gk_back       = 0x611c2d1f;         /* v0.25 grid (as test 13) */
+prop_set      = 0x610cd5c4;
+wb_shift      = 0x611d2941;
+sc_back       = 0x610cdf0b;
+sc_set        = 0x610cdf05;
+sc_ref        = 0x61192d6c;
+pu_back       = 0x611d04f2;
+gx_back       = 0x610f601c;         /* ft1: the still set-up (Grainy Film's texture is made here) */
 arw_back      = 0x611d0be8;
 rv_469        = 0x611b21f2;
 rv_back       = 0x611b2217;

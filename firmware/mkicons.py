@@ -18,7 +18,7 @@ W, H = 46, 46                      # slider-row icon
 CW, CH = 100, 76                   # choice-row cell picture
 # (lines, width, height): one line = (text, cap height px, baseline row)
 PICTURES = [
-    ([('Blk', 20, 33)], W, H), ([('Wht', 20, 33)], W, H), ([('A-B', 20, 33)], W, H), ([('G-M', 20, 33)], W, H),
+    ([('Blk', 20, 33)], W, H), ([('Wht', 20, 33)], W, H), ([], 8, 2), ([], 8, 2),  # v0.25: A-B / G-M unused (the WB grid row shows the camera's WB± picture)
     ([('Vignette', 15, 30), ('Off', 18, 60)], CW, CH), ([('Vignette', 15, 30), ('On', 18, 60)], CW, CH),
     ([('Noise', 15, 30), ('Off', 18, 60)], CW, CH), ([('Noise', 15, 30), ('Low', 18, 60)], CW, CH),
     ([('Noise', 15, 30), ('Std', 18, 60)], CW, CH), ([('Noise', 15, 30), ('High', 18, 60)], CW, CH),
