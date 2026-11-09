@@ -1997,3 +1997,24 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Package sp1: E1479999.BIN 5a49c741…, GUIDES.BIN 238f5f4e…, LABELS.BIN ee0dc195…, LOOKS.BIN 742c70b2… (the 20
   films with toning, fw 25). New camera pictures ("Tone [INFO]", "Shadows", "Highlights") sent to the owner.
 - Owner (2026-11-09): the new pictures ("Tone [INFO]", "Shadows", "Highlights") "look good, but it will depend on when it is in camera": approved for the camera test, final OK after seeing them there.
+
+### sp1 camera result and sp2 (2026-11-09)
+- **Camera (owner, sp1): "it's working, but with a big bug"**: with split toning on, changing the shooting mode
+  (silent mode) and then half-pressing **restarts the camera**. Owner's fixes: guides "Shadows" / "Highlights"
+  instead of "Tone"; the small dial label stays the camera's ("Vivid").
+- Cause (analysis / guess, not reproduced: the emulator does not run that pass): st_run bent the tables on every pass
+  through the stage list with key 11 / 12, after only an R = G = B check; another pass (silent mode's half-press)
+  with an output whose +1252.. are not the gamma tables (equal by chance, e.g. zero) would get 1920 B written into
+  something else. sp2 gates, in order: key 11 / 12; **R+14 = 0x1000 (still development)**; **O+3172 / 3176 / 3180 =
+  O+1252 / 1892 / 2532** (the copier's own pointers: the tables are real); P valid; some COLOR slot has a strength
+  (only then the getter); then the profile, K, and R = G = B. Emulator: toned as sp1; R+14 = 0 -> untouched.
+- Guides: TONES.BIN ('OM3S', two streams "Shadows [INFO]" 3964 B / "Highlights [INFO]" 4396 B, 8380 B; GUIDES.BIN
+  has no room: its malloc cap), loaded once per power-on at the half-press load (pf_load -> fl_mk2 -> tg_load,
+  then fl_mk), kept at tg_ptr (ext11 RAM). gd_set -> tg_sel puts the page's picture in the guide descriptor; gd_sel
+  first puts the camera's back when ours is there (so gd_set takes the descriptor as stock again). No TONES.BIN ->
+  the camera's guide on those pages. The dial label code from sp1 is gone (LABELS.BIN back to 27 labels, = v0.25's
+  d6c1b4ab…); GUIDES.BIN leaves the hidden Extras stream out too (13216 B, 3.2 KB free).
+- Emulator (outsp2): Hue 2708 / Luminance 4052 / Shadows 3964 / Highlights 4396 / back to the camera's 4022 on Color;
+  dial label the camera's throughout; values set on both pages; half-press save status 1. Without TONES.BIN: the
+  camera's guide on pages 5 / 6, no fault.
+- Package sp2: E1479999.BIN 6245db90…, GUIDES.BIN 2fffcee5…, LABELS.BIN d6c1b4ab…, TONES.BIN a5cd04e9… (LOOKS.BIN on the card kept).

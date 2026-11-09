@@ -22,8 +22,7 @@ LABELS = ['NR', 'NR Std', 'NR Low', 'NR Off', 'NR High',          # slice 1: 0 c
           'Blacks', 'Whites',                                   # slices 6, 7
           'Vig Cam', 'Vig Off',                                 # slice 8 (VigFix, v0.21): 0 camera, 1 off
           'Grain',                                              # slice 9 (v0.21): the readout shows 0..3
-          'Sharp', 'Sharp Off',                                 # slice 10 (v0.22): -4..+2 (readout), -5 Off
-          'Shadows', 'Highlights']                              # v0.26: the split toning wheel pages (axis 5, 6)
+          'Sharp', 'Sharp Off']                                 # slice 10 (v0.22): -4..+2 (readout), -5 Off
 
 
 def font(size):

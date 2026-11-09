@@ -1458,10 +1458,8 @@ gd_set:
  mov 4,d0
  mov (GPTR,a2),a1
 1:
- cmp 5,d0                         /* v0.26: Shadows / Highlights -> stream 3 ("Tone") */
- bcs 11f
- mov 3,d0
-11:
+ jmp tg_sel                       /* v0.26: Shadows / Highlights -> their pictures in TONES.BIN (tg_sel) */
+gd_s11:
  cmp 0,a1
  beq 4f
  cmp 2,d0
@@ -2161,7 +2159,7 @@ pf_load:
 6:
  mov (8,sp),d0
  mov d0,(LPTR,a2)                 /* published last */
- call fl_mk,[d2,d3,a2,a3],80      /* v0.24: the film list's cell pictures */
+ call fl_mk2,[d2,d3,a2,a3],80     /* v0.24: the film list's cell pictures (v0.26: TONES.BIN first) */
  bra 9f
 7:
  mov (8,sp),a0
@@ -7181,6 +7179,19 @@ gd_s0:
  * while a descriptor holds the camera's picture or ours. d0 kept; uses d1, a0, a1. Local (4) page. */
 gd_sel:
  mov d0,(4,sp)
+ mov (tg_ptr),d1                  /* v0.26: a TONES.BIN picture in the guide: the camera's picture back first, so */
+ cmp 0,d1                         /* gd_set takes the guide as stock again (and tg_sel puts the new page's in) */
+ beq 13f
+ mov GDESC,a0
+ mov (16,a0),d2
+ sub d1,d2
+ cmp 16448,d2
+ bcc 13f
+ mov GSTOCK_S,d2
+ mov d2,(12,a0)
+ mov GSTOCK_P,d2
+ mov d2,(16,a0)
+13:
  .if W_SALL
  mov (SATB,a2),a3
  cmp 0,a3
@@ -7678,15 +7689,46 @@ st_run:
  cmp 0,d0
  bne s9
 1:
+ movhu (14,a1),d0                 /* sp2: still development only (R+14 0x1000, column 0 of the curve rows); sp1 also */
+ cmp 0x1000,d0                    /* ran on other passes (camera: a restart at the half-press in silent mode) */
+ bne s9
+ mov a3,d1                        /* the three curve pointers must be the job's own tables (the copier wrote them) */
+ add 1252,d1
+ mov (3172,a3),d0
+ cmp d1,d0
+ bne s9
+ add 640,d1
+ mov (3176,a3),d0
+ cmp d1,d0
+ bne s9
+ add 640,d1
+ mov (3180,a3),d0
+ cmp d1,d0
+ bne s9
+ PVAL s9                          /* a2 = P (uses d3, a2) */
+ clr d1                           /* any strength on COLOR 1-4? (else no getter call) */
+ mov a2,a0
+ mov 4,d2
+12:
+ movbu (88,a0),d0
+ or d0,d1
+ movbu (90,a0),d0
+ or d0,d1
+ add 64,a0
+ add -1,d2
+ bne 12b
+ cmp 0,d1
+ beq s9
+ mov a2,(52,sp)                   /* P (the Kh B slot is written later) */
  mov 63153,d0                     /* effective COLOR profile number */
  clr d1
  mov 0,a0
  call getter,[d2,d3],12           /* keeps a2/a3 */
+ mov (52,sp),a2
  add -1,d0
  cmp 4,d0
  bcc s9
  mov d0,d2
- PVAL s9                          /* a2 = P (uses d3, a2) */
  asl 6,d2
  add d2,a2                        /* a2 = P + 64k: the slot is at +32 */
  clr d2                           /* any strength? */
@@ -7902,43 +7944,21 @@ st_k:                             /* K per strength step, R G B, for the wheel's
 .section .ext11,"ax"
 /* tn_get <- sl_get's miss (instead of ed_get): GetValue (CALLS entry: d0 id, a0 facade, a1 out). Sector ids
  * 928 + 12k + colour and the readout's 916..927 (the selected colour of the open editor, with the dial label) on a
- * Shadows / Highlights page; anything else: ed_get with every register as at entry. */
+ * Shadows / Highlights page; anything else: ed_get with every register as at entry. The page's name is its guide
+ * picture under the wheel ("Shadows [INFO]" / "Highlights [INFO]", TONES.BIN: tg_load, tg_sel). */
 tn_get:
  cmp 0,a1
  beq 9f
  movm [d2,d3,a2],(sp)
- mov d0,d2                        /* the readout on Color / Color All: put the stock dial label back if a split toning */
- exthu d2                         /* page left ours ("Shadows" / "Highlights") in the label's descriptor */
- add -916,d2
- cmp 12,d2
- bcc 1f
- PVAL 1f
- movbu (AXIS,a2),d3
- cmp 0,d3
- bne 1f
- mov 0xa4cf688c,a2                /* the dial label's descriptor (xblock VDESC): 70 x 30 */
- movhu (2,a2),d3
- cmp 70,d3
- bne 1f
- movhu (4,a2),d3
- cmp 30,d3
- bne 1f
- mov 1660,d3                      /* the camera's own label (VSTOCK_S, VSTOCK_P) */
- mov d3,(12,a2)
- mov 0xa4cf6210,d3
- mov d3,(16,a2)
-1:
  TONEP 8f
  mov d0,d2
  exthu d2
  add -916,d2
  cmp 12,d2
  bcc 2f
- movbu (EDK,a2),d3                /* the readout: colour d2 of the open editor */
- cmp 4,d3
+ movbu (EDK,a2),d3                /* the readout: colour d2 of the open editor (the dial label stays the camera's, */
+ cmp 4,d3                         /* "Vivid": owner, sp1) */
  bcc 8f
- call vl_s,[d2,d3,a2,a3],20       /* the dial label: "Shadows" / "Highlights" (code block) */
- movbu (EDK,a2),d3
  mov d3,d0
  add d0,d0
  add d3,d0
@@ -8025,3 +8045,127 @@ tn_poly:
 8:
  movm (sp),[d2,d3,a2]
  jmp ed_poly
+
+/* ------------------------------------------------------------------ split toning page guides (v0.26 sp2)
+ * TONES.BIN (card/mkguides.py): 'OM3S' | u32 total | u32 CRC-32 of bytes 12.. | u32 s1 | u32 s2 | the "Shadows [INFO]"
+ * stream | pad 4 | the "Highlights [INFO]" stream (175 x 50, type 11, as GUIDES.BIN's; GUIDES.BIN has no room: its
+ * malloc cap). Loaded once per power-on at the half-press load (fl_mk2, before the film list), kept at tg_ptr.
+ * Owner (sp1): the guide names the page; the dial label stays the camera's "Vivid". */
+.section .ext11,"ax"
+.balign 4
+tg_ptr:                           /* TONES.BIN heap copy (checked), 0 = none */
+ .long 0
+tg_path:
+ .asciz "C:\\OM3MOD\\TONES.BIN"
+.balign 2
+/* fl_mk2: pf_load's `call fl_mk2,[d2,d3,a2,a3],80` (a2 = P): TONES.BIN, then fl_mk in the same frame. */
+fl_mk2:
+ call tg_load,[d2,d3,a2,a3],28
+ jmp fl_mk
+/* tg_load: `call tg_load,[d2,d3,a2,a3],28`. Locals (4) handle, (8) buffer. Stores: tg_ptr, the heap buffer. */
+tg_load:
+ mov (tg_ptr),d0
+ cmp 0,d0
+ bne 9f                           /* loaded already */
+ mov tg_path,a0
+ mov gd_mode,a1
+ call fopen,[],4
+ cmp 0,a0
+ beq 9f
+ mov a0,(4,sp)
+ clr d0
+ mov 1,d1                         /* END */
+ call fseek,[d2,d3,a2,a3],20
+ cmp 0,d0
+ bne 8f
+ mov (4,sp),a0
+ call ftell,[d2,a2,a3],16
+ mov d0,d3                        /* n */
+ cmp 21,d3
+ bcs 8f
+ cmp 16449,d3
+ bcc 8f
+ mov (4,sp),a0
+ clr d0
+ mov 2,d1                         /* SET */
+ call fseek,[d2,d3,a2,a3],20
+ cmp 0,d0
+ bne 8f
+ mov d3,d0
+ call malloc,[],4
+ cmp 0,a0
+ beq 8f
+ mov a0,(8,sp)
+ mov 1,d0
+ mov d3,d1
+ mov (4,sp),a1
+ call fread,[d2,d3,a2,a3],24
+ cmp d3,d0
+ bne 8f                           /* (a failed file leaves its buffer: once per power-on) */
+ mov (8,sp),a2
+ mov (a2),d0
+ cmp 0x53334d4f,d0                /* 'OM3S' */
+ bne 8f
+ mov (4,a2),d0
+ cmp d3,d0
+ bne 8f
+ mov (12,a2),d0                   /* 20 + align4(s1) + s2 <= n */
+ add 3,d0
+ and -4,d0
+ mov (16,a2),d1
+ add d1,d0
+ add 20,d0
+ cmp d3,d0
+ bhi 8f
+ mov -1,d0
+ mov a2,a0
+ add 12,a0
+ mov d3,d1
+ add -12,d1
+ call sd_crc,[d2,d3],12
+ not d0
+ mov (8,a2),d1
+ cmp d1,d0
+ bne 8f
+ mov a2,(tg_ptr)                  /* published last */
+8:
+ mov (4,sp),a0
+ call fclose,[d2,a2,a3],16
+9:
+ ret [d2,d3,a2,a3],28
+
+/* tg_sel <- gd_set (jmp, its frame: a0 = GDESC, a1 = P+GPTR's buffer, d0 = page): pages 5 / 6 with TONES.BIN ->
+ * its picture into the guide's descriptor, gd_set's return; without the file -> stream 3 (empty: the camera's);
+ * other pages -> back to gd_set (gd_s11). */
+tg_sel:
+ cmp 5,d0
+ bcs 9f
+ cmp 7,d0
+ bcc 9f
+ mov (tg_ptr),d1
+ cmp 0,d1
+ beq 7f
+ mov d1,a1
+ cmp 5,d0
+ bne 1f
+ mov (12,a1),d1                   /* Shadows: s1 at +20 */
+ mov d1,(12,a0)
+ mov a1,d1
+ add 20,d1
+ mov d1,(16,a0)
+ ret [d2,a2],8
+1:
+ mov (16,a1),d1                   /* Highlights: s2 after align4(s1) */
+ mov d1,(12,a0)
+ mov (12,a1),d1
+ add 3,d1
+ and -4,d1
+ add 20,d1
+ mov a1,d2
+ add d2,d1
+ mov d1,(16,a0)
+ ret [d2,a2],8
+7:
+ mov 3,d0
+9:
+ jmp gd_s11

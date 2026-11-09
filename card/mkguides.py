@@ -129,14 +129,21 @@ def encode11(px, w, h):
     return bytes(out)
 
 
-PAGES = ['Hue', 'Luminance', 'Tone', 'Film']   # v0.26: stream 3 'Tone' (the Shadows / Highlights pages; was Extras, hidden since v0.24)
-#           # streams 1..4 = pages Hue, Luminance (v0.24 film test 10; before: Light), Extras (v0.20; before: WB/BW), Film (v0.20; before: Looks, Profiles)
-SKIP = {'Film'}   # v0.24 film test 10: the Film page is hidden (editor.s W_FILM 0): its stream left out (length 0, the
+PAGES = ['Hue', 'Luminance', 'Extras', 'Film']           # streams 1..4 = pages Hue, Luminance (v0.24 film test 10; before: Light), Extras (v0.20; before: WB/BW), Film (v0.20; before: Looks, Profiles)
+SKIP = {'Extras', 'Film'}   # v0.26: Extras (hidden since v0.24) left out too: room in GUIDES.BIN
+TONES = ['Shadows', 'Highlights']   # v0.26 TONES.BIN (--tones): the split toning pages' guides
+_SKIP_NOTE = None   # v0.24 film test 10: the Film page is hidden (editor.s W_FILM 0): its stream left out (length 0, the
                   # camera's own guide there) to keep GUIDES.BIN under the loader's 16 KB with "Luminance"; put it back with the page
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--preview')
+    ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--preview'); ap.add_argument('--tones')
     a = ap.parse_args()
+    if a.tones:   # 'OM3S' | u32 total | u32 CRC-32 of bytes 12.. | u32 s1 | u32 s2 | stream 1 | pad 4 | stream 2
+        ts = [encode11(bytes(build(t).flatten()), W, H) for t in TONES]
+        body = struct.pack('<II', *map(len, ts)) + ts[0] + bytes((-len(ts[0])) % 4) + ts[1]
+        body += bytes((-len(body)) % 4)
+        open(a.tones, 'wb').write(b'OM3S' + struct.pack('<II', 12 + len(body), zlib.crc32(body) & 0xffffffff) + body)
+        print(a.tones, 12 + len(body), 'bytes')
     imgs = [build(t) for t in PAGES]
     st = [b'' if t in SKIP else encode11(bytes(i.flatten()), W, H) for t, i in zip(PAGES, imgs)]
     body = struct.pack('<HHIIII', W, H, *map(len, st[:4]))

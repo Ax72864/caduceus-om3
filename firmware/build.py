@@ -423,7 +423,7 @@ def build(defaults, testfile, out):
     xtag = 0x58000000 | int.from_bytes(hashlib.sha256(bytes(m)).digest()[:3], 'little')
     struct.pack_into('<I', m, o(tr) + 2, xtag)
     xblock = make_xblock(out, sy, xtag)
-    subprocess.run([sys.executable, ROOT / 'card' / 'mkguides.py', out / 'pictures.bin'], check=True)
+    subprocess.run([sys.executable, ROOT / 'card' / 'mkguides.py', out / 'pictures.bin', '--tones', out / 'TONES.BIN'], check=True)   # v0.26: TONES.BIN
     subprocess.run([sys.executable, ROOT / 'card' / 'mklabels.py', out / 'LABELS.BIN'], check=True)
     g = bytearray((out / 'pictures.bin').read_bytes()); assert g[:4] == b'OM3G' and len(g) % 4 == 0
     g += xblock
