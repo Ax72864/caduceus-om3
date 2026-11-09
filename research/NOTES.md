@@ -1917,6 +1917,44 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Rules: halation is an effect the user adds (like Glow), not part of the film sims. Open: control (a Halo row, or a
   Glow colour), and the OM-3 chroma byte order.
 
+## Split toning probe st1 (2026-11-09; emulator only, camera test pending; branch experiment/split-tone-probe)
+- Owner: halation parked; split toning next. Plan: (1) probe the mechanism on the camera with fixed values, (2) then
+  per-look bytes, a Picture Mode row and the Control Panel.
+- st1 = fx3 (v0.25 candidate) + st_run (ext11, ~260 B; ext11 now ends 0x60f58d43 of 0x60f59800). Tone hook's exit
+  `jmp tone_next` -> `jmp st_run`, which ends with the displaced `mov d3,a0; jmp tone_next`. The gamma stage
+  (copier 0x60516c8d) runs before the stage list that holds the tone hook, so the job's R/G/B tables are there.
+  Bend per channel as model.py (Ks, Kh s8, >> 8) over all 320 entries (256 + the 64-entry fine table: the bend is a
+  function of the value, so both stay consistent). Gates: key 11 (or 12 with +1731 0); effective COLOR profile 4
+  (getter 63153) only; R, G, B tables identical before (one curve copied three times = stock COLOR; after our bend
+  they differ, so a repeated pass or a skipped copy never bends twice; art curves are left alone).
+  Probe tint: Ks (-66, 5, 121) teal shadows, Kh (57, -5, -124) orange highlights.
+- Emulator (research/splittone/probe_test.py; stock stage on a synthetic COLOR still, then tone -> st_run, then
+  tone only again; sess7 ncall now takes '=expr' values): COLOR 1: R = G = B (untouched). COLOR 4: toned, curves
+  rising, grey tint Cb +6.7 / Cr -4.5 at input 16, Cb -6.7 / Cr +3.7 at input 128, white and black unchanged;
+  the second pass leaves it as it was (no double bend). Bug found on the way: the test's request id bytes
+  (R+8.. must be 00 00 0b 00).
+- Package st1: E1479999.BIN 337bb2ff…, GUIDES.BIN 0457541…, LABELS.BIN d6c1b4ab… (= fx3). Not known: whether the
+  ISP uses these tables for the photo (camera test), whether live view shows it.
+- **Camera (owner, 2026-11-09, st1): it works.** Owner: "if there was one, it was very very subtle". Measured
+  (PB091535 COLOR 3 / PB091536 COLOR 4, same exposure 1/40 f1.8 ISO 1000, manual WB, tungsten-lit room; aligned by
+  phase correlation, shift -9/-10 px at 1296 wide, r = 0.992; binned by Y): COLOR 4 - COLOR 3 =
+  Y 30-60 Cb +4.6 Cr -4.1, Y 60-90 Cb +5.5 Cr -4.1, Y 90-120 Cb +4.8 Cr -2.8 (teal shadows / low mids), Y 160-200
+  Cb 0 Cr +1.2, Y 200-235 Cb -3.3 Cr +1.0 (warmer highlights), black and white ~0. Close to the emulator's
+  prediction in the shadows (Cb +6.7 / Cr -4.5 at the curve's input 16), about half in the highlights (this scene's
+  highlights were already strongly yellow, Cb -36). Mids Y +3..+5. **So the ISP uses the job's R/G/B tables for the
+  photo: split toning by curve bending is camera-proven.** Not answered yet: live view (owner could not tell).
+- Conclusion: the probe strength (~5 Cb/Cr units) is too subtle to see; the feature needs a range up to ~3x
+  (Cross Process I reaches ~23 at its peak). Photos not kept in the repo (owner's).
+- Owner (2026-11-09): strength about 3x the probe; control = **two colour wheels**, one for shadows and one for
+  highlights, each setting colour and strength. Design (proposal, analysis): reuse our HSL wheel editor (it already
+  hosted non-HSL pages: Looks page axis 4, Extras page axis 5 with per-sector settings in v0.20-v0.22) for two new
+  pages / rows "Shadows" and "Highlights": front dial = colour (12 wheel colours), rear dial = strength 0..5, one
+  colour active per wheel. Storage 4 bytes per look (hue, strength x 2): LOOKS.BIN record +53..+56 (firmware's
+  range check to widen), EDITS.BIN the same, slot bytes to pick. Engine: st_run with K from a 12-hue table scaled
+  by strength, max ~24 Cb/Cr units at the peak (>> 7 or wider K), running max to keep curves rising. Control Panel:
+  two wheels (angle = colour, distance = strength) + preview (model.py). Space: ext11 ~2.7 KB left after st1;
+  GUIDES.BIN full.
+
 ## v0.25 released (2026-11-09; owner's go-ahead)
 - Owner: release v0.25 with everything (not split toning). releases/v0.25 rebuilt from the branch (= fx3, rebuilt byte
   for byte: E1479999.BIN db189ca6…, GUIDES.BIN 1edf66bd…, LABELS.BIN d6c1b4ab…); `patch.py --release v0.25` makes
@@ -1925,3 +1963,36 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   the branch already held its changes; conflicts taken from the branch).
 - Docs: CHANGELOG, release notes with the 20 films, README (features, Control Panel step by step, the 20-film table,
   the rows), USING.md, DEVELOPER_NOTES. Control Panel text: the Glow row is "+ Glow, − Clarity". looklab rebuilt.
+
+## Split toning sp1: two wheels (2026-11-09; emulator only, camera test next; branch feature/v0.26-split-tone)
+- Owner: "two wheels ... set the color and strength of the tone", the wheel's 12 colours, about 3x the probe.
+- Engine (st_run, ext11): K = st_k[colour] x strength per channel (st_k: 12 colours x R G B, 4.8 Cb/Cr units at the
+  weight peak per step; colours as HSV hues Y 60, O 35, OR 18, R 0, M 310, V 270, B 235, BC 205, C 180, GC 155,
+  G 120, YG 85); slot +55 / +56 Shadows colour 0..11 / strength -5..5 (minus = the opposite colour), +57 / +58
+  Highlights, of the effective COLOR; both 0 -> nothing. Curves kept rising by a running max (the 256 and the 64
+  entries apart). Probe gate (COLOR 4) gone.
+- Wheel pages: axis 5 Shadows, 6 Highlights; INFO cycle Color -> Color All -> Hue -> Luminance -> Shadows ->
+  Highlights -> Color (k_step, W_TONE). sl_get / sl_set misses go to tn_get / tn_set (ext11) and the wheel drawing's
+  48 reads to tn_poly (build.py) before ed_get / ed_set / ed_poly. A colour reads its strength when it is the page's
+  colour, else 0; setting a non-zero value makes that colour the page's (with that strength), 0 on the page's colour
+  turns it off. tn_get also restores the camera's dial label on the Color pages (else "Highlights" stayed there).
+- Labels: dial label "Shadows" / "Highlights" (LABELS.BIN labels 27 / 28, XL_N 29, xb_vl); guide "Tone [INFO]"
+  (GUIDES.BIN stream 3, the hidden Extras page's slot; 2836 B), gd_set maps pages 5 / 6 to stream 3.
+- Files: LOOKS.BIN record +53..+56 (pf_lo -12 / -5 / -12 / -5; pf_bt pairs 53..56 <-> slot +55..+58, moved to ext3;
+  pf_capto copies through pf_bt now, so EDITS.BIN and the '*' include them); BUNDLES.BIN ranges +55 0..11, +56 -5..5,
+  +57 0..11, +58 -5..5 (build.py range_table). Older firmware rejects a LOOKS.BIN with these set (Control Panel
+  "v0.26 or later" export only).
+- Sizes: ext11 63552 of 65536, GUIDES.BIN 16068 of 16448, LABELS.BIN 12700.
+- Emulator (outsp1): engine (research/splittone/probe_test.py with slot bytes): Cyan 5 / Orange 5 -> grey at input 16
+  Cb +2.2 Cr -16.7, input 128 Cb -15.1 Cr +7.1, black / white unchanged, rising, second pass unchanged; strengths 0
+  -> untouched; strength 11 clamped to 5. Pages: INFO reaches axis 5 / 6, the rear dial sets colour + strength, the
+  front dial moves the cursor only; dial label descriptor "Shadows" 1380 B / "Highlights" 1804 B, guide 2836 B, the
+  stock label back on Color; half-press save status 1; BUNDLES.BIN keeps 0/2/11/1 over a reboot; a film's values
+  from LOOKS.BIN load with the film, changes kept over film switches and written to EDITS.BIN record 0.
+- Control Panel: Look.split {sh_color, sh, hl_color, hl}; export "v0.26 or later (split toning; test build)" (fw 25)
+  writes +53..+56; two wheels in the editor (click a colour, strength slider); the preview bends R, G, B the same way
+  (src/split.ts); films.py `split=(shadow colour, strength, highlight colour, strength)`: Portra 400 / 800,
+  CineStill 400D, Vision3 250D BC 1 / O 1; CineStill 800T C 2 / O 2; Kodachrome 64 B 1 / Y 1; Pro 400H C 1;
+  Superia 400 G 2; Fuji C200, Fuji Eterna GC 1 (analysis: our own, to tune on the camera).
+- Package sp1: E1479999.BIN 5a49c741…, GUIDES.BIN 238f5f4e…, LABELS.BIN ee0dc195…, LOOKS.BIN 742c70b2… (the 20
+  films with toning, fw 25). New camera pictures ("Tone [INFO]", "Shadows", "Highlights") sent to the owner.

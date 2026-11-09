@@ -1,3 +1,7 @@
+> **Branch `feature/v0.26-split-tone` (2026-11-09): work in progress, not released.** Split toning: two colour wheels
+> (Shadows, Highlights) on the HSL wheel and in the Control Panel; test build sp1 = emulator only, camera test next.
+> Released version: v0.25 on `main`.
+
 # Caduceus for OM-3
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)

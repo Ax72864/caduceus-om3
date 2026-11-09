@@ -21,6 +21,7 @@ import {
   SHARP, sharpLabel, slowGrain, monoGrain, toOm3, validateBank, type Bank, type Fw,
 } from './om3';
 import { namesBin } from './om3names';
+import { SPLIT_COLOURS, SPLIT_MAX, type Split } from './split';
 import { CAMERA_FILMS, FILMS, FILM_GROUPS, filmLook, filmOf, type Film, type FilmGroup } from './om3films';
 import { parseLook } from './pack';
 
@@ -727,6 +728,54 @@ function wbPanel(l: Look, changed: () => void): HTMLElement {
       h('span', { class: 'help' }, isOm3() ? (on ? 'the look\'s shift, added to the camera\'s own WB (Extras sectors 3 A–B and 4 G–M)' : 'off: no shift')
         : on ? 'overrides the camera\'s WB fine-tune for this look' : 'off: your own WB fine-tune applies')),
     ...rows);
+}
+
+/** OM-3 v0.26 split toning: two wheels (Shadows, Highlights) of the camera's 12 colours. Click a colour to tint toward
+ *  it; the slider sets the strength (minus = the opposite colour). Same numbers as the camera's wheel pages. */
+function splitPanel(l: Look, changed: () => void): HTMLElement {
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = <K extends keyof SVGElementTagNameMap>(t: K, a: Record<string, string | number>) => {
+    const e = document.createElementNS(NS, t);
+    for (const [k, v] of Object.entries(a)) e.setAttribute(k, String(v));
+    return e;
+  };
+  const sp = (): Split => l.split ?? { sh_color: 8, sh: 0, hl_color: 1, hl: 0 };
+  const put = (s: Split) => { if (s.sh || s.hl) l.split = s; else delete l.split; changed(); };
+  const wheel = (which: 'sh' | 'hl', title: string) => {
+    const S0 = 150, C = S0 / 2, R1 = 70, R0 = 28, cKey = which === 'sh' ? 'sh_color' : 'hl_color';
+    const svg = el('svg', { viewBox: `0 0 ${S0} ${S0}`, width: S0, height: S0, class: 'split-wheel', role: 'img' });
+    const pt = (a: number, r: number) => [C + r * Math.sin(a), C - r * Math.cos(a)];
+    const dot = el('circle', { r: 7, class: 'split-dot' });
+    const { inp, out } = slider(-SPLIT_MAX, SPLIT_MAX, sp()[which], (v) => { const s = { ...sp(), [which]: v }; put(s); draw(); }, undefined, `${title} strength`);
+    const name = h('span', { class: 'help' });
+    const wedges = SPLIT_COLOURS.map(([nm, col], i) => {
+      const a0 = (i - 0.5) * Math.PI / 6, a1 = (i + 0.5) * Math.PI / 6;
+      const [x0, y0] = pt(a0, R1), [x1, y1] = pt(a1, R1), [x2, y2] = pt(a1, R0), [x3, y3] = pt(a0, R0);
+      const w = el('path', { d: `M${x0},${y0} A${R1},${R1} 0 0 1 ${x1},${y1} L${x2},${y2} A${R0},${R0} 0 0 0 ${x3},${y3} Z`, fill: col, class: 'split-wedge' });
+      const t = el('title', {}); t.textContent = nm; w.append(t);
+      w.addEventListener('click', () => {
+        const s = { ...sp(), [cKey]: i } as Split;
+        if (!s[which]) s[which] = 2;
+        put(s); inp.value = String(s[which]); out.textContent = s[which] > 0 ? `+${s[which]}` : String(s[which]); draw(); checkpoint();
+      });
+      svg.append(w); return w;
+    });
+    svg.append(el('circle', { cx: C, cy: C, r: R0 - 2, class: 'split-hub' }), dot);
+    const draw = () => {
+      const s = sp(), c = s[cKey as 'sh_color'], v = s[which];
+      wedges.forEach((w, i) => w.classList.toggle('on', i === c && v !== 0));
+      const a = c * Math.PI / 6 + (v < 0 ? Math.PI : 0), [x, y] = v ? pt(a, R0 + 4 + (Math.abs(v) / SPLIT_MAX) * (R1 - R0 - 10)) : [C, C];
+      dot.setAttribute('cx', String(x)); dot.setAttribute('cy', String(y));
+      name.textContent = v === 0 ? 'Off' : `${SPLIT_COLOURS[c][0]}${v < 0 ? ' (opposite)' : ''} ${v > 0 ? '+' : ''}${v}`;
+    };
+    draw();
+    return h('div', { class: 'split-one' }, h('b', {}, title), svg, h('div', { class: 'srow plain' }, h('span', { class: 'sname' }, 'Strength'), inp, out), name);
+  };
+  return h('div', { class: 'group' },
+    h('span', { class: 'lbl' }, 'Split toning (firmware v0.26)'),
+    h('div', { class: 'split-row' }, wheel('sh', 'Shadows'), wheel('hl', 'Highlights')),
+    h('p', { class: 'help' }, 'Tints the shadows and the highlights: click one of the wheel\'s 12 colours, then set the strength (minus tints toward the opposite colour). On the camera these are the HSL wheel\'s Shadows and Highlights pages (INFO after Luminance). Needs firmware v0.26: export with "v0.26 or later". Shown in the preview.'),
+    h('button', { class: 'link', onclick: () => { delete l.split; renderEditor(); changed(); } }, 'Reset'));
 }
 
 function refreshProblems() {
@@ -1455,6 +1504,7 @@ function renderOm3Editor(l: Look) {
         h('button', { class: 'share-btn', onclick: () => om3ShareProfile(l), title: 'Share this look as a link or code' }, 'Share'))),
     sectorPanel(l, changed),
     tonePanel(l, changed),
+    splitPanel(l, changed),
     h('div', { class: 'group' },
       h('span', { class: 'lbl' }, 'Camera settings'),
       setting('Contrast', OM3.contrast, () => l.advice.contrast ?? 0, (x) => { l.advice.contrast = x; }, 'The camera\'s Contrast for this look'),
@@ -1685,12 +1735,12 @@ function om3ExportDialog() {
   const fname = (O.name || 'om3-looks').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'om3-looks';
   const n = O.bank.flat().filter(Boolean).length;
   const bankJson = () => JSON.stringify({ schema: BANK_SCHEMA, name: O.name, bank: O.bank.map((r) => r.map((l) => (l ? plainLook(l) : null))) }, null, 1) + '\n';
-  let fw: Fw = 24; try { const s = localStorage.getItem('caduceus.om3.fw'); if (s === '20' || s === '21' || s === '22' || s === '23' || s === '24') fw = Number(s) as Fw; } catch { /* storage blocked */ }
+  let fw: Fw = 24; try { const s = localStorage.getItem('caduceus.om3.fw'); if (s === '20' || s === '21' || s === '22' || s === '23' || s === '24' || s === '25') fw = Number(s) as Fw; } catch { /* storage blocked */ }
   const looksBin = () => profilesBin(O.bank, fw);
   const fwSel = h('select', { onchange: (e: Event) => {
     fw = Number((e.target as HTMLSelectElement).value) as Fw;
     try { localStorage.setItem('caduceus.om3.fw', String(fw)); } catch { /* storage blocked */ }
-  } }, h('option', { value: '24', selected: fw === 24 }, 'v0.25 or later'), h('option', { value: '23', selected: fw === 23 }, 'v0.24.1'), h('option', { value: '22', selected: fw === 22 }, 'v0.22'), h('option', { value: '21', selected: fw === 21 }, 'v0.21'), h('option', { value: '20', selected: fw === 20 }, 'v0.20 or older'));
+  } }, h('option', { value: '25', selected: fw === 25 }, 'v0.26 or later (split toning; test build)'), h('option', { value: '24', selected: fw === 24 }, 'v0.25'), h('option', { value: '23', selected: fw === 23 }, 'v0.24.1'), h('option', { value: '22', selected: fw === 22 }, 'v0.22'), h('option', { value: '21', selected: fw === 21 }, 'v0.21'), h('option', { value: '20', selected: fw === 20 }, 'v0.20 or older'));
   const cardFiles = async () => [{ name: 'LOOKS.BIN', data: looksBin() }, { name: 'NAMES.BIN', data: await namesBin(O.bank) as Uint8Array }];
   const busy = async (b: HTMLButtonElement, f: () => Promise<void>) => { b.disabled = true; try { await f(); } catch (e) { toast((e as Error).message, 'err'); } finally { b.disabled = probs.length > 0; } };
   const looks = O.bank.flat().filter(Boolean) as Look[];

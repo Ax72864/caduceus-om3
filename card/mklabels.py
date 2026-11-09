@@ -22,7 +22,8 @@ LABELS = ['NR', 'NR Std', 'NR Low', 'NR Off', 'NR High',          # slice 1: 0 c
           'Blacks', 'Whites',                                   # slices 6, 7
           'Vig Cam', 'Vig Off',                                 # slice 8 (VigFix, v0.21): 0 camera, 1 off
           'Grain',                                              # slice 9 (v0.21): the readout shows 0..3
-          'Sharp', 'Sharp Off']                                 # slice 10 (v0.22): -4..+2 (readout), -5 Off
+          'Sharp', 'Sharp Off',                                 # slice 10 (v0.22): -4..+2 (readout), -5 Off
+          'Shadows', 'Highlights']                              # v0.26: the split toning wheel pages (axis 5, 6)
 
 
 def font(size):
@@ -150,7 +151,7 @@ if __name__ == '__main__':
     open(a.out, 'wb').write(out); print(a.out, len(out), 'bytes; largest stream', max(len(encode11(bytes(i.flatten()), W, H)) for i in imgs))
     if a.preview:
         pal = {0: (30, 30, 60), 7: (20, 20, 20), 8: (90, 90, 90), 9: (60, 60, 60), 10: (255, 255, 255), 11: (200, 200, 200), 12: (160, 160, 160)}
-        sheet = Image.new('RGB', (W * 3 * 4, H * 3 * 7), (30, 30, 60))
+        sheet = Image.new('RGB', (W * 3 * ((len(imgs) + 6) // 7), H * 3 * 7), (30, 30, 60))
         for k, i in enumerate(imgs):
             rgb = Image.new('RGB', (W, H)); rgb.putdata([pal.get(int(v), (255, 0, 255)) for v in i.flatten()])
             sheet.paste(rgb.resize((W * 3, H * 3), Image.NEAREST), ((k // 7) * W * 3, (k % 7) * H * 3))

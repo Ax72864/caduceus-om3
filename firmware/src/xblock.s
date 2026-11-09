@@ -1883,7 +1883,7 @@ xb_reloc:                         /* a2 = P (x_load) */
 /* ---- dial labels: OM3MOD/LABELS.BIN v2 = 'OM3V' | u32 total | u32 CRC-32 of bytes 12.. | u32 n (24) | n bitmaps
  * 30 rows x 9 bytes (70 px, MSB first, 1 = letter fill). One heap copy (XL_FILE B) and one 2 KB stream buffer; the
  * label is drawn and encoded (OSD type 11, 70 x 30) only when it changes. */
- .set XL_N, 27
+ .set XL_N, 29                    /* v0.26: + 'Shadows', 'Highlights' (the split toning pages) */
  .include "wbglyph.inc"           /* the build's: XL_FILE, the WB cell's layout (WBC_*) */
  .set XL_BM, 270
  /* XL_FILE: the file's size, from the build (wbglyph.inc: v0.25 the WB cell glyphs after the bitmaps) */
@@ -2167,6 +2167,14 @@ xb_vl:
  bne 9f
 2:
  movbu (AXIS,a2),d3
+ cmp 5,d3                         /* v0.26: the Shadows / Highlights pages (axis 5 / 6): their own label */
+ bcs 21f
+ cmp 7,d3
+ bcc 7f
+ mov d3,d1
+ add XL_N-7,d1                    /* the last two labels */
+ bra 6f
+21:
  cmp 3,d3
  bne 7f
  cmp 10,d2

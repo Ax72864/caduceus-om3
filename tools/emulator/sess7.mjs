@@ -32,7 +32,7 @@ const snap = (k) => {
   if (st >= 1 && st - 1 < HMAX && ((st - 1) & 3) === 0) {
     const P = POOL + st - 1;
     e.marker = Buffer.from(rd(P + 680, 4)).toString('latin1'); e.gptr = u32(P + 700).toString(16); e.gdesc = [u32(0xa49ecdf8 + 12), u32(0xa49ecdf8 + 16).toString(16)]; e.vdesc = [u32(0xa4cf688c + 12), u32(0xa4cf688c + 16).toString(16)]; e.glbl = u32(P + 704); e.axis = rd(P + 684, 1)[0]; e.glowP = rd(P + 688, 1)[0]; e.dirty = rd(P + 685, 1)[0]; e.status = rd(P + 686, 1)[0]; e.lptr = u32(P + 708).toString(16); e.lidx = [...rd(P + 712, 4)].map(s8).join(',');
-    e.slots = [0, 1, 2, 3].map((k2) => { const b = rd(P + 32 + 64 * k2, 64); return { hue: [...b.slice(0, 12)].map(s8).join(','), light: [...b.slice(12, 24)].map(s8).join(','), flags: b[31], wb: [b[25], s8(b[26]), s8(b[27])].join('/'), bw: [s8(b[47]), s8(b[48])].join('/'), glow: [b[28], b[29]].join('/') }; });
+    e.slots = [0, 1, 2, 3].map((k2) => { const b = rd(P + 32 + 64 * k2, 64); return { hue: [...b.slice(0, 12)].map(s8).join(','), light: [...b.slice(12, 24)].map(s8).join(','), flags: b[31], wb: [b[25], s8(b[26]), s8(b[27])].join('/'), bw: [s8(b[47]), s8(b[48])].join('/'), glow: [b[28], b[29]].join('/'), tone: [b[55], s8(b[56]), b[57], s8(b[58])].join('/') }; });
   }
   log.push(e);
   console.log(JSON.stringify(e));
@@ -115,7 +115,7 @@ for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
     const ev = (x) => (typeof x === 'number' ? x : Function('P', 'SP', 'B', 'return (' + x + ')')(P, SP, B)) >>> 0;
     const RN = ['d0', 'd1', 'd2', 'd3', 'a0', 'a1', 'a2', 'a3', 'sp', 'pc', 'psw', 'mdr'];
     for (const cs of spec) {
-      for (const [a, hex] of cs.mem || []) dd.write(ev(a), Uint8Array.from(Buffer.from(hex, 'hex')));
+      for (const [a, hex] of cs.mem || []) { if (hex.startsWith('=')) { const v = ev(hex.slice(1)); dd.write(ev(a), Uint8Array.from([v & 255, v >> 8 & 255, v >> 16 & 255, v >>> 24])); } else dd.write(ev(a), Uint8Array.from(Buffer.from(hex, 'hex'))); }
       const r = saved.slice(); r[14] = 0;
       for (const [k, v] of Object.entries(cs.regs || {})) r[RN.indexOf(k)] = ev(v);
       if (!cs.regs || cs.regs.sp === undefined) r[8] = SP;

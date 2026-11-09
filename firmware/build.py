@@ -117,13 +117,15 @@ MAGIC = b'OM3B'
 RANGES = {'hue': (-7, 7), 'light': (-7, 7), 'grain': (0, 6), 'wb_flags': (0, 1), 'wb_ab': (-7, 7),
           'wb_gm': (-7, 7), 'effect_id': (0, 3), 'effect_strength': (0, 5), 'vignette': (-5, 5),
           'flags': (0, 3), 'colour': (0, 1), 'sat': (-5, 5), 'bloom_tint': (0, 4), 'art_effect': (0, 5),
-          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1), 'fgrain': (0, 3), 'sharp': (-5, 2)}
+          'blacks': (-5, 5), 'whites': (-5, 5), 'fx': (-5, 5), 'frame': (-5, 5), 'nr': (-5, 5), 'vig': (0, 1), 'fgrain': (0, 3), 'sharp': (-5, 2),
+          'sh_col': (0, 11), 'sh_str': (-5, 5), 'hl_col': (0, 11), 'hl_str': (-5, 5)}   # v0.26 split toning
 
 
 def range_table():
     lay = json.loads(LAYOUT.read_text())
     fields = dict(lay['fields']); fields.update(lay['color_fields'])
-    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1], 'fgrain': [53, 1], 'sharp': [54, 1]})   # OM-3 Extras (v0.20; VigFix v0.21; Sharp v0.22)
+    fields.update({'fx': [49, 1], 'frame': [50, 1], 'nr': [51, 1], 'vig': [52, 1], 'fgrain': [53, 1], 'sharp': [54, 1],
+                   'sh_col': [55, 1], 'sh_str': [56, 1], 'hl_col': [57, 1], 'hl_str': [58, 1]})   # OM-3 Extras (v0.20; VigFix v0.21; Sharp v0.22)
     lo, hi = [0] * 64, [0] * 64
     for name, (off, n, *_) in fields.items():
         a, b = RANGES[name]
@@ -293,7 +295,7 @@ def build(defaults, testfile, out):
     for a in (0x60b1d156, 0x60b1d1ff, 0x60b1d2a8):   # mov 939/951/963,d0; jmp 0x60b1d354 (the shared last read)
         assert m[o(a)] == 0x2c and m[o(a) + 3] == 0xcc and (a + 3 + struct.unpack_from('<h', m, o(a) + 4)[0]) & 0xffffffff == 0x60b1d354, hex(a)
     for a, v in ps:
-        m[o(a):o(a) + 7] = b'\xdd' + struct.pack('<i', sy['ed_poly'] - a) + b'\x00\x04'
+        m[o(a):o(a) + 7] = b'\xdd' + struct.pack('<i', sy['tn_poly'] - a) + b'\x00\x04'   # v0.26: tn_poly (split toning pages), then ed_poly
     m[o(EXT1[0]):o(EXT1[0]) + len(blobs['.ext1'])] = blobs['.ext1']
     m[o(EXT4[0]):o(EXT4[0]) + len(blobs['.ext4'])] = blobs['.ext4']
     m[o(EXT10[0]):o(EXT10[0]) + len(blobs['.ext10'])] = blobs['.ext10']

@@ -1,6 +1,7 @@
 /* v0.24 film test 7 (owner): the wheel's Film and Extras pages are hidden (their code stays; 1 brings them back) */
  .set W_FILM, 0
  .set W_EXTRAS, 0
+ .set W_TONE, 1                   /* v0.26 split toning: Luminance -> Shadows (axis 5) -> Highlights (axis 6) -> Color */
 /* film test 12 (owner, camera: test 11 went "sat, hue, sat, lum, all weird"): "work with the firmware, not against
  * it" -> the wheel's own order again, Color -> Color All -> Hue -> Luminance (the guide keeps the name Luminance).
  * W_SALL / W_SONE / W_HSL 0; their code stays. */
@@ -1146,11 +1147,18 @@ k_step:
  beq 8f
  .if W_EXTRAS
  mov 3,d1
+ .elseif W_TONE
+ mov 5,d1
  .else
  clr d1
  .endif
  cmp 1,d0
  beq 8f
+ .if W_TONE
+ mov 6,d1
+ cmp 5,d0
+ beq 8f
+ .endif
  clr d1
  cmp 3,d0
  bne 8f
@@ -1450,6 +1458,10 @@ gd_set:
  mov 4,d0
  mov (GPTR,a2),a1
 1:
+ cmp 5,d0                         /* v0.26: Shadows / Highlights -> stream 3 ("Tone") */
+ bcs 11f
+ mov 3,d0
+11:
  cmp 0,a1
  beq 4f
  cmp 2,d0
@@ -1948,7 +1960,7 @@ t9:
  mov (24,sp),a3
  add 52,sp
  mov d3,a0                        /* displaced 0x605197d7 */
- jmp tone_next                    /* 0x60518fa4; returns to 0x605197de */
+ jmp st_run                       /* split-tone probe st1 (ext11): ends with mov d3,a0; jmp tone_next */
 
 
 /* ------------------------------------------------------------------ section-3 tail: look library page (test 14)
@@ -2046,29 +2058,18 @@ pf_capto:                         /* v0.21: the same into a3 (code block xb_lkd:
  inc a1
  add -1,d1
  bne 1b
- movbu (1,a0),d0                  /* a0 = slot + 24 */
- and 1,d0
+ mov pf_bt,a1                     /* v0.26: the pf_bt pairs (a0 = slot + 24): WB on, A-B, G-M, Blacks, Whites, */
+5:                                /* Glow, Art, NR, VigFix, Grain, Sharp, split toning -> record +36..+40, +47..+56 */
+ movbu (a1),d1
+ movbu (1,a1),d0
+ movbu (d0,a0),d0
+ movbu d0,(d1,a3)
+ add 2,a1
+ cmp pf_bt+30,a1
+ bne 5b
+ movbu (36,a3),d0
+ and 1,d0                         /* WB on: bit 0 of the slot's WB flags */
  movbu d0,(36,a3)
- movbu (2,a0),d0
- movbu d0,(37,a3)
- movbu (3,a0),d0
- movbu d0,(38,a3)
- movbu (23,a0),d0
- movbu d0,(39,a3)
- movbu (24,a0),d0
- movbu d0,(40,a3)
- movbu (25,a0),d0                 /* v0.20: slot +49 Glow/Clarity, +50 Frame -> record +47, +48 */
- movbu d0,(47,a3)
- movbu (26,a0),d0
- movbu d0,(48,a3)
- movbu (27,a0),d0                 /* slot +51 NR -> record +49 */
- movbu d0,(49,a3)
- movbu (28,a0),d0                 /* v0.21: slot +52 VigFix -> record +50 */
- movbu d0,(50,a3)
- movbu (29,a0),d0                 /* slot +53 Grain -> record +51 */
- movbu d0,(51,a3)
- movbu (30,a0),d0                 /* v0.22: slot +54 Sharp -> record +52 */
- movbu d0,(52,a3)
  clr d3
 2:
  mov pf_ids,a0
@@ -2304,7 +2305,7 @@ pf_put1:                          /* v0.24 (fl_sw): (4) a0, (8) a1, (12) k set, 
 7:
  movbu d0,(d3,a0)
  add 2,a1
- cmp pf_bt+22,a1
+ cmp pf_bt+30,a1
  bne 8b
  movbu (7,a0),d0
  or 2,d0
@@ -2341,8 +2342,6 @@ pf_put1:                          /* v0.24 (fl_sw): (4) a0, (8) a1, (12) k set, 
  cmp 18,d3
  bne 5b
  ret [d2,d3,a2,a3],40
-pf_bt:                            /* record offset, slot offset - 24 */
- .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28, 51,29, 52,30
 
 .section .ext1,"ax"
 /* lk_hold (v0.21) <- ed_event on the Looks page (axis 4), in its frame (a2 = P, a3 = parent, d2 = 4, (12,sp) cursor
@@ -2506,10 +2505,13 @@ pf_ids:                           /* u16 id for COLOR1, u8 step per COLOR, u8 re
  .hword 976
  .byte 3, 46                      /* Highlights */
 .section .ext3,"ax"
+pf_bt:                            /* record offset, slot offset - 24 (v0.26: moved here from the sec-9 tail) */
+ .byte 36,1, 37,2, 38,3, 39,23, 40,24, 47,25, 48,26, 49,27, 50,28, 51,29, 52,30
+ .byte 53,31, 54,32, 55,33, 56,34  /* v0.26: split toning, record +53..+56 <-> slot +55..+58 */
 pf_lo:                            /* record byte i: lo; span = -2 lo for lo < 0, 1 for byte 36 (WB on 0/1), else 0
                                      (test 18: the span half of this table is computed, to make room) */
  .byte -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5, -5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5
- .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, -5, -5, 0,0,0,0,0,0,0,0,0,0,0
+ .byte 0, -5,-5,-5,-5, -2,-2,-5, -7,-7,-7, -5,-5,-5, -1, -5, -5, -12,-5,-12,-5, 0,0,0,0,0,0,0   /* v0.26 +53..+56 split toning */
 pf_pnew:
  .asciz "C:\\OM3MOD\\LOOKS.NEW"
 pf_pbin:
@@ -3724,7 +3726,7 @@ sl_gb:
  add 4,sp
  movm (sp),[d2,d3,a2,a3]
 9:
- jmp ed_get
+ jmp tn_get                       /* v0.26: the Shadows / Highlights wheel pages, else ed_get */
 
 /* REAL miss: d0 = a bar id (904 / GRB / NRB / VFB + k) and P valid -> a3 = class 1..4, d2 = k, a2 = P.
  * Uses d2, d3, a2, a3. */
@@ -4099,7 +4101,7 @@ sl_set0:
  ret [d2,d3,a2,a3],68
 9:
  mov (gr_oid),d0
- jmp ed_set
+ jmp tn_set                       /* v0.26: the Shadows / Highlights wheel pages, else ed_set */
 
 /* sl_rng <- jmp from 0x611d1041 (the slider bar setup 0x611d0f99, item 7 Sharpness; same frame): as stock, the value
  * of 7 into (24,sp), then the bar's ends a3 = min, d0 = max: -5..+2 on COLOR 1-4 (the Sharp slider), else -2..+2. */
@@ -7638,3 +7640,388 @@ s_wl:
  mov d0,d2
 9:
  jmp wl_back
+
+/* ------------------------------------------------------------------ split toning (v0.26)
+ * research/NOTES.md "Split toning": the RGB gamma stage (0x60516ad9) copies the picture-mode curve into the job three
+ * times (O+1252 R / +1892 G / +2532 B: 256 x u16 12-bit + 64 x u16 fine table, 640 B each) before the stage list that
+ * holds our tone hook. st_run runs at tone's exit (same context C in d3, all registers as at the hook) and bends each
+ * channel: t' = t + ((Ks ws + Kh wh) >> 8), ws = (t s >> 12) s >> 12, wh = (t t >> 12) s >> 12, s = 4095 - t
+ * (research/splittone/model.py), clamped 0..4095 and kept rising (running max, the 256 and the 64 entries apart).
+ * K = st_k[colour] x strength: the effective COLOR's slot +55 / +56 (Shadows colour 0..11, strength -5..5; minus =
+ * the opposite colour) and +57 / +58 (Highlights). Camera-proven with fixed values (probe st1). Gates: COLOR still
+ * (key 11, or 12 with +1731 0, as tone); P valid; a strength set; R, G and B tables identical before (stock COLOR
+ * copies one curve three times: a repeated pass never bends twice and art curves are left alone).
+ * Frame: (0) getter return, (4..28) registers, (32..52) Ks R G B, Kh R G B, (56) segment, (60) running max, (64) d0,
+ * (68) Ks, (72) Kh of the segment.
+ * Stores: own stack frame, O+1252..O+3171. */
+.section .ext11,"ax"
+st_run:
+ add -76,sp
+ mov d0,(64,sp)
+ mov d1,(4,sp)
+ mov d2,(8,sp)
+ mov d3,(12,sp)
+ mov a1,(16,sp)
+ mov a2,(20,sp)
+ mov a3,(24,sp)
+ mov mdr,d0
+ mov d0,(28,sp)
+ mov d3,a2                        /* a2 = context C */
+ mov (12,a2),a3                   /* a3 = output O */
+ mov (4,a2),a1                    /* request R */
+ movhu (10,a1),d0
+ cmp 11,d0
+ beq 1f
+ cmp 12,d0
+ bne s9
+ movbu (1731,a1),d0
+ cmp 0,d0
+ bne s9
+1:
+ mov 63153,d0                     /* effective COLOR profile number */
+ clr d1
+ mov 0,a0
+ call getter,[d2,d3],12           /* keeps a2/a3 */
+ add -1,d0
+ cmp 4,d0
+ bcc s9
+ mov d0,d2
+ PVAL s9                          /* a2 = P (uses d3, a2) */
+ asl 6,d2
+ add d2,a2                        /* a2 = P + 64k: the slot is at +32 */
+ clr d2                           /* any strength? */
+ mov sp,a1
+ add 32,a1                        /* a1 = Ks R */
+ mov 87,d3                        /* Shadows: slot +55 / +56 */
+2:
+ movbu (d3,a2),d0                 /* colour */
+ inc d3
+ movbu (d3,a2),d1                 /* strength */
+ inc d3
+ extb d1
+ cmp 12,d0
+ bcs 3f
+ clr d1                           /* no colour: off */
+3:
+ cmp -5,d1
+ bge 31f
+ mov -5,d1
+31:
+ cmp 5,d1
+ ble 32f
+ mov 5,d1
+32:
+ or d1,d2
+ mov d0,a0                        /* st_k + 3 colour */
+ add d0,a0
+ add d0,a0
+ add st_k,a0
+ movbu (a0),d0                    /* K = st_k x strength, per channel */
+ extb d0
+ mul d1,d0
+ mov d0,(a1)
+ movbu (1,a0),d0
+ extb d0
+ mul d1,d0
+ mov d0,(4,a1)
+ movbu (2,a0),d0
+ extb d0
+ mul d1,d0
+ mov d0,(8,a1)
+ add 12,a1
+ cmp 91,d3                        /* then Highlights: slot +57 / +58 */
+ bne 2b
+ cmp 0,d2
+ beq s9                           /* both strengths 0 */
+ mov a3,a0
+ add 1252,a0                      /* a0 = R table */
+ mov a0,a1
+ add 640,a1                       /* a1 = G table */
+ clr d1
+5:
+ movhu (d1,a0),d0
+ movhu (d1,a1),d2
+ cmp d0,d2
+ bne s9                           /* R != G: already toned, or not one curve */
+ add 640,d1
+ movhu (d1,a1),d2                 /* B (G + 640) */
+ add -640,d1
+ cmp d0,d2
+ bne s9
+ add 2,d1
+ cmp 640,d1
+ bne 5b
+ clr d0
+ mov d0,(56,sp)                   /* segment 0..5: channel = seg / 2, the 256 entries (even) or the 64 (odd) */
+6:
+ mov (56,sp),d0
+ mov d0,d1
+ lsr 1,d1                         /* channel */
+ mov d1,d2
+ asl2 d2
+ mov sp,a1
+ add d2,a1
+ mov (32,a1),d2
+ mov d2,(68,sp)                   /* Ks */
+ mov (44,a1),d2
+ mov d2,(72,sp)                   /* Kh */
+ mov 640,d2
+ mul d1,d2
+ mov a3,a0
+ add 1252,a0
+ add d2,a0                        /* this channel's table */
+ mov a0,a1
+ add 512,a1
+ btst 1,d0
+ beq 7f
+ mov a1,a0                        /* the 64-entry part */
+ add 128,a1
+7:
+ clr d2
+ mov d2,(60,sp)                   /* running max */
+8:
+ movhu (a0),d0                    /* t */
+ mov 4095,d1
+ sub d0,d1                        /* s */
+ mov d0,d2
+ mul d1,d2
+ lsr 12,d2
+ mul d1,d2
+ lsr 12,d2                        /* ws */
+ mov (68,sp),d3
+ mul d3,d2                        /* Ks ws */
+ mov d0,d3
+ mul d0,d3
+ lsr 12,d3
+ mul d1,d3
+ lsr 12,d3                        /* wh */
+ mov (72,sp),d1
+ mul d1,d3                        /* Kh wh */
+ add d3,d2
+ asr 8,d2
+ add d2,d0
+ bge 9f
+ clr d0
+9:
+ cmp 4095,d0
+ ble 10f
+ mov 4095,d0
+10:
+ mov (60,sp),d1
+ cmp d1,d0
+ bge 11f
+ mov d1,d0                        /* keep it rising */
+11:
+ mov d0,(60,sp)
+ movhu d0,(a0)
+ add 2,a0
+ cmp a1,a0
+ bne 8b
+ mov (56,sp),d0
+ inc d0
+ mov d0,(56,sp)
+ cmp 6,d0
+ bne 6b
+s9:
+ mov (28,sp),d0
+ mov d0,mdr
+ mov (64,sp),d0
+ mov (4,sp),d1
+ mov (8,sp),d2
+ mov (12,sp),d3
+ mov (16,sp),a1
+ mov (20,sp),a2
+ mov (24,sp),a3
+ add 76,sp
+ mov d3,a0                        /* displaced 0x605197d7 */
+ jmp tone_next                    /* 0x60518fa4; returns to 0x605197de */
+st_k:                             /* K per strength step, R G B, for the wheel's 12 colours (4.8 Cb/Cr units at the
+                                   * weight peak per step: up to 24 at 5, as Cross Process I) */
+ .byte 7,7,-57          /* Yellow */
+ .byte 26,-4,-47          /* Orange */
+ .byte 37,-12,-33          /* Orange-red */
+ .byte 43,-18,-18          /* Red */
+ .byte 39,-26,29          /* Magenta */
+ .byte 17,-19,53          /* Violet */
+ .byte -11,-5,56          /* Blue */
+ .byte -33,9,39          /* Blue-cyan */
+ .byte -43,18,18          /* Cyan */
+ .byte -45,24,-5          /* Green-cyan */
+ .byte -36,25,-36          /* Green */
+ .byte -13,17,-55          /* Yellow-green */
+ .align 2
+
+/* ------------------------------------------------------------------ split toning wheels (v0.26)
+ * The HSL wheel gets two more pages after Luminance: axis 5 Shadows and axis 6 Highlights (INFO: Color -> Color All ->
+ * Hue -> Luminance -> Shadows -> Highlights -> Color). On them the 12 colours are the tint's colour: the rear dial on
+ * a colour sets its strength -5..5 (minus = the opposite colour) and makes it the page's colour; the other colours
+ * read 0. Slot +55 / +56 (Shadows colour 0..11, strength), +57 / +58 (Highlights); LOOKS.BIN record +53..+56.
+ * TONEP miss: P valid, the editor's marker, axis 5 or 6 -> a2 = P, d3 = axis. Uses d3, a2. */
+ .macro TONEP miss
+ PVAL \miss
+ mov (EMARK,a2),d3
+ cmp EMAGIC,d3
+ bne \miss
+ movbu (AXIS,a2),d3
+ cmp 5,d3
+ bcs \miss
+ cmp 7,d3
+ bcc \miss
+ .endm
+/* TONEV: d2 = sector id - 928 (12k + colour), a2 = P, d3 = axis -> d0 = the value shown (-5..5). Uses d2, d3, a2. */
+ .macro TONEV
+ clr d0
+71:
+ cmp 12,d2
+ bcs 72f
+ add -12,d2
+ add 64,d0
+ bra 71b
+72:
+ add d0,a2
+ add -5,d3
+ add d3,a2
+ add d3,a2                        /* a2 = P + 64k + 2 (axis - 5) */
+ movbu (87,a2),d0                 /* the page's colour */
+ cmp d2,d0
+ bne 73f
+ movbu (88,a2),d0                 /* its strength */
+ extb d0
+ cmp -5,d0
+ bge 74f
+ mov -5,d0
+74:
+ cmp 5,d0
+ ble 75f
+ mov 5,d0
+ bra 75f
+73:
+ clr d0
+75:
+ .endm
+.section .ext11,"ax"
+/* tn_get <- sl_get's miss (instead of ed_get): GetValue (CALLS entry: d0 id, a0 facade, a1 out). Sector ids
+ * 928 + 12k + colour and the readout's 916..927 (the selected colour of the open editor, with the dial label) on a
+ * Shadows / Highlights page; anything else: ed_get with every register as at entry. */
+tn_get:
+ cmp 0,a1
+ beq 9f
+ movm [d2,d3,a2],(sp)
+ mov d0,d2                        /* the readout on Color / Color All: put the stock dial label back if a split toning */
+ exthu d2                         /* page left ours ("Shadows" / "Highlights") in the label's descriptor */
+ add -916,d2
+ cmp 12,d2
+ bcc 1f
+ PVAL 1f
+ movbu (AXIS,a2),d3
+ cmp 0,d3
+ bne 1f
+ mov 0xa4cf688c,a2                /* the dial label's descriptor (xblock VDESC): 70 x 30 */
+ movhu (2,a2),d3
+ cmp 70,d3
+ bne 1f
+ movhu (4,a2),d3
+ cmp 30,d3
+ bne 1f
+ mov 1660,d3                      /* the camera's own label (VSTOCK_S, VSTOCK_P) */
+ mov d3,(12,a2)
+ mov 0xa4cf6210,d3
+ mov d3,(16,a2)
+1:
+ TONEP 8f
+ mov d0,d2
+ exthu d2
+ add -916,d2
+ cmp 12,d2
+ bcc 2f
+ movbu (EDK,a2),d3                /* the readout: colour d2 of the open editor */
+ cmp 4,d3
+ bcc 8f
+ call vl_s,[d2,d3,a2,a3],20       /* the dial label: "Shadows" / "Highlights" (code block) */
+ movbu (EDK,a2),d3
+ mov d3,d0
+ add d0,d0
+ add d3,d0
+ asl2 d0
+ add d0,d2                        /* 12k + colour */
+ bra 3f
+2:
+ add -12,d2                       /* 928.. -> 0.. */
+ cmp 48,d2
+ bcc 8f
+3:
+ movbu (AXIS,a2),d3
+ TONEV
+ mov d0,(a1)
+ movm (sp),[d2,d3,a2]
+ clr d0
+ rets
+8:
+ movm (sp),[d2,d3,a2]
+9:
+ jmp ed_get
+
+/* tn_set <- sl_set's miss (instead of ed_set), entered as ed_set (d0 id, d1 value, a0 inner, a1 mode; d2/d3/a2/a3
+ * saved by the setter's call, frame 68). A sector id on a Shadows / Highlights page: value -5..5; not 0 -> this
+ * colour and strength; 0 -> strength 0 if this is the page's colour. Then s_dirty (dirty, the manager's refresh). */
+tn_set:
+ TONEP 9f
+ mov d0,d2
+ exthu d2
+ add -928,d2
+ cmp 48,d2
+ bcc 9f
+ cmp -5,d1
+ blt 8f
+ cmp 5,d1
+ bgt 8f
+ mov d0,a3                        /* keep the id */
+ clr d0
+1:
+ cmp 12,d2
+ bcs 2f
+ add -12,d2
+ add 64,d0
+ bra 1b
+2:
+ add -5,d3
+ add d3,d0
+ add d3,d0                        /* 64k + 2 (axis - 5) */
+ add 87,d0                        /* P offset of the page's colour byte */
+ cmp 0,d1
+ bne 3f
+ movbu (d0,a2),d3
+ cmp d2,d3
+ bne 4f                           /* 0 on another colour: nothing to change */
+ inc d0
+ movbu d1,(d0,a2)                 /* strength 0 */
+ bra 4f
+3:
+ movbu d2,(d0,a2)                 /* colour ... */
+ inc d0
+ movbu d1,(d0,a2)                 /* ... and strength */
+4:
+ mov a3,d0
+ jmp s_dirty
+8:
+ clr d0
+ ret [d2,d3,a2,a3],68
+9:
+ jmp ed_set
+
+/* tn_poly <- the 48 sector reads of the wheel drawing (build.py points them here instead of ed_poly), `call
+ * tn_poly,[],4`, d0 = id: the value shown on a Shadows / Highlights page, else ed_poly. Keeps d2/d3/a2/a3. */
+tn_poly:
+ movm [d2,d3,a2],(sp)
+ TONEP 8f
+ mov d0,d2
+ exthu d2
+ add -928,d2
+ cmp 48,d2
+ bcc 8f
+ TONEV
+ movm (sp),[d2,d3,a2]
+ ret [],4
+8:
+ movm (sp),[d2,d3,a2]
+ jmp ed_poly

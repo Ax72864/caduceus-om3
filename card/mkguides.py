@@ -129,7 +129,8 @@ def encode11(px, w, h):
     return bytes(out)
 
 
-PAGES = ['Hue', 'Luminance', 'Extras', 'Film']           # streams 1..4 = pages Hue, Luminance (v0.24 film test 10; before: Light), Extras (v0.20; before: WB/BW), Film (v0.20; before: Looks, Profiles)
+PAGES = ['Hue', 'Luminance', 'Tone', 'Film']   # v0.26: stream 3 'Tone' (the Shadows / Highlights pages; was Extras, hidden since v0.24)
+#           # streams 1..4 = pages Hue, Luminance (v0.24 film test 10; before: Light), Extras (v0.20; before: WB/BW), Film (v0.20; before: Looks, Profiles)
 SKIP = {'Film'}   # v0.24 film test 10: the Film page is hidden (editor.s W_FILM 0): its stream left out (length 0, the
                   # camera's own guide there) to keep GUIDES.BIN under the loader's 16 KB with "Luminance"; put it back with the page
 
