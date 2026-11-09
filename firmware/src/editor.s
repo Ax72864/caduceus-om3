@@ -6580,3 +6580,17 @@ xs_su2:                           /* a0 = S, a1 = the set-up's second argument (
 9:
  mov d2,d0
  ret [d2,a2],12
+
+/* ft3: the combiner set-up 0x60504b2b calls the selector itself (0x60504b5d); code block +120 (xb_sel2) answers
+ * combiner 1 there for the textured COLOR development, so Grainy Film's blend is set up with COLOR's key. */
+.section .hook_sel2,"ax"
+ call s_sel2,[d2,a2],12           /* stock 0x60504b5d: call 0x6052cf39,[d2,a2],12 */
+
+.section .ext11,"ax"
+s_sel2:                           /* the selector's frame; a0 = context */
+ call xp,[],0
+ beq 9f
+ add 120,a1
+ jmp (a1)
+9:
+ jmp SEL

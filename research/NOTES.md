@@ -1542,3 +1542,14 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   => The blend is switched on by combiner 1's set-up under Grainy Film's key, together with its mono conversion.
   Next (emulator, no camera): run combiner 1's handler natively with key 11 and with 0x01020068 on the same request
   and diff what it writes, to separate "blend the texture" from "make it mono" (as gl4..gl6 did for combiner 33).
+- Why ft2 Low had no grain (analysis): the request configuration calls the selector twice - our hooked call at
+  0x604955f1, then again inside the combiner set-up 0x60504b2b (0x60504b5d), which then jumps to the combiner's case
+  (table 0x606cc794). With the key back to 11 the second call gave combiner 0, so the default case (0x605056ef) set
+  up no blend. **Combiner 1's case 0x60504b90 does not read the context key**: it calls 0x605047c1 (signed second
+  input, -512..511) and writes the register image (context+8)+7988: +4 = 0x00200001 (default 0x00200000), +8 = 3822,
+  +92 = 0x2a0000, +96 = 1024, +100 = 0, +144 = 0x2a0000, +148 = 1024. So the mono of ft2 Med comes from other
+  key-driven set-ups, not from the blend.
+- **ft3 (firmware + GUIDES; emulator: boots, live view and menus fine; stills untested):** new flash hook
+  `.hook_sel2` (0x60504b5d -> `s_sel2` -> block +120 `xb_sel2`): the textured COLOR development gets combiner 1 from
+  both selector calls with its key left at 11 (Grain Low / High); Grain Med keeps the ft2 control (GF II's key).
+  Firmware 95649831…, GUIDES 6d62e1bf….

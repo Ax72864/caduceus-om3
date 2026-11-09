@@ -47,6 +47,8 @@ xb_base:
  .balign 8
  jmp xb_su                        /* +112 ft1: after the still set-up (xs_su, `calls`, a0 = S): grain texture */
  .balign 8
+ jmp xb_sel2                      /* +120 ft3: the combiner set-up's own selector call (s_sel2, frame [d2,a2],12) */
+ .balign 8
 xb_nrel:
  .long 0                          /* relocation count (written by the build) */
 
@@ -528,14 +530,15 @@ xb_dev:
  mov d2,a3
  mov a2,a0
 3:
- mov 0x01020068,d0                /* ft2: Grainy Film II's context key for the selector -> combiner 1 (0x6052cfc6) */
- mov d0,(48,a0)
- movbu (xb_tl),d0                 /* Grain 2 (Med): keep that key for combiner 1's set-up; 1 / 3: back to 11 */
+ movbu (xb_tl),d0                 /* ft3: Grain Med (2) = the ft2 control: Grainy Film II's context key (mono + grain) */
  cmp 2,d0
- beq 4f
- mov 1,d0
- movbu d0,(xb_ck)
+ bne 4f
+ mov 0x01020068,d0
+ mov d0,(48,a0)
+ jmp xb_lg
 4:
+ mov 1,d0                         /* ft3: Low / High: key stays 11; xb_lg answers combiner 1 instead of the selector */
+ movbu d0,(xb_ck)
  jmp xb_lg
 5:
  movbu (xb_gt),d0
@@ -637,6 +640,22 @@ xb_su:
  movm (sp),[d2,d3,a2,a3]
  rets
 
+/* xb_sel2 (ft3): jmp from s_sel2 = the selector call inside the combiner set-up 0x60504b2b (frame `call ..,[d2,a2],12`,
+ * a0 = context). The textured COLOR development (xb_tx 2, request xb_rq) gets combiner 1 there too; else the stock
+ * selector. */
+xb_sel2:
+ movbu (xb_tx),d0
+ cmp 2,d0
+ bne 9f
+ mov (4,a0),d0
+ mov (xb_rq),d1
+ cmp d0,d1
+ bne 9f
+ mov 1,d0
+ ret [d2,a2],12
+9:
+ jmp SEL
+
 xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  rets
 
@@ -728,13 +747,12 @@ xb_lg:                            /* jmp from xb_dev in the frame of `call s_cl,
  mov a0,a2
  call SEL,[d2,a2],12              /* the stock selector (reads a0) */
  mov d0,d2                        /* its combiner */
- movbu (xb_ck),d0                 /* ft2: the context key back to COLOR (11) after the selection */
+ movbu (xb_ck),d0                 /* ft3: the textured COLOR development: combiner 1 (Grainy Film's blend) */
  cmp 0,d0
  beq 1f
  clr d0
  movbu d0,(xb_ck)
- mov 11,d0
- mov d0,(48,a2)
+ mov 1,d2
 1:
  movm [d3,a3],(sp)
  add -4,sp                        /* (0) call slot for the leaves (above it: the saved d3, a3) */
@@ -2075,7 +2093,7 @@ xb_tx:                            /* ft1: 1 = xb_su gave this still a texture, 2
  .byte 0
 xb_tl:                            /* ft2: that still's Grain level (1 / 3: combiner 1 with key 11, 2: with GF II's key) */
  .byte 0
-xb_ck:                            /* ft2: 1 = put the context key back to 11 after the selector */
+xb_ck:                            /* ft3: 1 = xb_lg answers combiner 1 for this configuration */
  .byte 0
  .balign 4
 xb_rq:                            /* ft2: the development request the texture went to */
