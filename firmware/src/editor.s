@@ -3016,7 +3016,8 @@ pm_list:                          /* item ids, in the order the owner reads them
                                    * the colour wheel), tone (Contrast, Highlight & Shadow, Blacks, Whites), white balance
                                    * (A-B, G-M), detail (Sharpness, Noise Filter = NR), lens (Vignette Correction =
                                    * VigFix, Shading), finish (Film Grain Effect = Grain) */
- .long 111, 5397, 8, 5398, BK_IT, WH_IT, AB_IT, GM_IT, 7, NR_IT, VF_IT, 5399, 5400   /* v0.25: Shading back (fast grain keeps colour) */
+ .long 111, 5397, 8, 5398, BK_IT, WH_IT, AB_IT, GM_IT, 7, NR_IT, VF_IT, 5399, GL_IT, FR_IT, 5400   /* v0.25: Shading back,
+                                    Glow / Clarity and Frame rows */
 .set PM_N, (. - pm_list) / 4
 
 /* Picture Mode rows of COLOR 1-4 that are Extras settings of the selected look (slot k = P + 32 + 64k):
@@ -3039,18 +3040,24 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set WHB, 0x7e40
 .set ABB, 0x7e50                  /* A-B / G-M slider rows (v0.23 test 14): bar ids + k, classes 7 / 8, slot +26 / +27 */
 .set GMB, 0x7e60
+.set GLB, 0x7ea0                  /* v0.25 Glow / Clarity slider row (class 9, slot +49, -5 Glow .. +5 Clarity) */
+.set FRB, 0x7eb0                  /* v0.25 Frame choice row (class 10, slot +50: 0 Off / 5 Frame) */
 .set NR_IT, 5394
 .set VF_IT, 5389
 .set BK_IT, 5386
 .set WH_IT, 5385
 .set AB_IT, 5384
 .set GM_IT, 5383
+.set GL_IT, 5382
+.set FR_IT, 5381
 .set ST_VIG, 0x7f00               /* our string ids (st_get answers them; the camera's table has ~6000) */
 .set ST_STD, 0x7f01
 .set ST_BKS, 0x7f02                 /* "Blacks" */
 .set ST_WHS, 0x7f03                 /* "Whites" */
 .set ST_AB, 0x7f04                  /* "A-B" */
 .set ST_GM, 0x7f05                  /* "G-M" */
+.set ST_GLC, 0x7f06                 /* "Glow / Clarity" */
+.set ST_FRM, 0x7f07                 /* "Frame" */
 .set IC_BK, 0x7f80                /* our picture ids (ic_get answers them; the camera's table has ~20000 slots) */
 .set IC_WH, 0x7f81
 .set IC_AB, 0x7f82
@@ -3062,7 +3069,10 @@ pm_list:                          /* item ids, in the order the owner reads them
 .set IC_N2, 0x7f88
 .set IC_N3, 0x7f89
 .set IC_HSL, 0x7f8a               /* "HSL": the Color row's cell (film test 7, in place of the stock "Color / Vivid") */
-.set IC_END, 0x7f8b
+.set IC_GL, 0x7f8b                /* v0.25 "Glow" slider icon, "Frame / Off", "Frame / On" (left column) */
+.set IC_F0, 0x7f8c
+.set IC_F1, 0x7f8d
+.set IC_END, 0x7f8e
 .set FV0, 100                     /* v0.24 film list: picture-mode values FV0 + j for film j (COLOR k = j / 5, look j % 5 + 1) */
 .set NF, 20
 .set FLB, 0x7e70                  /* FLB + j: "is film j there?" (the list's per-entry availability id) */
@@ -3117,6 +3127,10 @@ ab_tab:
  .long 54, ABB, 55, ABB + 1, 56, ABB + 2, 64, ABB + 3
 gm_tab:
  .long 54, GMB, 55, GMB + 1, 56, GMB + 2, 64, GMB + 3
+gl_tab:
+ .long 54, GLB, 55, GLB + 1, 56, GLB + 2, 64, GLB + 3
+fr_tab:
+ .long 54, FRB, 55, FRB + 1, 56, FRB + 2, 64, FRB + 3
 .balign 8
 sw11_tab:                         /* the row switches 0x615511cc and 0x6155134c (16 entries, full with our rows) */
  .space 32 * 8                    /* re-hashed by build.py into 32 entries */
@@ -3130,6 +3144,8 @@ it_tab:                           /* the stock 17 item entries (filled by build.
  .long WH_IT, 0, 0, 0, wh_title, 0, 6 << 16, 0, 0, 0           /* left icon: 5 / 6 = IC_BK / IC_WH in ic_list) */
  .long AB_IT, 0, 0, 0, ab_title, 0, 7 << 16, 0, 0, 0           /* A-B / G-M: icons 7 / 8 = IC_AB / IC_GM */
  .long GM_IT, 0, 0, 0, gm_title, 0, 8 << 16, 0, 0, 0
+ .long GL_IT, 0, 0, 0, gl_title, 0, 9 << 16, 0, 0, 0           /* v0.25: icon 9 = IC_GL */
+ .long FR_IT, fr_title, fr_l0, 2, 0, fr_l1, 2, 0, fr_l2, 2      /* v0.25: as Vignette Correction */
 bk_title:
  .short 4, ST_BKS
  .long 0x6154b480
@@ -3141,6 +3157,12 @@ ab_title:
  .long 0x6154b480
 gm_title:
  .short 4, ST_GM
+ .long 0x6154b480
+gl_title:
+ .short 4, ST_GLC
+ .long 0x6154b480
+fr_title:
+ .short 4, ST_FRM
  .long 0x6154b480
 nr_title:
  .short 4, 188                    /* string 188 "Noise Filter" */
@@ -3179,6 +3201,15 @@ vf_l1:                            /* the left column: "Vignette" over Off / On *
  OPT 0, 3, IC_V0
  OPT 1, 3, IC_V1
 vf_l2:                            /* the strip: the camera's Off / On icons */
+ OPT 0, 3, VF_I0
+ OPT 1, 3, VF_I1
+fr_l0:                            /* v0.25 Frame: the title stays "Frame" */
+ OPT 0, 4, ST_FRM
+ OPT 1, 4, ST_FRM
+fr_l1:                            /* the left column: "Frame" over Off / On */
+ OPT 0, 3, IC_F0
+ OPT 1, 3, IC_F1
+fr_l2:                            /* the strip: the camera's Off / On icons */
  OPT 0, 3, VF_I0
  OPT 1, 3, VF_I1
 nr_s2v:                           /* NR slot value 1..4 (index 0..3) -> Noise Filter value; 0 Camera: the camera's own */
@@ -3226,8 +3257,20 @@ gr_lc:
  bra 9f
 6:
  cmp GM_IT,d0
- bne 9f
+ bne 7f
  mov gm_tab,a3
+ mov 4,d2
+ bra 9f
+7:
+ cmp GL_IT,d0
+ bne 8f
+ mov gl_tab,a3
+ mov 4,d2
+ bra 9f
+8:
+ cmp FR_IT,d0
+ bne 9f
+ mov fr_tab,a3
  mov 4,d2
 9:
  jmp lc_back                      /* 0x611d19b4: cmp 0,a3 */
@@ -3261,8 +3304,18 @@ st_get:
  ret [d2],8
 1:
  cmp ST_GM,d0
- bne 2f
+ bne 6f
  mov gms_str,a0
+ ret [d2],8
+6:
+ cmp ST_GLC,d0
+ bne 7f
+ mov glc_str,a0
+ ret [d2],8
+7:
+ cmp ST_FRM,d0
+ bne 2f
+ mov frm_str,a0
  ret [d2],8
 2:
  cmp ST_F0,d0                     /* v0.24: film names */
@@ -3298,6 +3351,10 @@ abs_str:                          /* "A-B" */
  .short 65, 45, 66, 0
 gms_str:                          /* "G-M" */
  .short 71, 45, 77, 0
+glc_str:                          /* "Glow / Clarity" */
+ .short 71, 108, 111, 119, 32, 47, 32, 67, 108, 97, 114, 105, 116, 121, 0
+frm_str:                          /* "Frame" */
+ .short 70, 114, 97, 109, 101, 0
  .balign 16
 std_str:                          /* "Std" */
  .short 83, 116, 100, 0
@@ -3350,6 +3407,12 @@ ch_id:
  CHC wh_f, WHB, f2c_obj
  CHC ab_f, ABB, f2c_obj
  CHC gm_f, GMB, f2c_obj
+ CHC gl_f, GLB, f2c_obj           /* v0.25 Glow / Clarity slider */
+ CHC fr_a, FRB, cha_back          /* v0.25 Frame choice row */
+ CHC fr_b, FRB, chb_back
+ CHC fr_c, FRB, chc_back
+ CHC fr_d, FRB, chd_back
+ CHC fr_f, FRB, chf_back
 
 /* lc_nr / lc_vf <- row switch 0x6155124c (the left column's cell): as Film Grain's case 0x611d0b57 (cell type 1, the
  * icon of the value from the item's list) but GetValue of our row's own id instead of 998 -> 0x611d0b72. */
@@ -3358,6 +3421,9 @@ lc_nr:
  bra 1f
 lc_vf:
  mov VF_IT,d2
+ bra 1f
+lc_fr:
+ mov FR_IT,d2
 1:
  mov (20,sp),a3
  mov 1,d0
@@ -3416,6 +3482,16 @@ sl_slot:
  add -GMB,d2
  cmp 4,d2
  bcs 2f
+ mov 9,d1
+ mov d3,d2
+ add -GLB,d2
+ cmp 4,d2
+ bcs 2f
+ mov 10,d1
+ mov d3,d2
+ add -FRB,d2
+ cmp 4,d2
+ bcs 2f
  mov 1,d1
  cmp 7,d3
  beq 1f
@@ -3439,6 +3515,12 @@ sl_slot:
  beq 1f
  mov 8,d1
  cmp GM_IT,d3
+ beq 1f
+ mov 9,d1
+ cmp GL_IT,d3
+ beq 1f
+ mov 10,d1
+ cmp FR_IT,d3
  bne 8f
 1:
  mov d1,d3                        /* the class, over the getter */
@@ -3472,6 +3554,23 @@ sl_slot:
 
 /* sl_val: d1 class, a0 slot -> d0 the row's value (Sharp -5..+2, Grain 0..3, NR -2..+1, VigFix -1..0). */
  .macro SL_VAL
+ cmp 9,d1
+ bne 83f
+ movbu (49,a0),d0                 /* v0.25 Glow -5..-1 / Clarity +1..+5 */
+ extb d0
+ bra 99f
+83:
+ cmp 10,d1
+ bne 84f
+ movbu (50,a0),d0                 /* v0.25 Frame: Art Effect 5 -> 1 On, anything else 0 Off */
+ cmp 5,d0
+ beq 85f
+ clr d0
+ bra 99f
+85:
+ mov 1,d0
+ bra 99f
+84:
  cmp 7,d1
  bne 81f
  movbu (26,a0),d0                 /* A-B */
@@ -3619,6 +3718,18 @@ sl_gb:
  exthu d2
  add -GMB,d2
  cmp 4,d2
+ bcs 90f
+ mov 9,a3
+ mov d0,d2
+ exthu d2
+ add -GLB,d2
+ cmp 4,d2
+ bcs 90f
+ mov 10,a3
+ mov d0,d2
+ exthu d2
+ add -FRB,d2
+ cmp 4,d2
  bcc \miss
 90:
  PVAL \miss
@@ -3628,6 +3739,12 @@ sl_gb:
 sl_cnt:
  movm [d2,d3,a2,a3],(sp)
  REAL 8f
+ mov 11,d0                        /* v0.25: 9 Glow / Clarity -5..+5 */
+ cmp 9,a3
+ beq 6f
+ mov 2,d0                         /* 10 Frame Off / On */
+ cmp 10,a3
+ beq 6f
  mov 15,d0                        /* 7 A-B, 8 G-M: -7..+7 */
  cmp 7,a3
  bcc 6f
@@ -3650,6 +3767,14 @@ sl_cnt:
 
 /* the class's lowest value (d0) and count (d1) for index <-> value: Sharp -5/8, Grain 0/4, NR -2/4, VigFix -1/2 */
  .macro LOWCNT
+ mov -5,d0                        /* v0.25: 9 Glow / Clarity -5, 11; 10 Frame 0, 2 */
+ mov 11,d1
+ cmp 9,a3
+ beq 99f
+ clr d0
+ mov 2,d1
+ cmp 10,a3
+ beq 99f
  mov -7,d0
  mov 15,d1
  cmp 7,a3
@@ -3730,6 +3855,31 @@ sl_set0:
  REAL 9f
  asl 6,d2
  add a2,d2                        /* d2 = P + 64k */
+ cmp 9,a3
+ bne 12f
+ cmp -5,d1                        /* v0.25 Glow / Clarity -5..+5 -> +49 */
+ blt 7f
+ cmp 5,d1
+ bgt 7f
+ mov d2,a3
+ movbu d1,(81,a3)
+ jmp s_dirty
+12:
+ cmp 10,a3
+ bne 13f
+ cmp 0,d1                         /* v0.25 Frame 0 Off / 1 On -> +50 = 0 / 5 */
+ blt 7f
+ cmp 1,d1
+ bgt 7f
+ clr d3
+ cmp 0,d1
+ beq 14f
+ mov 5,d3
+14:
+ mov d2,a3
+ movbu d3,(82,a3)
+ jmp s_dirty
+13:
  cmp 7,a3
  bcs 10f
  cmp -7,d1                        /* A-B / G-M -7..+7 -> +26 / +27, then wb_flags (+25): bit0 on, bit7 off (as the
@@ -3854,6 +4004,8 @@ rw_bar:
  beq 3f
  cmp WH_IT,d0
  beq 3f
+ cmp GL_IT,d0                     /* v0.25 Glow / Clarity: -5..+5 as Blacks / Whites */
+ beq 3f
  cmp AB_IT,d0
  beq 4f
  cmp GM_IT,d0
@@ -3961,6 +4113,10 @@ rv_chk:
  movhu (a0),d0
  add -GMB,d0
  cmp 4,d0
+ bcs 1f
+ movhu (a0),d0
+ add -GLB,d0
+ cmp 4,d0
  bcc 2f
 1:
  mov 1,a2
@@ -4034,9 +4190,10 @@ ic_list:
  .long 0xffff, 7, 7, IC_WH
  .long 0xffff, 7, 7, IC_AB
  .long 0xffff, 7, 7, IC_GM
+ .long 0xffff, 7, 7, IC_GL         /* v0.25: 9 = Glow / Clarity */
 ic_lend:
 ic_ent:                           /* the slot word of each of our pictures, in firmware/mkicons.py PICTURES order */
- .long ic_d0, ic_d1, ic_d2, ic_d3, ic_d4, ic_d5, ic_d6, ic_d7, ic_d8, ic_d9, ic_d10
+ .long ic_d0, ic_d1, ic_d2, ic_d3, ic_d4, ic_d5, ic_d6, ic_d7, ic_d8, ic_d9, ic_d10, ic_d11, ic_d12, ic_d13
 /* descriptors <6H3I> as the stock pictures': format 14, w, h, 8, 0, 0, size, payload, flags; build.py fills w, h,
  * size and payload (the streams from firmware/mkicons.py, packed into ic_pay, by their uncached address 0xa...) */
  .macro ICD n
@@ -4055,9 +4212,12 @@ ic_d\n:
  ICD 8
  ICD 9
  ICD 10
+ ICD 11
+ ICD 12
+ ICD 13
 .balign 8
 ic_pay:
- .space 16384
+ .space 19480                     /* v0.25: 14 pictures (build.py checks the fit) */
 ic_pend:
 
 /* st_chk <- jmp from 0x611b201b (bar setup, a3 = the bar, (16,sp) -> its id): the bar's +116 says whether the arrows
@@ -4082,6 +4242,10 @@ st_chk:
  bcs 1f
  movhu (a1),d0
  add -GMB,d0
+ cmp 4,d0
+ bcs 1f
+ movhu (a1),d0
+ add -GLB,d0
  cmp 4,d0
  bcs 1f
  clr d0
@@ -4112,6 +4276,8 @@ rd_a:
  beq 1f
  cmp WH_IT,d0
  beq 1f
+ cmp GL_IT,d0
+ beq 1f
  jmp rda_none
 1:
  jmp rda_11
@@ -4132,6 +4298,8 @@ rd_b:
  cmp BK_IT,d0
  beq 1f
  cmp WH_IT,d0
+ beq 1f
+ cmp GL_IT,d0
  beq 1f
  jmp rdb_none
 1:
@@ -6391,13 +6559,18 @@ fl_isdef:
  exthu d0
  add -GRB,d0
  blt 90f
- cmp 0x70,d0
+ cmp 0xc0,d0                      /* v0.25: + GLB (row 10), FRB (row 11); rows 7..9 are not ours (FLB films) */
  bcc 90f
  mov d0,d2
  and 15,d2                        /* k */
  cmp 4,d2
  bcc 90f
  lsr 4,d0                         /* the row */
+ cmp 7,d0
+ bcs 6f
+ cmp 10,d0
+ bcs 90f
+6:
  mov fl_xr,a0
  add d0,a0
  add d0,a0
@@ -6438,8 +6611,9 @@ fl_isdef:
 90:
  mov (4,sp),d0
  jmp ed_isdef
-fl_xr:                            /* {record offset, slot offset} of the rows GRB, NRB, VFB, BKB, WHB, ABB, GMB (pf_bt) */
- .byte 51,53, 49,51, 50,52, 39,47, 40,48, 37,26, 38,27
+fl_xr:                            /* {record offset, slot offset} of the rows GRB, NRB, VFB, BKB, WHB, ABB, GMB (pf_bt),
+                                     three unused (FLB), v0.25 GLB, FRB */
+ .byte 51,53, 49,51, 50,52, 39,47, 40,48, 37,26, 38,27, 0,0, 0,0, 0,0, 47,49, 48,50
 
 /* fl_live: `call fl_live,[d2,d3,a2,a3],24`, a2 = P, d2 = COLOR k holding film j -> d0 1 when COLOR k now differs from
  * film j as built: its 18 settings (fl_isdef) or the slot's WB shift, Blacks / Whites, Extras (pf_bt). */

@@ -1,6 +1,7 @@
 /* v0.24 film test 7 (owner): the Extras page is hidden and its Glow / Clarity and Art Effect read 0 wherever they act
  * (XB_FX 0); the code stays: set XB_FX 1 to bring them back. */
  .set XB_FX, 1                    /* ft5: Glow / Clarity / Art back on (grain by texture where the development allows) */
+ .set XB_OWNOFF, 0                /* rc1: 1 = COLOR k's own Glow / Art Effect ignored (no rows then) */
  .set XB_LOG, 0                   /* v0.25: the fast-grain logger (GLOG.BIN) off */
  .set XB_SHG, 0                   /* film test 11's Shading check before the camera grain (1: on; rebooted on the camera) */
 /* Caduceus for OM-3 v0.20 test 5: the Extras code block (appended to GUIDES.BIN, our own code).
@@ -94,8 +95,8 @@ xb_art:
  .else
  clr d0
  .endif
- cmp 6,d0
- bcc 1f
+ cmp 5,d0                         /* v0.25: Frame only (owner: Star Light slow, Pin Hole / White Edge = Shading) */
+ bne 1f
  add d0,d0
  mov xb_ft,a0
  movhu (d0,a0),d0
@@ -1099,6 +1100,7 @@ xb_lw:                            /* `calls` from pf_save (the half-press save, 
 /* xb_own (v0.25): leaf, a1 = slot entry (from xb_slot) -> d0 = 1 when COLOR k shows its own settings (no film
  * selected: P+LIDX+k not 1..5), else 0. Uses d0, a0 only; returns through MDR. */
 xb_own:
+ .if XB_OWNOFF
  mov (xb_pp),a0
  mov a1,d0
  sub a0,d0
@@ -1116,6 +1118,10 @@ xb_own:
 1:
  mov 1,d0
  retf [],0
+ .else
+ clr d0                           /* v0.25 rc2: COLOR k's own Glow / Frame have rows now: used */
+ retf [],0
+ .endif
  .set P_TORG, 820                 /* v0.24: the film block (EDITS.BIN image at +TWO) */
 /* xb_lkh (v0.21): jmp from lk_hold in ed_event's frame (after its movm and add -28: (12,sp) cursor id 2197 + k,
  * (24,sp) the event, a2 = P, a3 = the parent, d2 = 4). OK held on the wheel (0x903e) with a look selected for COLOR k:

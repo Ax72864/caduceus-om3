@@ -1679,3 +1679,13 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   lift gone - Y shift vs Off within -5..+5 on mid tones (shadows +1..+7, highlights -5..-16 at High: grain clipped at
   black / white), **no colour cast** (Cb/Cr within ±1.2): +180 low half is the Y offset (confirmed). Grain high-pass
   std **Low ~10, Med ~16, High ~24** (Off 2..8): clearly three steps.
+- Owner (2026-11-08): option 2 (rows first, one release) with: the **Glow / Clarity slider back**; for Art Effects
+  **only Frame On / Off** (Star Light is slow: out; Pin Hole / White Edge: Shading covers them).
+- **rc2b (firmware + GUIDES; emulator: rows show, values change, '*' appears):** two Picture Mode rows after Shading:
+  **Glow / Clarity** (GL_IT 5382, slider class 9, bar GLB 0x7ea0 + k, slot +49 = -5 Glow .. +5 Clarity, icon "Glow",
+  readout and -5..+5 bar as Blacks) and **Frame** (FR_IT 5381, choice class 10 as Vignette Correction, bar FRB 0x7eb0 +
+  k, slot +50 = 0 / 5, left cells "Frame / Off|On", strip the camera's Off / On icons). Strings ST_GLC "Glow /
+  Clarity", ST_FRM "Frame"; it_tab 25 entries; ic_list 9 (count 9); fl_xr rows 10/11 (rows 7..9 skipped: FLB); 14
+  mkicons pictures, ic_pay 19480 B (ext11 64976 of 65536: 560 B left). Block: xb_art = Frame (5) only; COLOR k's
+  own Glow / Frame used again (XB_OWNOFF 0). Firmware 591fe72d…, GUIDES 6ec55047…. New camera pictures: "Glow",
+  "Frame / Off", "Frame / On" (sent to the owner).
