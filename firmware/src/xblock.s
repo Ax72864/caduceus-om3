@@ -735,11 +735,17 @@ xb_c1e:
  add d0,a0
  movhu (a0),d1
  mov d1,(148,a2)
+ movhu (6,a0),d1                  /* rc2: the texture is not zero-mean: it lifted Y by ~0.026 x gain (8-bit) on every
+                                     tone (owner test PB081496..499); the output's Y offset (+180 low half, 0 in
+                                     combiner 1's set-up, guess) takes it back: -0.102 x gain (10-bit) */
+ movhu d1,(180,a2)
 9:
  rets
  .balign 2
-xb_tgain:
- .hword 512, 768, 1024
+xb_tgain:                         /* rc2: Low / Med / High (Med and High looked alike at 768 / 1024; 2048 went dark) */
+ .hword 448, 832, 1280
+xb_tbias:                         /* -(0.102 x gain) as 16 bits, the same order */
+ .hword -46 & 0xffff, -85 & 0xffff, -131 & 0xffff
 
 /* xb_wl (ft8): `calls` from s_wl in the work-list builder 0x604b8cf7, a0 = job, before it picks the list by the
  * job's key (job+5352). A COLOR still (11) that already has our texture (job+8324, made at the set-up) and whose

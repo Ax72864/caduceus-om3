@@ -1666,3 +1666,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   used (xb_own: P+LIDX+k not 1..5 = no film) until rc2 gives them rows (fixes the hidden "COLOR 1 white frame" from
   the Extras era). Films' Glow / Art apply. Firmware d69485cd…, GUIDES 8860ded9…. Camera test with the owner's own
   LOOKS.BIN / EDITS.BIN put back.
+- rc1 camera (owner): works; **grain brightens the photo**, **Med and High look alike**. Same-scene test PB081496..499
+  (Off / Low / Med / High, COLOR 1), 32 px blocks binned by the Off photo's Y: Y lifted on **every tone** by ~+12 /
+  +19 / +26 (8-bit) at gain 512 / 768 / 1024 (~0.026 x gain), Cb/Cr ~unchanged; grain high-pass std Off 2..8,
+  Low 10..12, Med 15..16, High 19..20 (Med / High only 1.3x apart). => the texture is not zero-mean (a DC offset
+  scaled by its gain), not black clipping.
+- rc2a (GUIDES only; emulator: boots): gains Low 448 / Med 832 / High 1280 (2048 went dark in ft4: likely a signed
+  12-bit field) and the output's Y offset (+180 low half; combiner 1's set-up leaves it 0 and puts 512 in the chroma
+  offsets) = -0.102 x gain (10-bit): -46 / -85 / -131. Which offset field is Y is a guess: a colour cast instead of
+  the fix would say it is chroma. GUIDES 7294c032….
