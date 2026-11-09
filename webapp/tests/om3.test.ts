@@ -157,6 +157,14 @@ describe('OM-3 profile bank', () => {
     l.film_grain = 0; expect(monoGrain(l)).toBe(false);
   });
 
+  it('v0.24.1: Shading is saved as 0 (with grain it turns the photo mono); older firmware keeps it', () => {
+    const l = blankLook('colour', 'S'); l.vignette = -3; l.film_grain = 1;
+    expect(monoGrain(l)).toBe(true);
+    expect(readProfiles(profilesBin([[l]], 23))[0][0]!.vignette).toBe(0);
+    expect(readProfiles(profilesBin([[l]], 22))[0][0]!.vignette).toBe(-3);
+    l.film_grain = 0; expect(monoGrain(l)).toBe(false);
+  });
+
   it.skipIf(!existsSync(MK))('PROFILES.BIN is byte-identical to card/mkprofiles.py', () => {
     const dir = mkdtempSync(join(tmpdir(), 'om3-'));
     for (const [i, b] of [defaultBank(LIB, fromLibrary), randomBank(7), randomBank(8), emptyBank()].entries()) {
