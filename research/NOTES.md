@@ -1553,3 +1553,6 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   `.hook_sel2` (0x60504b5d -> `s_sel2` -> block +120 `xb_sel2`): the textured COLOR development gets combiner 1 from
   both selector calls with its key left at 11 (Grain Low / High); Grain Med keeps the ft2 control (GF II's key).
   Firmware 95649831…, GUIDES 6d62e1bf….
+- ft2 restart (owner): one brief restart on a Grain Low shot (probably the missing PB081451), not repeatable. Guess:
+  in ft2 Low the request carried the texture and stage 0x0100 while the combiner set-up was the default one (the
+  second selector call gave 0), a mismatch ft3 removes. Watch for it in ft3.
