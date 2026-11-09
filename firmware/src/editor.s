@@ -3373,8 +3373,8 @@ abs_str:                          /* v0.25 the WB grid row's title "WB" */
  .short 87, 66, 0
 gms_str:                          /* "G-M" */
  .short 71, 45, 77, 0
-glc_str:                          /* "Clarity" (v0.25: the row is named for its + side; - is Glow) */
- .short 67, 108, 97, 114, 105, 116, 121, 0
+glc_str:                          /* "Glow" (v0.25 owner: + Glow, - Clarity; the row is named for its + side) */
+ .short 71, 108, 111, 119, 0
 frm_str:                          /* "Frame" */
  .short 70, 114, 97, 109, 101, 0
  .balign 16
@@ -3595,8 +3595,10 @@ sl_slot:
 86:
  cmp 9,d1
  bne 83f
- movbu (49,a0),d0                 /* v0.25 Glow -5..-1 / Clarity +1..+5 */
+ movbu (49,a0),d0                 /* v0.25 Glow -5..-1 / Clarity +1..+5 (the slot) */
  extb d0
+ not d0                           /* the row shows it the other way: + Glow, - Clarity (owner) */
+ inc d0
  bra 99f
 83:
  cmp 10,d1
@@ -3799,7 +3801,9 @@ sl_cnt:
  movm [d2,d3,a2,a3],(sp)
  mov mdr,d2                       /* v0.25 grid: the WB grid's ids -> our A-B / G-M bars (gr_id; MDR kept) */
  mov d2,a3
+ add -4,sp                        /* its return address slot (else it lands on the saved d2: the choice strips broke) */
  call gr_id,[d2,d3],12
+ add 4,sp
  mov a3,d2
  mov d2,mdr
  REAL 8f
@@ -3875,7 +3879,9 @@ sl_vbi:
  movm [d2,d3,a2,a3],(sp)
  mov mdr,d2                       /* v0.25 grid: the WB grid's ids -> our A-B / G-M bars (gr_id; MDR kept) */
  mov d2,a3
+ add -4,sp                        /* its return address slot (else it lands on the saved d2: the choice strips broke) */
  call gr_id,[d2,d3],12
+ add 4,sp
  mov a3,d2
  mov d2,mdr
  REAL 8f
@@ -3910,7 +3916,9 @@ sl_sel0:
  movm [d2,d3,a2,a3],(sp)
  mov mdr,d2                       /* v0.25 grid: the WB grid's ids -> our A-B / G-M bars (gr_id; MDR kept) */
  mov d2,a3
+ add -4,sp                        /* its return address slot (else it lands on the saved d2: the choice strips broke) */
  call gr_id,[d2,d3],12
+ add 4,sp
  mov a3,d2
  mov d2,mdr
  REAL 8f
@@ -3963,7 +3971,9 @@ sl_set:
 sl_set0:
  mov mdr,d2                       /* v0.25 grid: the WB grid's ids -> our A-B / G-M bars (gr_id; MDR kept) */
  mov d2,a3
+ add -4,sp                        /* its return address slot (else it lands on the saved d2: the choice strips broke) */
  call gr_id,[d2,d3],12
+ add 4,sp
  mov a3,d2
  mov d2,mdr
  REAL 9f
@@ -3978,6 +3988,8 @@ sl_set0:
  blt 7f
  cmp 5,d1
  bgt 7f
+ not d1                           /* the row's + Glow / - Clarity -> the slot's - Glow / + Clarity */
+ inc d1
  mov d2,a3
  movbu d1,(81,a3)
  jmp s_dirty
@@ -5015,7 +5027,7 @@ ic_d\n:
  ICD 13
 .balign 8
 ic_pay:
- .space 14704                     /* v0.25: 14 pictures (build.py checks the fit; A-B / G-M, Frame blank now) */
+ .space 14720                     /* v0.25: 14 pictures (build.py checks the fit; A-B / G-M, Frame blank now) */
 ic_pend:
 
 /* st_chk <- jmp from 0x611b201b (bar setup, a3 = the bar, (16,sp) -> its id): the bar's +116 says whether the arrows
