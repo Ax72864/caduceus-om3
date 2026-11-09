@@ -3016,7 +3016,7 @@ pm_list:                          /* item ids, in the order the owner reads them
                                    * the colour wheel), tone (Contrast, Highlight & Shadow, Blacks, Whites), white balance
                                    * (A-B, G-M), detail (Sharpness, Noise Filter = NR), lens (Vignette Correction =
                                    * VigFix, Shading), finish (Film Grain Effect = Grain) */
- .long 111, 5397, 8, 5398, BK_IT, WH_IT, AB_IT, GM_IT, 7, NR_IT, VF_IT, 5400   /* v0.24.1: Shading (5399) hidden: with grain it turns the photo mono */
+ .long 111, 5397, 8, 5398, BK_IT, WH_IT, AB_IT, GM_IT, 7, NR_IT, VF_IT, 5399, 5400   /* v0.25: Shading back (fast grain keeps colour) */
 .set PM_N, (. - pm_list) / 4
 
 /* Picture Mode rows of COLOR 1-4 that are Extras settings of the selected look (slot k = P + 32 + 64k):

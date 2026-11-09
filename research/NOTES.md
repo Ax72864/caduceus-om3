@@ -1657,3 +1657,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   => Goal reached in the test build: grain as fast as default, in colour, with Art Effects, Glow / Clarity and
   Shading. Next: a clean release candidate (logger out, Shading row back, strengths, Control Panel), and the open
   "COLOR 1 white frame" question (an Art Effect stored on COLOR 1 from the Extras era, no row to change it).
+
+## v0.25 candidate rc1 (2026-11-08; branch feature/v0.25-fast-grain from experiment/fast-grain-log ft9)
+
+- Owner: release candidate yes; Glow / Clarity and Art Effects should get Picture Mode rows (rc2).
+- rc1 (emulator: boots, live view fine, the Shading row is back between Vignette and Film Grain): ft9 + XB_LOG 0
+  (no GLOG.BIN, no 57 KB buffers), Shading row back (pm_list 5399), and COLOR k's **own** Glow / Art Effect are not
+  used (xb_own: P+LIDX+k not 1..5 = no film) until rc2 gives them rows (fixes the hidden "COLOR 1 white frame" from
+  the Extras era). Films' Glow / Art apply. Firmware d69485cd…, GUIDES 8860ded9…. Camera test with the owner's own
+  LOOKS.BIN / EDITS.BIN put back.

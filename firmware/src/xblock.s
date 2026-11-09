@@ -1,6 +1,7 @@
 /* v0.24 film test 7 (owner): the Extras page is hidden and its Glow / Clarity and Art Effect read 0 wherever they act
  * (XB_FX 0); the code stays: set XB_FX 1 to bring them back. */
  .set XB_FX, 1                    /* ft5: Glow / Clarity / Art back on (grain by texture where the development allows) */
+ .set XB_LOG, 0                   /* v0.25: the fast-grain logger (GLOG.BIN) off */
  .set XB_SHG, 0                   /* film test 11's Shading check before the camera grain (1: on; rebooted on the camera) */
 /* Caduceus for OM-3 v0.20 test 5: the Extras code block (appended to GUIDES.BIN, our own code).
  *
@@ -105,7 +106,11 @@ xb_art:
 /* capture (Art Effect -> flag converter 0x60555e47): a3 = capture, a2 = params+12 (flags), (-4,a2) = key.
  * Exit as stock: fx_back with d0 = the Art Effect id and a1 = its address, or fx_tail. */
 xb_cap:
+ .if XB_LOG
  call xb_mark,[d2,d3,a2,a3],20    /* fg1 log: a new slot for this capture */
+ .endif
+ clr d0
+ movbu d0,(xb_ownf)
  clr d0
  movbu d0,(xb_gt)                 /* no camera grain unless a plain COLOR look with Grain below */
  mov 38225,a1
@@ -121,6 +126,10 @@ xb_cap:
  beq 7f
  mov (a2),d1                      /* (data registers only: `movbu (d8,An),Am` misread on the camera) */
  .if XB_FX
+ call xb_own,[],0                 /* v0.25: COLOR k's own Glow / Art Effect (no film) are not used: no row for them */
+ movbu d0,(xb_ownf)
+ cmp 0,d0
+ bne 5f
  movbu (49,a1),d0
  .else
  clr d0
@@ -134,6 +143,7 @@ xb_cap:
  .endif
  cmp 0,d0
  bne 3f                           /* an Art Effect */
+5:
  movbu (53,a1),d0                 /* plain: Grain 0..3 -> the camera's own grain (xb_dev) */
  cmp 0,d0
  beq 1f
@@ -171,7 +181,11 @@ xb_cap:
 2:
  or 128,d1
 1:
+ movbu (xb_ownf),d0               /* v0.25: no Art Effect flags from COLOR k's own settings */
+ cmp 0,d0
+ bne 6f
  call xb_art,[],0
+6:
  mov d1,(a2)
  jmp fx_tail
 7:
@@ -187,6 +201,9 @@ xb_lv:
  beq 9f
  mov (12,a2),d1
  .if XB_FX
+ call xb_own,[],0                 /* v0.25: COLOR k's own Glow / Art Effect are not used (no film) */
+ cmp 0,d0
+ bne 9f
  movbu (49,a1),d0
  .else
  clr d0
@@ -864,6 +881,7 @@ xb_lg:                            /* jmp from xb_dev in the frame of `call s_cl,
  movbu d0,(xb_ck)
  mov 1,d2
 1:
+ .if XB_LOG
  movm [d3,a3],(sp)
  add -4,sp                        /* (0) call slot for the leaves (above it: the saved d3, a3) */
  mov xb_lhdr,a0
@@ -986,10 +1004,12 @@ xb_lg:                            /* jmp from xb_dev in the frame of `call s_cl,
 9:
  add 4,sp
  movm (sp),[d3,a3]
+ .endif
  mov d2,d0
  ret [d2,a2],12
 
 xb_lw:                            /* `calls` from pf_save (the half-press save, HLS_EVENT task): (0,sp) = return */
+ .if XB_LOG
  add -16,sp                       /* (0) call slot, (4) handle */
  mov (xb_lbuf),a3
  cmp 0,a3
@@ -1064,8 +1084,32 @@ xb_lw:                            /* `calls` from pf_save (the half-press save, 
 9:
  add 16,sp
  rets
+ .else
+ rets
+ .endif
 
  .set P_LIDX, 712
+
+/* xb_own (v0.25): leaf, a1 = slot entry (from xb_slot) -> d0 = 1 when COLOR k shows its own settings (no film
+ * selected: P+LIDX+k not 1..5), else 0. Uses d0, a0 only; returns through MDR. */
+xb_own:
+ mov (xb_pp),a0
+ mov a1,d0
+ sub a0,d0
+ add -32,d0
+ lsr 6,d0
+ add d0,a0
+ movbu (P_LIDX,a0),d0
+ extb d0
+ cmp 1,d0
+ blt 1f
+ cmp 5,d0
+ bgt 1f
+ clr d0
+ retf [],0
+1:
+ mov 1,d0
+ retf [],0
  .set P_TORG, 820                 /* v0.24: the film block (EDITS.BIN image at +TWO) */
 /* xb_lkh (v0.21): jmp from lk_hold in ed_event's frame (after its movm and add -28: (12,sp) cursor id 2197 + k,
  * (24,sp) the event, a2 = P, a3 = the parent, d2 = 4). OK held on the wheel (0x903e) with a look selected for COLOR k:
@@ -2208,6 +2252,8 @@ xb_ck:                            /* ft3: 1 = xb_lg answers combiner 1 for this 
 xb_fx1:                           /* ft4: Grain level when combiner 1's set-up gets COLOR's chroma back, 0 none */
  .byte 0
 xb_k3:                            /* ft7: 1 = the texture goes to a conversion pass (keep its stage) */
+ .byte 0
+xb_ownf:                          /* v0.25: 1 = this capture's COLOR shows its own settings (xb_cap) */
  .byte 0
 xb_sw:                            /* ft8b: 1 = this still got Grainy Film II's work list (xb_wl) */
  .byte 0
