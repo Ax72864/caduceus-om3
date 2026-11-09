@@ -2018,3 +2018,23 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   dial label the camera's throughout; values set on both pages; half-press save status 1. Without TONES.BIN: the
   camera's guide on pages 5 / 6, no fault.
 - Package sp2: E1479999.BIN 6245db90…, GUIDES.BIN 2fffcee5…, LABELS.BIN d6c1b4ab…, TONES.BIN a5cd04e9… (LOOKS.BIN on the card kept).
+
+### sp2 camera result and sp3 (2026-11-09)
+- **Camera (owner, sp2): still restarts.** Owner's recipe: adjust COLOR 1's HSL, switch to silent mode (the photo is
+  taken fine), then open COLOR 1 to adjust it -> restart. Also: the '*' stays when everything is back at 0, and
+  holding OK does not reset everything.
+- **Reproduced in the emulator, and also on the released v0.25 (fx3 = outrel): not split toning.** Tokens
+  `s1 ok ok down info info main+2 s1 wait ok down down ok right ok s1 wait ok up up ok`: fault in gr_is
+  (0x60f4b29b, `movhu (4,a0)` with a0 = 0x20041001) at Picture Mode's first update. Cause: sc_cap took any holder
+  that loads scene 456 as the WB grid's holder (gr_cont); the drive mode list (FUNC_DIRECT, 0x....) uses 456 for its
+  bottom bar too, then goes away; Picture Mode's first update read the freed holder. Fix: gx_map keeps the state it
+  sends the GUI to (gr_st); sc_cap takes the holder only when that is Picture Mode (0x0418). Emulator: the recipe
+  runs without a fault; the WB row's grid shows before and after the drive mode change.
+- '*': ed_isdef read slot +52..55 as a word, so a split toning colour byte (+55) with strength 0 counted as a change;
+  now +52, +53, +54 and the strengths +56, +58 (not the colours). tn_set clears the colour with the strength.
+  Emulator: '*' on COLOR 1 / HSL with Shadows 1, gone at 0.
+- Hold OK on the wheel / COLOR n cleared slot +0..54 only: now +0..58 (split toning too). Emulator: Hue and Shadows
+  back to 0.
+- The still-only engine gates of sp2 stay (harmless; the silent-mode report was this grid bug).
+- Package sp3: E1479999.BIN 8fdec5af…, GUIDES.BIN f1d60781…, LABELS.BIN d6c1b4ab…, TONES.BIN a5cd04e9… (as sp2).
+- **v0.25 has the drive-mode restart too** (the WB grid row): fix it in the next release (or a v0.25.1).

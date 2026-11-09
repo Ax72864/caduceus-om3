@@ -1583,7 +1583,8 @@ e_rst:
  mov a2,a0
  add d0,a0                        /* slot entry: hue[12] +0, light[12] +12 */
  clr d0
- mov 55,d1                        /* slot +0..54 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix/Grain/Sharp) */
+ mov 59,d1                        /* slot +0..58 (hue, light, WB, flags, Blacks/Whites, Extras glow/art/NR/VigFix/Grain/Sharp,
+                                   * v0.26 split toning) */
 2:
  movbu d0,(a0)
  inc a0
@@ -1711,7 +1712,13 @@ ed_isdef:
  movbu (47,a0),d3                 /* Blacks, Whites, Extras Glow/Clarity, Art Effect, NR, VigFix: any non-zero */
  mov (48,a0),d1                   /* +48..51 (slot entries are 4-aligned: P + 32 + 64k) */
  or d1,d3
- mov (52,a0),d1                   /* +52..55: VigFix, Grain, two zero bytes */
+ movhu (52,a0),d1                 /* +52, +53: VigFix, Grain */
+ or d1,d3
+ movbu (54,a0),d1                 /* +54 Sharp (v0.26: +55, a split toning colour, alone is no change) */
+ or d1,d3
+ movbu (56,a0),d1                 /* v0.26: the split toning strengths +56, +58 */
+ or d1,d3
+ movbu (58,a0),d1
  or d1,d3
  cmp 0,d3
  bne 7f
@@ -4357,6 +4364,8 @@ gr_cont:                          /* the holder of Picture Mode's layer 457, cap
  .long 0
 gr_sv:
  .long 0, 0, 0, 0
+gr_st:                            /* v0.26: the GUI state gx_map last sent the screen to */
+ .long 0
 gr_blk:                           /* the grid's block (property 256, 18 B, as the WB screen's +5188 from 0x611d257a):
                                    * B / A / G / M box states 3, flags, A-B line x, G-M line y, dot x / y */
  .byte 3, 3, 3, 3, 0, 0, 0, 0
@@ -4675,6 +4684,10 @@ gr_now:
  * empties (-1) when it opens; on our row we load 485 into it again, and empty it when the row or the screen goes. */
 sc_cap:
  cmp GLY,d0
+ bne 1f
+ mov (gr_st),d3                   /* v0.26 (camera: COLOR 1 after the drive mode screen restarted it): only Picture Mode's
+                                   * load; other screens' bottom bars (e.g. the drive mode list) use 456 too and go away */
+ cmp 0x0418,d3
  bne 1f
  movbu (gr_fine),d3               /* not while the fine-tune screen is open from our row (its own 457 holder goes away;
                                    * Picture Mode's stays) */
@@ -4997,6 +5010,12 @@ gx_map:
  bne 9f
  mov d1,(gr_cont)                 /* else the holder may go with the screen: captured again when 457 loads */
 9:
+ mov d0,d1                        /* v0.26: the screen we go to (sc_cap takes the holder only for Picture Mode) */
+ exthu d1
+ cmp 0,d1
+ beq 91f
+ mov d1,(gr_st)
+91:
  mov d0,d3
  exthu d3
  mov d3,d2
@@ -8013,8 +8032,9 @@ tn_set:
  movbu (d0,a2),d3
  cmp d2,d3
  bne 4f                           /* 0 on another colour: nothing to change */
+ movbu d1,(d0,a2)                 /* off: colour 0 ... */
  inc d0
- movbu d1,(d0,a2)                 /* strength 0 */
+ movbu d1,(d0,a2)                 /* ... strength 0 */
  bra 4f
 3:
  movbu d2,(d0,a2)                 /* colour ... */
