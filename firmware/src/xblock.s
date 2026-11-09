@@ -643,6 +643,14 @@ xb_tex:
  movbu (53,a1),d0                 /* Grain 1..3 */
  cmp 0,d0
  beq 9f
+ movbu (49,a1),d1                 /* rc2c: Glow / Clarity AND Frame with Grain: the camera wrote no picture (owner,
+                                     PB081509..511): no texture there -> the CPU grain (slower), as v0.22 */
+ cmp 0,d1
+ beq 3f
+ movbu (50,a1),d1
+ cmp 5,d1
+ beq 9f
+3:
  movbu d0,(xb_tl)                 /* ft9: Glow / Clarity too (Grainy Film's list) */
  movbu (50,a1),d1
  movbu d1,(xb_tart)

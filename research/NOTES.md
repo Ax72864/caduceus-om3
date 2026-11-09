@@ -1690,3 +1690,10 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   own Glow / Frame used again (XB_OWNOFF 0). Firmware 591fe72d…, GUIDES 6ec55047…. New camera pictures: "Glow",
   "Frame / Off", "Frame / On" (sent to the owner).
 - Owner approved the rc2b row pictures ("Glow", "Frame / Off", "Frame / On"), 2026-11-08.
+- **rc2b camera (2026-11-08, owner):** the four row tests worked (Glow / Clarity, Frame, '*', hold-OK reset;
+  PB081506..508). But **Glow + Frame + Grain together: "picture error"**: PB081509 / 510 / 511 are 93 184 B files -
+  the EXIF header and thumbnail only, no main image (the camera wrote no picture). Isolation (PB081511..513): Glow -1 +
+  Frame + Grain High = broken; Glow -1 + Frame, Grain Off = fine (white frame); Sharp -5 + NR Off + VigFix Off + Grain
+  High = fine (Y hp ~22). So the break is Glow + Frame on Grainy Film's list with the texture.
+- **rc2c (GUIDES only, firmware = rc2b; emulator: boots):** Glow / Clarity together with Frame and Grain: no texture,
+  COLOR's own list, the CPU grain (~3 s, as v0.22). Every other combination as rc2b. GUIDES cbee5efc….
