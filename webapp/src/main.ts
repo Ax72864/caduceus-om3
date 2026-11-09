@@ -19,7 +19,7 @@ import {
   SHARP, sharpLabel, slowGrain, monoGrain, toOm3, validateBank, type Bank, type Fw,
 } from './om3';
 import { namesBin } from './om3names';
-import { FILMS, FILM_GROUPS, filmLook, filmOf, type Film, type FilmGroup } from './om3films';
+import { CAMERA_FILMS, FILMS, FILM_GROUPS, filmLook, filmOf, type Film, type FilmGroup } from './om3films';
 import { parseLook } from './pack';
 
 // ---------------------------------------------------------------- state
@@ -267,7 +267,7 @@ function shell() {
         ...([['ep7', 'Olympus PEN E-P7'], ['om3', 'OM SYSTEM OM-3']] as [Cam, string][]).map(([c, t]) =>
           h('button', { role: 'radio', 'aria-checked': String(c === CAM), class: c === CAM ? 'on' : '', onclick: () => switchCamera(c) }, t))),
       h('span', { class: 'cam-note' }, om3
-        ? 'Caduceus for OM-3: 5 looks for each of COLOR 1–4 (LOOKS.BIN + NAMES.BIN).'
+        ? 'Caduceus for OM-3: 20 films, FILM 1–20 in Picture Mode (LOOKS.BIN).'
         : 'Caduceus for the E-P7: the Film page look pack (LOOKS.BIN).')),
     h('header', { class: 'top' },
       h('div', { class: 'brand' }, h('span', { class: 'mark', 'aria-hidden': 'true' }, '☤'), h('span', { class: 'word' }, 'Caduceus'),
@@ -522,7 +522,7 @@ function lookCodePanel(l: Look): HTMLElement {
         const c = toOm3(decodeLookCode(t));
         if (!c.look) throw new Error('A monochrome look can\'t be an OM-3 look (COLOR looks only).');
         c.look.notes = l.notes; O.bank[O.k][O.v] = c.look; save(); renderAll();
-        toast(`Loaded "${c.look.name}" into COLOR ${O.k + 1}, look ${O.v + 1}${om3Changes(c)}`);
+        toast(`Loaded "${c.look.name}" into ${at(O.k, O.v)}${om3Changes(c)}`);
       } catch (e) { msg.className = 'help err'; msg.textContent = (e as Error).message; }
       return;
     }
@@ -1147,7 +1147,7 @@ const fmtProblem = (p: Problem) => (p.look !== undefined ? `Look ${p.look + 1} (
 // The OM-3 has no look list: each of COLOR 1-4 holds five numbered looks (the camera's Film page, dial 1-5).
 const OB_PREFIX = 'ob1_', OP_PREFIX = 'op1_';
 const OM3_GH = 'https://github.com/androidfanman/caduceus-om3';
-const at = (k: number, v: number) => `COLOR ${k + 1}, look ${v + 1}`;
+const at = (k: number, v: number) => `FILM ${k * PER + v + 1}`;   // owner 2026-11-08: one list, FILM 1-20 (COLOR k = (n - 1) / 5 on the card)
 
 function switchCamera(c: Cam) {
   if (c === CAM) return;
@@ -1163,12 +1163,12 @@ function switchCamera(c: Cam) {
 }
 
 function newBank(kind: 'library' | 'empty') {
-  if (!confirm(kind === 'library' ? 'Reset all 20 looks to the standard set? Your current looks are replaced (Undo brings them back).'
+  if (!confirm(kind === 'library' ? 'Reset to the 20 films in the standard FILM 1–20 order? Your current films are replaced (Undo brings them back).'
     : 'Empty all 20 looks? Your current looks are removed (Undo brings them back).')) return;
   O.bank = kind === 'library' ? defaultBank(LIBRARY, fromLibrary) : emptyBank();
   O.k = 0; O.v = 0;
   save(); renderAll();
-  toast(kind === 'library' ? 'Looks reset to the standard set' : 'All looks emptied');
+  toast(kind === 'library' ? 'Reset to the 20 films (FILM 1–20)' : 'All films emptied');
 }
 
 let bankDrag: [number, number] | null = null;
@@ -1199,7 +1199,7 @@ function listsBar(): HTMLElement {
     h('div', { class: 'lists-btns' },
       h('button', { onclick: () => nameDialog('Save as a new list', '', 'Save', (n) => {
         flush(); LISTS.lists[n] = JSON.parse(JSON.stringify(O.bank)) as Bank; switchList(n, `Saved as "${n}". You're now on "${n}"; changes save into it.`);
-      }), title: 'Save all four COLORs\' looks under a new name' }, 'Save as…'),
+      }), title: 'Save all 20 films under a new name' }, 'Save as…'),
       h('button', { onclick: () => nameDialog(`Rename "${LISTS.current}"`, LISTS.current, 'Rename', (n) => {
         const b = LISTS.lists[LISTS.current]; delete LISTS.lists[LISTS.current];
         LISTS.lists[n] = b; LISTS.current = n; O.name = n; flush(); renderList(); toast(`Renamed to "${n}"`);
@@ -1237,18 +1237,19 @@ function renderBank() {
   const el = $('#list');
   const bad = new Set(validateBank(O.bank).map((p) => p.look));
   const used = O.bank.flat().filter(Boolean).length;
-  const groups = O.bank.map((row, k) => h('div', { class: 'bank-group' },
-    h('div', { class: 'list-head' }, h('span', {}, `COLOR ${k + 1}`), h('span', { class: 'count' }, `${row.filter(Boolean).length} / ${PER}`)),
-    h('ol', { class: 'looks bank' }, ...row.map((l, v) => {
+  // owner 2026-11-08: one list FILM 1-20, as on the camera (FILM n = COLOR (n - 1) / 5 + 1, look (n - 1) % 5 + 1 in LOOKS.BIN)
+  const N = COLORS * PER, slot = (n: number): [number, number] => [Math.floor(n / PER), n % PER];
+  const films = h('ol', { class: 'looks bank' }, ...O.bank.flatMap((row, k) => row.map((l, v) => {
+      const n = k * PER + v;
       const sel = k === O.k && v === O.v;
       const li = h('li', {
         class: `look${sel ? ' sel' : ''}${l ? '' : ' empty-slot'}${bad.has(k * PER + v) ? ' bad' : ''}`, 'data-at': k * PER + v,
         draggable: l ? 'true' : 'false', tabindex: 0,
         onclick: () => { O.k = k; O.v = v; renderAll(); },
         onkeydown: (e: KeyboardEvent) => {
-          const n = k * PER + v, go = (m: number) => { if (m >= 0 && m < COLORS * PER) { O.k = Math.floor(m / PER); O.v = m % PER; renderAll(); focusSel(); } };
-          if (e.key === 'ArrowUp' && e.altKey && v > 0) { swapSlots([k, v], [k, v - 1]); e.preventDefault(); }
-          else if (e.key === 'ArrowDown' && e.altKey && v < PER - 1) { swapSlots([k, v], [k, v + 1]); e.preventDefault(); }
+          const go = (m: number) => { if (m >= 0 && m < COLORS * PER) { O.k = Math.floor(m / PER); O.v = m % PER; renderAll(); focusSel(); } };
+          if (e.key === 'ArrowUp' && e.altKey && n > 0) { swapSlots([k, v], slot(n - 1)); e.preventDefault(); }
+          else if (e.key === 'ArrowDown' && e.altKey && n < N - 1) { swapSlots([k, v], slot(n + 1)); e.preventDefault(); }
           else if (e.key === 'ArrowUp') { go(n - 1); e.preventDefault(); }
           else if (e.key === 'ArrowDown') { go(n + 1); e.preventDefault(); }
           else if ((e.key === 'Delete' || e.key === 'Backspace') && l) { clearSlot(k, v); e.preventDefault(); }
@@ -1260,20 +1261,20 @@ function renderBank() {
         ondrop: (e: DragEvent) => { e.preventDefault(); li.classList.remove('over'); if (bankDrag) swapSlots(bankDrag, [k, v]); bankDrag = null; },
       },
       h('span', { class: 'grip', 'aria-hidden': 'true' }, l ? '⋮⋮' : ''),
-      h('span', { class: 'idx' }, String(v + 1)),
+      h('span', { class: 'idx' }, String(n + 1)),
       h('span', { class: 'nm' }, l ? l.name || '(no name)' : 'Empty'),
       h('span'),
       h('span', { class: 'row-btns' },
-        h('button', { class: 'icon', title: 'Move up (Alt+↑)', 'aria-label': 'Move up', disabled: v === 0, onclick: (e: Event) => { e.stopPropagation(); swapSlots([k, v], [k, v - 1]); } }, '↑'),
-        h('button', { class: 'icon', title: 'Move down (Alt+↓)', 'aria-label': 'Move down', disabled: v === PER - 1, onclick: (e: Event) => { e.stopPropagation(); swapSlots([k, v], [k, v + 1]); } }, '↓'),
+        h('button', { class: 'icon', title: 'Move up (Alt+↑)', 'aria-label': 'Move up', disabled: n === 0, onclick: (e: Event) => { e.stopPropagation(); swapSlots([k, v], slot(n - 1)); } }, '↑'),
+        h('button', { class: 'icon', title: 'Move down (Alt+↓)', 'aria-label': 'Move down', disabled: n === N - 1, onclick: (e: Event) => { e.stopPropagation(); swapSlots([k, v], slot(n + 1)); } }, '↓'),
         h('button', { class: 'icon danger', title: 'Remove (leaves the number empty)', 'aria-label': 'Remove', disabled: !l, onclick: (e: Event) => { e.stopPropagation(); clearSlot(k, v); } }, '×')));
       return li;
-    }))));
+    })));
   el.replaceChildren(
     listsBar(),
-    h('div', { class: 'list-head' }, h('span', {}, 'Looks'), h('span', { class: 'count' }, `${used} / ${COLORS * PER}`)),
-    ...groups,
-    h('p', { class: 'help' }, 'The number is the Film page dial (1–5) for that COLOR; 0 on the camera is "nothing". Drag a look to another number, or use ↑ ↓. An empty number shows "Empty" on the camera and loads neutral there.'));
+    h('div', { class: 'list-head' }, h('span', {}, 'Films'), h('span', { class: 'count' }, `${used} / ${N}`)),
+    films,
+    h('p', { class: 'help' }, 'The camera lists these as FILM 1–20 in Picture Mode, after COLOR 1–4, in this order. Drag a film to another place, or use ↑ ↓. Empty places are left out of the camera\'s list (the films after them move up a number).'));
 }
 
 /** The editor for a number with no look: make one. */
@@ -1313,11 +1314,10 @@ function om3LibraryPicker() {
 }
 
 /** Film sims: browse the fitted films, preview one on the current photo and add it to the looks. With `into`, the
- *  film goes into that (empty) number; otherwise into the selected number when it is empty, else the first empty
- *  number of the selected COLOR, else the first empty number anywhere (or, when all 20 are used, it asks to replace
+ *  film goes into that (empty) FILM; otherwise into the selected FILM when it is empty, else the first empty FILM (or, when all 20 are used, it asks to replace
  *  the selected look). Removing works as for any look (× in the list). */
 function om3FilmPicker(into?: { k: number; v: number }) {
-  let group: FilmGroup | 'all' = 'all', query = '', sel: Film | null = null;
+  let group: FilmGroup | 'all' | 'camera' = 'all', query = '', sel: Film | null = null;
   const pv = h('canvas', { class: 'film-pv', 'aria-label': 'Preview of the selected film sim' });
   const pvNote = h('div', { class: 'film-desc' });
   const drawPv = () => {
@@ -1333,9 +1333,7 @@ function om3FilmPicker(into?: { k: number; v: number }) {
   const target = (): { k: number; v: number } | null => {
     if (into && !O.bank[into.k][into.v]) return into;
     if (!O.bank[O.k][O.v]) return { k: O.k, v: O.v };
-    const inCol = O.bank[O.k].findIndex((l) => !l);
-    if (inCol >= 0) return { k: O.k, v: inCol };
-    for (let k = 0; k < COLORS; k++) { const v = O.bank[k].findIndex((l) => !l); if (v >= 0) return { k, v }; }
+    for (let k = 0; k < COLORS; k++) { const v = O.bank[k].findIndex((l) => !l); if (v >= 0) return { k, v }; }   // the first empty FILM
     return null;
   };
   const place = (f: Film, t: { k: number; v: number }) => {
@@ -1352,13 +1350,12 @@ function om3FilmPicker(into?: { k: number; v: number }) {
       box.replaceChildren(
         h('p', { class: 'help' }, `Pick the look ${f.name} replaces. The look you pick is overwritten (Undo brings it back).`),
         h('div', { class: 'replace-grid' }, ...O.bank.map((row, k) => h('div', { class: 'replace-col' },
-          h('h3', {}, `COLOR ${k + 1}`),
-          ...row.map((l, v) => h('button', { class: 'replace-slot', title: `Replace COLOR ${k + 1}, look ${v + 1}: ${l?.name ?? 'Empty'}`, onclick: () => { dlg.close(); place(f, { k, v }); } },
-            h('span', { class: 'num' }, String(v + 1)), h('span', { class: 'nm' }, l?.name ?? 'Empty')))))),
+          ...row.map((l, v) => h('button', { class: 'replace-slot', title: `Replace ${at(k, v)}: ${l?.name ?? 'Empty'}`, onclick: () => { dlg.close(); place(f, { k, v }); } },
+            h('span', { class: 'num' }, String(k * PER + v + 1)), h('span', { class: 'nm' }, l?.name ?? 'Empty')))))),
         h('div', { class: 'modal-actions' }, h('button', { onclick: () => dlg.close() }, 'Cancel')));
     };
     box.replaceChildren(
-      h('p', {}, `All 20 look numbers (5 for each of COLOR 1–4) are in use. Do you want to replace one of your looks with ${f.name}?`),
+      h('p', {}, `All 20 films (FILM 1–20) are in use. Do you want to replace one of them with ${f.name}?`),
       h('div', { class: 'modal-actions' },
         h('button', { onclick: () => dlg.close() }, 'No'),
         h('button', { class: 'primary', onclick: choose }, 'Yes, choose a look…')));
@@ -1370,24 +1367,29 @@ function om3FilmPicker(into?: { k: number; v: number }) {
   // where each film sim already is in the current list (COLOR k, number v), by the look's film origin
   const where = () => {
     const m = new Map<string, string[]>();
-    O.bank.forEach((row, k) => row.forEach((l, v) => { const f = l && filmOf(l); if (f) m.set(f.name, [...(m.get(f.name) ?? []), `COLOR ${k + 1} · ${v + 1}`]); }));
+    O.bank.forEach((row, k) => row.forEach((l, v) => { const f = l && filmOf(l); if (f) m.set(f.name, [...(m.get(f.name) ?? []), at(k, v)]); }));
     return m;
   };
   const list = h('div', { class: 'film-list', role: 'list' });
   const drawRows = () => {
     const have = where(), q = query.trim().toLowerCase();
-    const rows = FILMS.filter((f) => (group === 'all' || f.group === group) && (!q || `${f.name} ${f.film}`.toLowerCase().includes(q)));
-    const sections = FILM_GROUPS.filter(([g]) => rows.some((f) => f.group === g)).map(([g, label]) =>
-      h('div', { class: 'film-group' }, h('h3', {}, label), ...rows.filter((f) => f.group === g).map((f) =>
+    const hit = (f: Film) => !q || `${f.name} ${f.film}`.toLowerCase().includes(q);
+    // owner 2026-11-08: the camera's 20 first, in their FILM 1-20 order; under All the other films follow by type
+    const cam = group === 'all' || group === 'camera' ? CAMERA_FILMS.filter(hit) : [];
+    const rows = group === 'camera' ? [] : FILMS.filter((f) => (group === 'all' ? !CAMERA_FILMS.includes(f) : f.group === group) && hit(f));
+    const parts: [string, Film[]][] = [...(cam.length ? [['The 20 (FILM 1–20 order)', cam] as [string, Film[]]] : []),
+      ...FILM_GROUPS.filter(([g]) => rows.some((f) => f.group === g)).map(([g, label]) => [group === 'all' ? `More: ${label.toLowerCase()}` : label, rows.filter((f) => f.group === g)] as [string, Film[]])];
+    const sections = parts.map(([label, fs]) =>
+      h('div', { class: 'film-group' }, h('h3', {}, label), ...fs.map((f) =>
         h('div', { class: `film-row${sel === f ? ' on' : ''}${have.has(f.name) ? ' in-list' : ''}`, role: 'listitem' },
           h('button', { class: 'film-pick', onclick: () => { sel = f; drawPv(); drawRows(); }, 'aria-pressed': String(sel === f) },
-            h('b', {}, f.name), h('small', {}, f.film)),
+            h('b', {}, CAMERA_FILMS.includes(f) ? `${CAMERA_FILMS.indexOf(f) + 1}. ${f.name}` : f.name), h('small', {}, f.film)),
           have.has(f.name) ? h('span', { class: 'in-list-tag', title: `Already in "${LISTS.current}": ${have.get(f.name)!.join(', ')}` }, '✓ ', have.get(f.name)!.join(', ')) : null,
           h('button', { class: 'film-add', onclick: () => add(f), title: `Add ${f.name} to your looks` }, '+ Add')))));
     list.replaceChildren(...(sections.length ? sections : [h('p', { class: 'empty' }, 'No film matches.')]));
   };
   const chips = h('div', { class: 'seg film-groups', role: 'radiogroup', 'aria-label': 'Film type' },
-    ...([['all', 'All']] as [FilmGroup | 'all', string][]).concat(FILM_GROUPS.map(([g, l]) => [g, l.replace(' simulations', '')] as [FilmGroup, string])).map(([g, t]) =>
+    ...([['all', 'All'], ['camera', 'The 20']] as [FilmGroup | 'all' | 'camera', string][]).concat(FILM_GROUPS.map(([g, l]) => [g, l.replace(' simulations', '')] as [FilmGroup, string])).map(([g, t]) =>
       h('button', { role: 'radio', 'aria-checked': String(g === group), class: g === group ? 'on' : '', onclick: (e: Event) => {
         group = g; (e.currentTarget as HTMLElement).parentElement!.querySelectorAll('button').forEach((b) => { const on = b === e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
         drawRows();
@@ -1538,7 +1540,7 @@ function confirmPackToBank(p: Pack, fromE7 = true) {
   const e7 = h('button', {}, 'Open for the E-P7 instead');
   const no = h('button', {}, 'Cancel');
   const dlg = modal('Caduceus pack → OM-3 looks', h('div', {},
-    h('p', {}, `"${p.name}": ${p.looks.length} looks. The first ${r.n} colour looks become COLOR 1–4, looks 1–5, in order.`),
+    h('p', {}, `"${p.name}": ${p.looks.length} looks. The first ${r.n} colour looks become FILM 1–${r.n}, in order.`),
     h('p', { class: 'help' }, [r.mono ? `${r.mono} monochrome look(s) are skipped (COLOR looks only). ` : '', r.extra ? `${r.extra} more colour look(s) don't fit (20 looks). ` : '',
       'Hue, Light and WB are limited to ±5; a halation glow becomes a plain glow and Blur is left out. This replaces your current looks (Undo brings them back).'].join(''))),
   [no, ...(fromE7 ? [e7] : []), yes]);
@@ -1650,7 +1652,7 @@ function om3InstallDialog() {
       step('Flash',
         h('p', {}, 'Put the card in the camera, hold ', h('b', {}, 'OK'), ' and switch on. Wait for the update to finish (blinking LED) and don\'t switch off meanwhile. Then delete ', code('DCOLYMP/E1479999.BIN'), ' from the card.')),
       step('Shoot',
-        h('p', {}, 'Picture Mode › COLOR 1–4 › press ', h('b', {}, '▼'), ' for the wheel; it opens on ', h('b', {}, 'Film'), '. Turn the front dial to 1–5 to load a look; ', h('b', {}, 'INFO'), ' changes page (Saturation, Hue, Light, Extras). To keep changes in a look, go back to Film and hold ', h('b', {}, 'OK'), '.')))
+        h('p', {}, 'Picture Mode: after COLOR 1–4 the list shows ', h('b', {}, 'FILM 1–20'), ', in the order you set here. Pick one, then adjust its settings in the rows beside it; changes are saved into that film.')))
   );
   const dlg = modal('Install Caduceus for OM-3', body, [
     h('a', { class: 'btn', href: `${OM3_GH}/blob/main/docs/INSTALL.md`, target: '_blank', rel: 'noopener' }, 'Full guide on GitHub'),
@@ -1725,7 +1727,7 @@ function om3ExportDialog() {
     h('div', { class: 'ex-row' },
       h('div', {}, h('b', {}, 'RapidRAW presets (.rrpreset)'), h('p', { class: 'help' }, 'Every look as its own preset in a zip, for ORF files. Approximate.')),
       h('button', { disabled: !looks.length, onclick: () => download(`${fname}-rapidraw.zip`, rrAll(), 'application/zip') }, `All ${looks.length} (.zip)`)),
-    h('p', { class: 'help' }, 'The camera checks every file and ignores one that fails. A new LOOKS.BIN starts every COLOR at 0, so your current camera settings stay until you pick a look.')));
+    h('p', { class: 'help' }, 'The camera checks every file and ignores one that fails. A new LOOKS.BIN keeps the camera on its current setting until you pick a film.')));
 }
 
 // ---------------------------------------------------------------- start

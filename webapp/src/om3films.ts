@@ -15,8 +15,10 @@ export type FilmGroup = 'fuji' | 'slide' | 'neg' | 'instant' | 'print';
 export const FILM_GROUPS: [FilmGroup, string][] = [
   ['fuji', 'Fujifilm simulations'], ['slide', 'Slide film'], ['neg', 'Colour negative'], ['instant', 'Instant film'], ['print', 'Cinema print'],
 ];
-const DATA = filmsJson as { films: Film[]; aliases: Record<string, string> };
+const DATA = filmsJson as { films: Film[]; aliases: Record<string, string>; camera: string[] };
 export const FILMS = DATA.films;
+/** The 20 films for the camera, FILM 1-20 in the owner's order (scripts/films.py CAMERA). */
+export const CAMERA_FILMS: Film[] = DATA.camera.map((n) => FILMS.find((f) => f.name === n)!);
 
 /** A look's film sim, from its origin (`film:<name>`, set when it was added) or, for looks added before origins, its
  *  unchanged name. Renamed or edited looks keep their origin. Names from earlier versions of the list map to the film

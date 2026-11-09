@@ -22,7 +22,7 @@
 //   NAMES.BIN v1: the name pictures for the Film page (./om3names.ts).
 import { ARTS, blankLook, cloneLook, toneIsZero, zeroTone, type Grain, type Look, type Pack } from './pack';
 import { crc32, type Problem } from './format';
-import { filmByName, filmLook } from './om3films';
+import { CAMERA_FILMS, filmByName, filmLook } from './om3films';
 
 export const COLORS = 4, PER = 5;
 export const OM3 = { hl: 5, sat: 5, wb: 5, contrast: 2, sharpness: 2, shading: 5, hsm: 7, bw: 5, fx: 5, grain: 3 } as const;
@@ -176,14 +176,10 @@ export function readProfiles(b: Uint8Array): Bank {
   return bank;
 }
 
-// ---- first visit: 20 looks, one theme per COLOR. `film:` = a film sim, otherwise a library look (a process rather
+// ---- first visit: the 20 films (FILM 1-20). `film:` = a film sim, otherwise a library look (a process rather
 // than a film).
-const DEFAULT_NAMES = [
-  ['film:Classic Chrome', 'film:Classic Neg', 'film:Reala Ace', 'film:Eterna', 'film:Pro Neg Std'],              // Fujifilm
-  ['film:Velvia 50', 'film:Kodachrome 64', 'film:Ektachrome E100', 'film:Provia 100F', 'film:Astia 100F'],     // slide
-  ['film:Portra 400', 'film:Portra 160', 'film:Ektar 100', 'film:Gold 200', 'film:Fuji 400H'],                 // negative
-  ['film:CineStill 800T', 'film:Kodak 2383', 'film:Vision3 250D', 'film:FP-100C', 'Bleach Byp.'],               // cinema & instant
-];
+// owner 2026-11-08: the 20 film sims in the camera's FILM 1-20 order (scripts/films.py CAMERA).
+const DEFAULT_NAMES = Array.from({ length: COLORS }, (_, k) => CAMERA_FILMS.slice(PER * k, PER * k + PER).map((f) => `film:${f.name}`));
 /** Start-up looks carry no grain, Glow / Clarity or Art Effect: those stay the user's choice. */
 const plain = (l: Look | null): Look | null => { if (l) { l.effect = null; l.art_effect = 'off'; delete l.film_grain; } return l; };
 export function defaultBank(library: Pack, fromLib: (l: Look) => Look): Bank {

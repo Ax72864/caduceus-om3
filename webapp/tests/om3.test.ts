@@ -50,17 +50,18 @@ function randomBank(seed: number): Bank {
 }
 
 describe('OM-3 profile bank', () => {
-  it('first visit: 20 colour library looks, all valid for the camera', () => {
+  it('first visit: the 20 films in the owner\'s FILM 1-20 order, all valid for the camera', () => {
     const b = defaultBank(LIB, fromLibrary);
     expect(b.flat().filter(Boolean)).toHaveLength(20);
     expect(validateBank(b)).toEqual([]);
     expect(b.map((r) => r.map((l) => l!.name))).toEqual([
-      ['Classic Chrome', 'Classic Neg', 'Reala Ace', 'Eterna', 'Pro Neg Std'],
-      ['Velvia 50', 'Kodachrome 64', 'Ektachrome E100', 'Provia 100F', 'Astia 100F'],
-      ['Portra 400', 'Portra 160', 'Ektar 100', 'Gold 200', 'Fuji 400H'],
-      ['CineStill 800T', 'Kodak 2383', 'Vision3 250D', 'FP-100C', 'Bleach Byp.'],
+      ['Portra 400', 'Gold 200', 'Kodachrome 64', 'Portra 800', 'CineStill 800T'],
+      ['Ektar 100', 'Ultramax 400', 'Pro 400H', 'Velvia 50', 'Superia 400'],
+      ['ColorPlus 200', 'CineStill 400D', 'Fuji C200', 'Ektachrome E100', 'Reala 100'],
+      ['Provia 100F', 'Vision3 250D', 'Fuji Eterna', 'Astia 100F', 'Agfa Ultra 100'],
     ]);
-    expect(b[0][0]!.origin).toBe('film:Classic Chrome');
+    expect(b[0][0]!.origin).toBe('film:Portra 400');
+    expect(filmByName('Fuji 400H')!.name).toBe('Pro 400H');   // renamed films keep older looks' film
     for (const l of b.flat()) {   // no grain, Glow / Clarity or Art Effect in the start-up looks
       expect(l!.effect).toBeNull(); expect(l!.art_effect).toBe('off'); expect(l!.film_grain).toBeUndefined();
     }

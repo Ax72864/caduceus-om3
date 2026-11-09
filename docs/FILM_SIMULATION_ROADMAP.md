@@ -18,6 +18,8 @@ new features have room; more can be opened up the same way.
 
 ## Next steps
 
+0. **Camera test of the 20 rewritten film sims** (owner's order, FILM 1-20; on the card 2026-11-08). Then tune
+   from the owner's photos.
 1. **Our own grain texture** (after v0.25's fast colour grain with every setting): colour speckle and grain size from the
    Grain Lab design, through the same texture route. Plan: project doc `fast-grain-plan`, `research/NOTES.md`.
 2. **Research coloured glow (halation)** in the emulator: whether the Soft Focus glow can take a colour, as on the
@@ -63,6 +65,7 @@ new features have room; more can be opened up the same way.
 
 | Date | Item | What it gives film looks |
 |---|---|---|
+| 2026-11-08 | The camera's 20 films (camera test pending) | 20 film sims rewritten in the owner's order, FILM 1–20 on the camera and in the Control Panel (one list). |
 | 2026-11-08 | v0.25 fast colour grain (camera-tested, release pending) | Film grain from the image processor in colour, as fast as no grain, with Shading and Glow / Clarity; a Glow row (+ Glow, − Clarity), a WB grid row, no Art Effects; film choice and changes now kept over power off. |
 | 2026-11-08 | v0.24.1 films in the list | Films (FILM n) in the Picture Mode list with their names; changes kept per film; the Extras as Picture Mode rows. Glow / Clarity and Art Effects off and the Shading row hidden for now. (v0.24 was withdrawn the same day: Film Grain High rebooted the camera.) |
 | 2026-11-07 | v0.22 Sharp | Sharpening per look, −5 (Off) to +2; film sims set it. |

@@ -1873,3 +1873,25 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   v0.25 candidate: E1479999.BIN db189ca6…, GUIDES.BIN 1edf66bd…, LABELS.BIN d6c1b4ab…). Not released yet: releases
   /v0.25 on the branch still holds rc2c's files and must be rebuilt from this build before a release (owner's go-ahead
   needed). Next (owner): update the Control Panel and the film sims.
+
+## The camera's 20 film sims, rewritten (2026-11-08; preview + emulator, camera test pending)
+- Owner: the 20 films on the camera in a fixed order, the same order in the Control Panel, rewritten with every
+  setting now mapped: 1 Portra 400, 2 Gold 200, 3 Kodachrome 64, 4 Portra 800, 5 CineStill 800T, 6 Ektar 100,
+  7 Ultramax 400, 8 Pro 400H, 9 Velvia 50, 10 Superia 400, 11 ColorPlus 200, 12 CineStill 400D, 13 Fuji C200,
+  14 Ektachrome E100, 15 Reala 100, 16 Provia 100F, 17 Vision3 250D (250D / 50D), 18 Fuji Eterna, 19 Astia 100F,
+  20 Agfa Ultra 100. FILM n = LOOKS.BIN record n - 1 (COLOR (n - 1) / 5 + 1, look (n - 1) % 5 + 1).
+- webapp/scripts/films.py: the 20 recipes rewritten at the top of FILMS (single sectors where it matters, e.g. skin
+  = O, OR; WB A-B / G-M, Blacks / Whites, Contrast, Shadows / Midtones / Highlights, Sharp); `CAMERA` = the order
+  (om3films.json 'camera'). Renamed: Fuji 400H -> Pro 400H, Superia Reala -> Reala 100 (aliases keep older looks'
+  film). New: Fuji Eterna (the motion-picture film; 'Eterna' stays as Fujifilm's cinema mode). No grain, Glow /
+  Clarity, Art Effects, Shading or NR in the films (user's choice); lens vignette correction off as every look.
+- Tuned by eye on the Control Panel preview (approximate; analysis): contact sheets of the 20 on 7 sample photos.
+  Kodachrome 64's Shadows -3 crushed the blue-hour scene: -2.
+- Control Panel: the look list is one list FILM 1-20 (no COLOR 1-4 groups; owner); the film browser shows "The 20"
+  first in FILM order, the rest under "More"; first visit and "Reset looks to standard" give the 20 in order.
+  Tests (om3) pass. looklab/ not rebuilt yet.
+- LOOKS.BIN (Control Panel export, fw 24): b7e4262a…. Emulator (fx3 build, GUIDES / LABELS fx3): the Picture Mode
+  list shows FILM 1-20; FILM 1 "Portra 400" Contrast -1, Sh +1 Mid +1 Hi -2; FILM 9 "Velvia 50" Contrast +2, Blk -1;
+  FILM 20 "Agfa Ultra 100" Contrast +1. On the owner's card as LOOKS.BIN and LOOKS.NEW, checked by checksum; the old
+  LOOKS.BIN / .NEW / EDITS.BIN kept in the session scratchpad (not in the repo). Old EDITS.BIN changes drop by
+  themselves (each carries a CRC of the film record it came from). No firmware change.
