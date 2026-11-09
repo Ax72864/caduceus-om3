@@ -1,3 +1,7 @@
+> **Experiment branch `experiment/split-tone-probe` (2026-11-09): not for use.** Probe st1 = the v0.25 candidate (fx3)
+> plus fixed split toning (teal shadows, orange highlights) on COLOR 4 / FILM 16-20 only, to test on the camera whether
+> bending the camera's own R/G/B curves works. Emulator only; see `research/NOTES.md` "Split toning probe st1".
+
 # Caduceus for OM-3
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)

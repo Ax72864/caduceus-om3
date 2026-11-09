@@ -115,7 +115,7 @@ for (const t of SCRIPT.split(/\s+/).filter(Boolean)) {
     const ev = (x) => (typeof x === 'number' ? x : Function('P', 'SP', 'B', 'return (' + x + ')')(P, SP, B)) >>> 0;
     const RN = ['d0', 'd1', 'd2', 'd3', 'a0', 'a1', 'a2', 'a3', 'sp', 'pc', 'psw', 'mdr'];
     for (const cs of spec) {
-      for (const [a, hex] of cs.mem || []) dd.write(ev(a), Uint8Array.from(Buffer.from(hex, 'hex')));
+      for (const [a, hex] of cs.mem || []) { if (hex.startsWith('=')) { const v = ev(hex.slice(1)); dd.write(ev(a), Uint8Array.from([v & 255, v >> 8 & 255, v >> 16 & 255, v >>> 24])); } else dd.write(ev(a), Uint8Array.from(Buffer.from(hex, 'hex'))); }
       const r = saved.slice(); r[14] = 0;
       for (const [k, v] of Object.entries(cs.regs || {})) r[RN.indexOf(k)] = ev(v);
       if (!cs.regs || cs.regs.sp === undefined) r[8] = SP;

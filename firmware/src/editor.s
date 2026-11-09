@@ -1948,7 +1948,7 @@ t9:
  mov (24,sp),a3
  add 52,sp
  mov d3,a0                        /* displaced 0x605197d7 */
- jmp tone_next                    /* 0x60518fa4; returns to 0x605197de */
+ jmp st_run                       /* split-tone probe st1 (ext11): ends with mov d3,a0; jmp tone_next */
 
 
 /* ------------------------------------------------------------------ section-3 tail: look library page (test 14)
@@ -7638,3 +7638,134 @@ s_wl:
  mov d0,d2
 9:
  jmp wl_back
+
+/* ------------------------------------------------------------------ split toning probe st1 (experiment branch)
+ * research/NOTES.md "Split toning": the RGB gamma stage (0x60516ad9) copies the picture-mode curve into the job three
+ * times (O+1252 R / +1892 G / +2532 B: 256 x u16 12-bit + 64 x u16 fine table, 640 B each) before the stage list that
+ * holds our tone hook. st_run runs at tone's exit (same context C in d3, all registers as at the hook), bends each
+ * channel: t' = t + ((Ks ws + Kh wh) >> 8), ws = (t s >> 12) s >> 12, wh = (t t >> 12) s >> 12, s = 4095 - t
+ * (research/splittone/model.py), clamped 0..4095, over all 320 entries (a function of the value, so the fine table
+ * stays consistent). Probe gates: COLOR still (key 11, or 12 with +1731 0, as tone); effective COLOR profile 4 only
+ * (FILM 16-20 and COLOR 4); R, G and B tables still identical (stock COLOR copies one curve three times, so a second
+ * pass never bends twice and art curves are left alone). Fixed tint: teal shadows (14 Cb/Cr units at the peak),
+ * orange highlights (12). Stores: own stack frame, O+1252..O+3171. */
+.section .ext11,"ax"
+st_run:
+ add -48,sp
+ mov d0,(44,sp)                   /* (0,sp) is the getter call's return word */
+ mov d1,(4,sp)
+ mov d2,(8,sp)
+ mov d3,(12,sp)
+ mov a1,(16,sp)
+ mov a2,(20,sp)
+ mov a3,(24,sp)
+ mov mdr,d0
+ mov d0,(28,sp)
+ mov d3,a2                        /* a2 = context C */
+ mov (12,a2),a3                   /* a3 = output O */
+ mov (4,a2),a1                    /* request R */
+ movhu (10,a1),d0
+ cmp 11,d0
+ beq 1f
+ cmp 12,d0
+ bne s9
+ movbu (1731,a1),d0
+ cmp 0,d0
+ bne s9
+1:
+ mov 63153,d0                     /* effective COLOR profile number */
+ clr d1
+ mov 0,a0
+ call getter,[d2,d3],12           /* keeps a2/a3 */
+ cmp 4,d0
+ bne s9                           /* probe: COLOR 4 (FILM 16-20) only */
+ mov a3,a0
+ add 1252,a0                      /* a0 = R table */
+ mov a0,a1
+ add 640,a1                       /* a1 = G table */
+ clr d1
+2:
+ movhu (d1,a0),d0
+ movhu (d1,a1),d2
+ cmp d0,d2
+ bne s9                           /* R != G: already toned, or not one curve */
+ add 640,d1
+ movhu (d1,a1),d2                 /* B (G + 640) */
+ add -640,d1
+ cmp d0,d2
+ bne s9
+ add 2,d1
+ cmp 640,d1
+ bne 2b
+ clr d0
+ mov d0,(40,sp)                   /* channel 0..2 */
+3:
+ mov (40,sp),d0
+ mov st_k,a1
+ add d0,a1
+ movbu (a1),d1
+ extb d1
+ mov d1,(32,sp)                   /* Ks */
+ movbu (3,a1),d1
+ extb d1
+ mov d1,(36,sp)                   /* Kh */
+ mov 640,d1
+ mul d0,d1
+ mov a3,a0
+ add 1252,a0
+ add d1,a0                        /* a0 = this channel's table */
+ mov a0,a1
+ add 640,a1
+4:
+ movhu (a0),d0                    /* t */
+ mov 4095,d1
+ sub d0,d1                        /* s */
+ mov d0,d2
+ mul d1,d2
+ lsr 12,d2
+ mul d1,d2
+ lsr 12,d2                        /* ws */
+ mov (32,sp),d3
+ mul d3,d2                        /* Ks ws */
+ mov d0,d3
+ mul d0,d3
+ lsr 12,d3
+ mul d1,d3
+ lsr 12,d3                        /* wh */
+ mov (36,sp),d1
+ mul d1,d3                        /* Kh wh */
+ add d3,d2
+ asr 8,d2
+ add d2,d0
+ bge 5f
+ clr d0
+5:
+ cmp 4095,d0
+ ble 6f
+ mov 4095,d0
+6:
+ movhu d0,(a0)
+ add 2,a0
+ cmp a1,a0
+ bne 4b
+ mov (40,sp),d0
+ inc d0
+ mov d0,(40,sp)
+ cmp 3,d0
+ bne 3b
+s9:
+ mov (28,sp),d0
+ mov d0,mdr
+ mov (44,sp),d0
+ mov (4,sp),d1
+ mov (8,sp),d2
+ mov (12,sp),d3
+ mov (16,sp),a1
+ mov (20,sp),a2
+ mov (24,sp),a3
+ add 48,sp
+ mov d3,a0                        /* displaced 0x605197d7 */
+ jmp tone_next                    /* 0x60518fa4; returns to 0x605197de */
+st_k:
+ .byte -66, 5, 121, 57, -5, -124  /* Ks R G B (teal shadows), Kh R G B (orange highlights) */
+ .align 2

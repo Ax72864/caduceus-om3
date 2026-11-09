@@ -1916,3 +1916,22 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   has ~3 KB left, so the pass would go in ext11 and call the block's xb_open / mapper through the block entry table.
   Rules: halation is an effect the user adds (like Glow), not part of the film sims. Open: control (a Halo row, or a
   Glow colour), and the OM-3 chroma byte order.
+
+## Split toning probe st1 (2026-11-09; emulator only, camera test pending; branch experiment/split-tone-probe)
+- Owner: halation parked; split toning next. Plan: (1) probe the mechanism on the camera with fixed values, (2) then
+  per-look bytes, a Picture Mode row and the Control Panel.
+- st1 = fx3 (v0.25 candidate) + st_run (ext11, ~260 B; ext11 now ends 0x60f58d43 of 0x60f59800). Tone hook's exit
+  `jmp tone_next` -> `jmp st_run`, which ends with the displaced `mov d3,a0; jmp tone_next`. The gamma stage
+  (copier 0x60516c8d) runs before the stage list that holds the tone hook, so the job's R/G/B tables are there.
+  Bend per channel as model.py (Ks, Kh s8, >> 8) over all 320 entries (256 + the 64-entry fine table: the bend is a
+  function of the value, so both stay consistent). Gates: key 11 (or 12 with +1731 0); effective COLOR profile 4
+  (getter 63153) only; R, G, B tables identical before (one curve copied three times = stock COLOR; after our bend
+  they differ, so a repeated pass or a skipped copy never bends twice; art curves are left alone).
+  Probe tint: Ks (-66, 5, 121) teal shadows, Kh (57, -5, -124) orange highlights.
+- Emulator (research/splittone/probe_test.py; stock stage on a synthetic COLOR still, then tone -> st_run, then
+  tone only again; sess7 ncall now takes '=expr' values): COLOR 1: R = G = B (untouched). COLOR 4: toned, curves
+  rising, grey tint Cb +6.7 / Cr -4.5 at input 16, Cb -6.7 / Cr +3.7 at input 128, white and black unchanged;
+  the second pass leaves it as it was (no double bend). Bug found on the way: the test's request id bytes
+  (R+8.. must be 00 00 0b 00).
+- Package st1: E1479999.BIN 337bb2ff…, GUIDES.BIN 0457541…, LABELS.BIN d6c1b4ab… (= fx3). Not known: whether the
+  ISP uses these tables for the photo (camera test), whether live view shows it.
