@@ -1593,3 +1593,7 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Open: why Frame restarts (Frame = development effect 0 -> textured, then a kind-3 0xf005 pass with combiner 10;
   in GF + Frame that pass also got the texture at +96 by the hook); Pin Hole / Glow / White Edge need the texture
   somewhere else (their development has its own combiner).
+- Owner: FILM 4 (High + Frame) restarts the camera **every time** (ft5).
+- **ft6 (GUIDES only, firmware = ft4; emulator: boots):** the texture only for no Art Effect or Star Light and no
+  Glow / Clarity; Frame, Pin Hole, White Edge and Glow / Clarity with Grain go back to the CPU grain (Soft Focus pass,
+  ~3 s, as v0.22). GUIDES 705cf9b8…. Meant as the safe base for a release candidate; Frame + texture stays research.

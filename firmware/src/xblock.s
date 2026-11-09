@@ -162,7 +162,12 @@ xb_cap:
  movbu d0,(xb_gt)
  bra 1f
 3:
- bra 1f                           /* ft5: Art Effect + Grain: the texture in the development, no Soft Focus pass */
+ movbu (53,a1),d0                 /* Art Effect + Grain: the Soft Focus passes for the CPU grain (w 1024), */
+ cmp 0,d0
+ beq 1f
+ movbu (50,a1),d0                 /* ft6: except Star Light (1): its development takes the texture */
+ cmp 1,d0
+ beq 1f
 2:
  or 128,d1
 1:
@@ -589,6 +594,14 @@ xb_su:
  movbu (53,a1),d0                 /* Grain 1..3 */
  cmp 0,d0
  beq 9f
+ movbu (49,a1),d1                 /* ft6: the texture only without Glow / Clarity and with no Art Effect or Star
+                                     Light (Frame restarted the camera; Pin Hole / White Edge / Glow have their own
+                                     combiner in the development): those keep the CPU grain */
+ cmp 0,d1
+ bne 9f
+ movbu (50,a1),d1
+ cmp 1,d1
+ bhi 9f
  movbu d0,(xb_tl)
  mov a2,a3
  add 4,a3                         /* the still's parameters */
