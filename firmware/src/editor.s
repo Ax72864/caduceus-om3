@@ -1408,7 +1408,10 @@ gd_check:
 /* gd_set: `call gd_set,[d2,a2],8`, a2 = P, d0 = page (2 Hue, 1 Light, else stock). Uses d1, a0, a1.
  * Only when the descriptor is the stock 14/175x50/8 one and its payload is the stock stream or one of ours. */
 gd_set:
+ add -4,sp                        /* v0.25: its slot (without it the call wrote over gd_set's saved a2, and ed_trig went
+                                   * on with a2 = garbage: no half-press save after the editor's first use) */
  call gd_sel,[d2,d3,a2,a3],24     /* film test 8: the Saturation page's label and guide */
+ add 4,sp
  mov GDESC,a0
  movhu (a0),d1
  cmp 14,d1
@@ -3589,7 +3592,7 @@ sl_slot:
  .macro SL_VAL
  cmp 11,d1
  bne 86f
- call wb_draw,[d2,d3,a2,a3],16    /* v0.25 WB grid row: draw its left cell from the look's A-B / G-M */
+ call wb_draw,[d2,d3,a2,a3],20    /* v0.25 WB grid row: draw its left cell from the look's A-B / G-M */
  clr d0
  bra 99f
 86:
@@ -4028,7 +4031,7 @@ sl_set0:
  or 1,d3
  and 0x7f,d3
  movbu d3,(57,a3)
- call gr_now,[d2,d3,a2,a3],16     /* v0.25: the grid's dot and the title's numbers follow */
+ call gr_now,[d2,d3,a2,a3],20     /* v0.25: the grid's dot and the title's numbers follow */
  jmp s_dirty
 10:
  cmp 1,a3
@@ -4468,7 +4471,7 @@ wb_wem:
 wb_v:
  .long 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-/* sh_build: `call sh_build,[d2,d3,a2,a3],16` (pu_hook, once): the Shading row's icon (the camera's picture 16244,
+/* sh_build: `call sh_build,[d2,d3,a2,a3],20` (pu_hook, once): the Shading row's icon (the camera's picture 16244,
  * 46 x 46, type 11) moved down SH_DY rows into sh_desc (owner, v0.25: its number sat lower than the icon; the row's
  * own left cell puts the readout lower than the slider rows' cells do). ic_get answers 16244 with it. Uses the WB
  * cell drawer's token reader / packer (wb_wtk / wb_wem, wb_v). */
@@ -4563,7 +4566,7 @@ sh_build:
  mov d0,(sh_desc + 16)
 8:
 9:
- ret [d2,d3,a2,a3],16
+ ret [d2,d3,a2,a3],20
 .balign 4
 sh_try:
  .long 0
@@ -4575,7 +4578,7 @@ sh_desc:
  .short 14, 46, 46, 8, 0, 0
  .long 0, 0, 0
 
-/* wb_draw: `call wb_draw,[d2,d3,a2,a3],16`, a0 = the look's slot: the WB grid row's left cell for its A-B (+26) /
+/* wb_draw: `call wb_draw,[d2,d3,a2,a3],20`, a0 = the look's slot: the WB grid row's left cell for its A-B (+26) /
  * G-M (+27), drawn by the code block (xb_wbc, +144) into its buffer, wb_desc pointing there; again only when the
  * values change. Without the block (or a drawing) the cell stays the camera's WB± picture (ic_get). */
 wb_draw:
@@ -4617,7 +4620,7 @@ wb_draw:
  mov -1,d0
  mov d0,(wb_last)                 /* try again next time */
 9:
- ret [d2,d3,a2,a3],16
+ ret [d2,d3,a2,a3],20
 .balign 4
 wb_last:
  .long -1
@@ -4653,19 +4656,19 @@ gr_id:
 9:
  ret [d2,d3],12
 
-/* gr_now: `call gr_now,[d2,d3,a2,a3],16`: gr_pub and gr_ref, keeping d0, d1, a0, a1 (sl_set's s_dirty needs them). */
+/* gr_now: `call gr_now,[d2,d3,a2,a3],20`: gr_pub and gr_ref, keeping d0, d1, a0, a1 (sl_set's s_dirty needs them). */
 gr_now:
  mov d0,(gr_sv)
  mov d1,(gr_sv + 4)
  mov a0,(gr_sv + 8)
  mov a1,(gr_sv + 12)
- call gr_pub,[d2,d3,a2,a3],16
- call gr_ref,[d2,d3,a2,a3],16
+ call gr_pub,[d2,d3,a2,a3],20
+ call gr_ref,[d2,d3,a2,a3],20
  mov (gr_sv),d0
  mov (gr_sv + 4),d1
  mov (gr_sv + 8),a0
  mov (gr_sv + 12),a1
- ret [d2,d3,a2,a3],16
+ ret [d2,d3,a2,a3],20
 
 /* sc_cap <- jmp from 0x610cdf05 (a holder element gets its scene: a0 holder, d0 scene index; a1 free): remember the
  * start-up holder of scene 485, the camera's WB fine-tune grid. It is one of the GUI's top layers, which every screen
@@ -4687,7 +4690,9 @@ sc_cap:
  movbu d3,(gr_wait)
  mov a0,(gx_d0)
  mov d1,(gr_sv + 4)
- call gr_pub,[d2,d3,a2,a3],16
+ add -4,sp                        /* our call's slot (not the hooked frame's (0,sp)) */
+ call gr_pub,[d2,d3,a2,a3],20
+ add 4,sp
  mov (gr_sv + 4),d1
  mov (gx_d0),a0
  mov 498,d0
@@ -4697,7 +4702,7 @@ sc_cap:
  mov 1,d0
  jmp sc_back                      /* 0x610cdf0b */
 
-/* gr_upd: `call gr_upd,[d2,d3,a2,a3],16`, a0 -> the Picture Mode screen's current item (u16). On our row on COLOR 1-4:
+/* gr_upd: `call gr_upd,[d2,d3,a2,a3],20`, a0 -> the Picture Mode screen's current item (u16). On our row on COLOR 1-4:
  * gr_flag = look + 1, publish the grid block (gr_pub) and load the camera's WB grid scene (485) into its top-layer
  * holder; else gr_flag = 0 and the holder is emptied. */
 gr_upd:
@@ -4716,7 +4721,7 @@ gr_upd:
  mov (gr_cont),d0
  cmp 0,d0
  beq 9f
- call gr_pub,[d2,d3,a2,a3],16
+ call gr_pub,[d2,d3,a2,a3],20
  mov (gr_cont),a0
  call gr_is,[d2],8                /* d0 = 1: the holder already shows the grid */
  cmp 1,d0
@@ -4725,7 +4730,7 @@ gr_upd:
  mov 498,d0
  call sc_set,[d2,d3,a2,a3],28     /* the holder takes the WB grid scene */
 7:
- call gr_ref,[d2,d3,a2,a3],16
+ call gr_ref,[d2,d3,a2,a3],20
  bra 9f
 8:
  clr d0
@@ -4738,7 +4743,7 @@ gr_upd:
  mov GLY,d0
  call sc_set,[d2,d3,a2,a3],28     /* back to its own layer (the bottom bar) */
 9:
- ret [d2,d3,a2,a3],16
+ ret [d2,d3,a2,a3],20
 
 /* gr_is: `call gr_is,[d2],8`, a0 = the holder (or 0) -> d0 = 1 when its scene is the WB grid (element 24813) */
 gr_is:
@@ -4756,7 +4761,7 @@ gr_is:
  mov d2,d0
  ret [d2],8
 
-/* gr_ref: `call gr_ref,[d2,d3,a2,a3],16`: the grid scene (the holder's +776) re-reads property 256 (its method
+/* gr_ref: `call gr_ref,[d2,d3,a2,a3],20`: the grid scene (the holder's +776) re-reads property 256 (its method
  * 0x61192d6c, as on a property change). */
 gr_ref:
  mov gr_cont,a1
@@ -4770,9 +4775,9 @@ gr_ref:
  mov sc_ref,a1
  calls (a1)
 9:
- ret [d2,d3,a2,a3],16
+ ret [d2,d3,a2,a3],20
 
-/* gr_pub: `call gr_pub,[d2,d3,a2,a3],16`: with gr_flag = look + 1, fill the grid block from the look's A-B / G-M as
+/* gr_pub: `call gr_pub,[d2,d3,a2,a3],20`: with gr_flag = look + 1, fill the grid block from the look's A-B / G-M as
  * the WB screen does (0x611d257a: lines at 613 + 13 A-B / 299 - 13 G-M, dot at 594 + 13 A-B / 280 - 13 G-M, x + 80
  * when 0x611d2941 says 1) and publish it (property 256). */
 gr_pub:
@@ -4847,18 +4852,22 @@ gr_pub:
  mov 1,a1
  call prop_set,[d2,a2],16
 9:
- ret [d2,d3,a2,a3],16
+ ret [d2,d3,a2,a3],20
 
 /* pu_hook <- jmp from 0x611d04ec (the Picture Mode screen's update, after its per-row case; (4,sp) -> the current
  * item; a3 = the screen): the WB grid for our row, then as stock `mov (0x6037a360),d0` -> 0x611d04f2. */
 pu_hook:
+ mov (4,sp),a0
+ add -4,sp                        /* our calls' slot (the screen update's own (0,sp) stays) */
  mov (sh_desc + 12),d0            /* v0.25: the Shading icon moved down, once (sh_build) */
  cmp 0,d0
  bne 1f
- call sh_build,[d2,d3,a2,a3],16
+ mov a0,(gx_d0)
+ call sh_build,[d2,d3,a2,a3],20
+ mov (gx_d0),a0
 1:
- mov (4,sp),a0
- call gr_upd,[d2,d3,a2,a3],16
+ call gr_upd,[d2,d3,a2,a3],20
+ add 4,sp
  mov (0x6037a360),d0
  jmp pu_back
 
@@ -4971,12 +4980,16 @@ gx_map:
  cmp 0,a0
  beq 9f
  mov d0,(gx_d0)
+ add -4,sp
  call gr_is,[d2],8
+ add 4,sp
  cmp 1,d0
  bne 8f
  mov (gr_cont),a0
  mov GLY,d0
+ add -4,sp
  call sc_set,[d2,d3,a2,a3],28
+ add 4,sp
 8:
  mov (gx_d0),d0
  movbu (gr_fine),d1               /* to the fine-tune screen: Picture Mode and its holder stay (it comes back) */
