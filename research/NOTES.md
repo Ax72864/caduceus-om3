@@ -1828,3 +1828,23 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   (commit "Revert the Blacks / Whites grid row"): firmware and card files are WB grid test 3 again (rebuilt byte for
   byte: E1479999.BIN eba6b508…, GUIDES.BIN 58983837…, LABELS.BIN d6c1b4ab…), back on the card, checked by
   checksum. The Blacks / Whites grid code stays in commit 2fa6a5c for reference.
+
+### v0.25 fixes from the owner's list (2026-11-08; emulator only)
+- Owner's list: (1) profile changes not kept over a restart; (2) Picture Mode should open on its top row; (3) remove
+  Frame; (4) the viewfinder info screen shows COLOR 3 on FILM 6; (5) Shading's number sits low; (6) Glow -> Clarity
+  (rows named for the + side); (7) the selected film / profile is lost over a power cycle.
+- (1) / (7), found (analysis + emulator): the editor's first use since the load (ei_page, and the wheel's k_ path)
+  cleared P+DIRTY with the marker, so a film chosen (fl_set) or a change made before it was never saved (the next
+  half-press found nothing to save). DIRTY is kept now. Still possible (to check on the camera): the bank loads at
+  the first half-press after power-on, so before it the menus show COLOR n. (The emulator's half-press does not pass
+  ed_trig's gate, so the save itself cannot be seen there.)
+- (2) the row memory (setting 2148) answers 111 every time, except once after MENU from the WB fine-tune screen
+  (gr_bk). (3) pm_list without FR_IT; xblock XB_ART 0 (ARTB: the Art Effect reads as 0 everywhere); the Frame
+  pictures blank (ic_pay 14704); Control Panel v25Art 'off', slowGrain false, the Art Effect select only Off.
+  (5) the Shading row's own left cell puts its readout ~5 px lower than the slider rows' cells: its picture 16244
+  (46 x 46) is answered with a copy moved down 6 rows (sh_build, once from pu_hook, with wb_wtk / wb_wem). The 11-entry
+  readout tables for 5399 (rd_a / rd_b) did not move it. (6) string "Clarity", icon "Clarity" (cap 16).
+- (4) not found yet: on the back screen every live-view INFO display shows "FILM 3" correctly; the emulator's EVF
+  switch fails (re-entry check), and no other picture in the table looks like the shooting screen's COLOR labels
+  (15706..15709), so the viewfinder may draw it as text. Possibly the same cause as (7) (bank not loaded yet).
+- Package fx1: E1479999.BIN 1203dedc…, GUIDES.BIN 9fc2aea5…, LABELS.BIN d6c1b4ab…, on the card, checked by checksum.
