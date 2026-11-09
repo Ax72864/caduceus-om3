@@ -18,7 +18,9 @@ new features have room; more can be opened up the same way.
 
 ## Next steps
 
-0. **Tune the 20 film sims from the owner's camera photos** (released in v0.25, tuned on the preview).
+0. **Tune the 20 film sims from the owner's camera photos** (released in v0.25, tuned on the preview). Owner's plan
+   (2026-11-09): a colour checker card, fixed light, one photo per film (FILM 1–20) plus a neutral reference; measure
+   each patch against the reference and adjust the recipes in `webapp/scripts/films.py`.
 1. **Our own grain texture** (after v0.25's fast colour grain with every setting): colour speckle and grain size from the
    Grain Lab design, through the same texture route. Plan: project doc `fast-grain-plan`, `research/NOTES.md`.
 2. **Split toning** (probe st1 on `experiment/split-tone-probe`, camera test next), then **halation** (parked by the
