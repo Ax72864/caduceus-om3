@@ -1689,3 +1689,4 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   mkicons pictures, ic_pay 19480 B (ext11 64976 of 65536: 560 B left). Block: xb_art = Frame (5) only; COLOR k's
   own Glow / Frame used again (XB_OWNOFF 0). Firmware 591fe72d…, GUIDES 6ec55047…. New camera pictures: "Glow",
   "Frame / Off", "Frame / On" (sent to the owner).
+- Owner approved the rc2b row pictures ("Glow", "Frame / Off", "Frame / On"), 2026-11-08.
