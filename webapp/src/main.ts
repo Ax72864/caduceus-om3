@@ -8,7 +8,9 @@ import {
 import { History } from './history';
 import { fromLibrary, libraryOrigin, migratePack, replaceRetiredLooks, resetLook, standardPack } from './reset';
 import { renderLook } from './preview';
-import { decodeLookCode, decodePackCode, encodeLookCode, encodePackCode, isPackCode } from './sharecode';
+import { codeName, decodeLookCode, decodePackCode, encodeLookCode as encodeLookCode0, encodePackCode, isPackCode } from './sharecode';
+// owner 2026-11-09: OM-3 film names (up to 15) are shortened to fit a look code (12) instead of refusing the code
+const encodeLookCode = (l: Look, group = false) => encodeLookCode0(l.name.length > 12 ? { ...l, name: codeName(l.name) } : l, group);
 import { makeZip } from './zip';
 import { rrpreset } from './rapidraw';
 import { TARGETS, targetById } from './targets';
@@ -554,7 +556,8 @@ function refreshLookCode() {
   try {
     code.textContent = encodeLookCode(l, true);
     help.className = 'help';
-    help.textContent = 'Share just this look: anyone can paste the code (or open the link) in the control panel. Notes are not included.';
+    help.textContent = 'Share just this look: anyone can paste the code (or open the link) in the control panel. Notes are not included.'
+      + (l.name.length > 12 ? ` Codes hold 12 characters, so the name travels as "${codeName(l.name)}".` : '');
   } catch (e) {
     code.textContent = '—';
     help.className = 'help err';

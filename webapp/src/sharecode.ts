@@ -189,6 +189,21 @@ function toSymbols(n: bigint): number[] {
 }
 
 /** Look -> share code, e.g. "1K7GQ...". group=true inserts a hyphen every 5 characters (ignored on input). */
+/** A name that fits a look code (12 characters): OM-3 film names may be up to 15. Spaces go first, then letters from
+ *  the end of the longest word ("Agfa Ultra 100" -> "AgfaUltra100", "CineStill 800T" -> "CineStil800T"). */
+export function codeName(name: string): string {
+  if (name.length <= 12) return name;
+  let words = name.split(' ').filter(Boolean);
+  if (words.join('').length <= 12) return words.join('');
+  while (words.join('').length > 12) {
+    let k = 0;
+    words.forEach((w, i) => { if (w.length > words[k].length) k = i; });
+    if (words[k].length <= 2) return words.join('').slice(0, 12);
+    words = words.map((w, i) => (i === k ? w.slice(0, -1) : w));
+  }
+  return words.join('');
+}
+
 export function encodeLookCode(l: Look, group = false): string {
   if ([...l.name].some((c) => !NAME_CHARS.includes(c)) || l.name.length < 1 || l.name.length > 12)
     throw new Error('share code: the name must be 1-12 printable ASCII characters without "@"');
