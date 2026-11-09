@@ -2,10 +2,10 @@
 
 **Caduceus for OM-3** is the OM SYSTEM OM-3 member of the [Caduceus](https://github.com/cakelesscoder/caduceus-ep7)
 family, made together with cakelesscoder: open-source firmware patches for the **OM SYSTEM OM-3** (firmware 1.1). It puts
-**your films in the camera's Picture Mode list** (FILM 1, FILM 2, … after COLOR 1–4, up to five per COLOR, each with
-its name), turns the Color Profile wheel into a colour editor (per-colour Hue and Luminance next to the camera's
-Saturation), and adds the look's settings to the camera's own Picture Mode screen: Blacks, Whites, WB shift, Sharp,
-Noise Filter, lens vignette correction and film grain. Films are made in the browser with the **Caduceus Control
+**your films in the camera's Picture Mode list** (FILM 1–20 after COLOR 1–4, each with its name; 20 film sims come
+with it), turns the Color Profile wheel into a colour editor (per-colour Hue and Luminance next to the camera's
+Saturation), and adds the look's settings to the camera's own Picture Mode screen: Blacks, Whites, a WB grid, Sharp,
+Noise Filter, lens vignette correction, Shading, Glow / Clarity and fast colour film grain. Films are made in the browser with the **Caduceus Control
 Panel**; changes you make on the camera are kept per film.
 
 **Latest: v0.25** ([changelog](CHANGELOG.md)) · **▶ [Control Panel](https://androidfanman.github.io/caduceus-om3/)** · **[Install guide](docs/INSTALL.md)** ·
@@ -30,14 +30,14 @@ Panel**; changes you make on the camera are kept per film.
 
 | Feature | What you get | Status |
 |---|---|---|
-| **Films in the Picture Mode list** | After COLOR 1–4, Picture Mode lists your films as **FILM 1, FILM 2, …** (up to 20, five per COLOR, from `LOOKS.BIN`). The film's name is the big title; the quick menu and the shooting screen show FILM n. Choosing a film loads it onto its COLOR. | Camera-tested (v0.25) |
-| **Changes kept** | What you change on a film, or on COLOR 1–4, stays when you switch away and back (kept by the camera in `EDITS.BIN`). **Hold OK** on a film: back as built; on COLOR n: back to the factory. A `*` marks what is changed. | Camera-tested (v0.25) |
+| **Films in the Picture Mode list** | After COLOR 1–4, Picture Mode lists your films as **FILM 1–20** (from `LOOKS.BIN`). The film's name is the big title; the quick menu, the shooting screen and the viewfinder show it. | Camera-tested (v0.25) |
+| **20 film sims** | Portra 400, Gold 200, Kodachrome 64, Portra 800, CineStill 800T, Ektar 100, Ultramax 400, Pro 400H, Velvia 50, Superia 400, ColorPlus 200, CineStill 400D, Fuji C200, Ektachrome E100, Reala 100, Provia 100F, Vision3 250D, Fuji Eterna, Astia 100F, Agfa Ultra 100: our own looks, in this order as FILM 1–20 (see [the list](#the-20-film-sims)). | New in v0.25 (tuned on the Control Panel preview) |
+| **Changes kept** | What you change on a film, or on COLOR 1–4, stays when you switch away and back and **over power off**, with the film you were on (kept by the camera in `EDITS.BIN` and `LOOKS.BIN`). **Hold OK** on a film: back as built; on COLOR n: back to the factory. A `*` marks what is changed. | Camera-tested (v0.25) |
 | **Hue and Luminance** | The Color Profile wheel (the **HSL** row) gains pages: **INFO** goes Color → Color All → Hue → Luminance. Hue turns a colour toward its neighbour; Luminance brightens or darkens it, for each of the 12 colours. | Camera-tested |
-| **Picture Mode rows** | On COLOR 1–4: **Blacks**, **Whites** (−5..+5), **A-B**, **G-M** (WB shift −7..+7, in every WB mode, Auto WB included), **Sharpness** (−5 Off..+2), **Noise Filter** (Off / Low / Std / High), **Vignette Correction** (the lens's vignette correction Off / On), **Shading**, **Glow / Clarity** (−5 Glow .. +5 Clarity), **Frame** (Off / On) and **Film Grain**, next to the camera's Contrast and Highlight & Shadow. | Camera-tested (v0.25) |
-| **Film grain on COLOR** | Low / Med / High grain, in colour, made by the camera's image processor as the photo develops (the way its Grainy Film Art Filter adds grain): **as fast as a photo without grain**, also with Shading, Glow / Clarity and Frame. Only Glow / Clarity + Frame + Grain together take the slower route (~3 s). | Camera-tested (v0.25) |
-| **Glow / Clarity and Frame** | Rows on the Picture Mode screen: Glow (soft glow) or Clarity (local contrast), and a white Frame. Frame is the only Art Effect from v0.25 (Star Light, Pin Hole and White Edge are gone; Shading does the dark corners). | Camera-tested (v0.25) |
+| **Picture Mode rows** | On COLOR 1–4 and films: **Blk** / **Wht** (Blacks / Whites −5..+5), **WB** (a grid with the film's A-B / G-M shift; OK opens the camera's own WB fine-tune screen; works in every WB mode, Auto WB included), **Sharpness** (−5 Off..+2), **Noise Filter** (Off / Low / Std / High), **Vignette Correction** (Off / On), **Shading**, **Glow** (+ Glow, − Clarity) and **Film Grain**, next to the camera's Contrast and Highlight & Shadow. | Camera-tested (v0.25) |
+| **Film grain on COLOR** | Low / Med / High grain, in colour, made by the camera's image processor as the photo develops (the way its Grainy Film Art Filter adds grain): **as fast as a photo without grain**, with every other setting. | Camera-tested (v0.25) |
 | **Saved on the card** | Your changes save to `OM3MOD` on the SD card at the next half-press, written to a new file and read back before the old one is replaced. | Camera-tested |
-| **Control Panel** | The Caduceus Control Panel, shared with Caduceus for the E-P7: a switch at the top picks **OM SYSTEM OM-3** or **Olympus PEN E-P7**. On the OM-3 it makes and previews looks on test photos (or your own), with 60 film sims, then saves them for the card. | Works in any browser |
+| **Control Panel** | The Caduceus Control Panel, shared with Caduceus for the E-P7: a switch at the top picks **OM SYSTEM OM-3** or **Olympus PEN E-P7**. On the OM-3 it makes and previews your FILM 1–20 on test photos (or your own), starting from the 20 film sims (61 to choose from), then saves them for the card. | Works in any browser |
 
 ## Install
 
@@ -107,50 +107,78 @@ More detail, troubleshooting and FAQ: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 ## Make your own looks: the Control Panel
 
-The **[Caduceus Control Panel](https://androidfanman.github.io/caduceus-om3/)** is where you make and edit looks
-in your browser. It is the same tool as Caduceus for the E-P7: the switch at the very top picks the camera. With
-**OM SYSTEM OM-3** selected:
+The **[Caduceus Control Panel](https://androidfanman.github.io/caduceus-om3/)** is where you make and edit your
+films (the creative profiles the camera lists as FILM 1–20) in your browser. It is the same tool as Caduceus for the
+E-P7: the switch at the very top picks the camera. With **OM SYSTEM OM-3** selected:
 
-- The left side shows COLOR 1–4 with looks 1–5 ("Empty" for an unused number); on the camera they become FILM 1,
-  FILM 2, … in the Picture Mode list, in this order, skipping empty numbers. Drag a look to another number, or use ↑ ↓; × empties a number.
-- **Lists** keep whole sets of looks (all four COLORs) under a name, like playlists: **Save as…** stores the
-  current set as a new list, the **List** menu switches between them, and **Rename** / **Delete** manage them.
-  Changes save into the list you're on; the looks you had before are the list **Default**. Lists stay in this
-  browser; export a list to put it on the card.
-- **Film sims** opens 60 film looks, one for each film: the Fujifilm simulations (Provia, Velvia, Astia, Classic
-  Chrome, Classic Neg, Eterna, Reala Ace, Nostalgic Neg…), slide films (Velvia, Provia, Kodachrome, Ektachrome…),
-  colour negatives (Portra, Ektar, Gold, ColorPlus, Ultramax, Superia, Fuji 400H, CineStill 50D / 400D / 800T,
-  Harman Phoenix, LomoChrome '92…), instant films (FP-100C, Polaroid, Instax) and cinema print stocks. They're our own
-  looks, designed from what each film is known for and made of ordinary OM-3 settings; none uses grain, Glow /
-  Clarity or an Art Effect, so you can add those yourself. Click one to preview it on your photo, **+ Add** puts it in an
-  empty number, and × in the list removes it again. Films already in your list are marked with where they are. The
-  standard set you start with uses them: Fujifilm on COLOR 1, slide on COLOR 2, negative on COLOR 3, cinema and
-  instant on COLOR 4.
-- Edit Hue, Lightness and Saturation for each of the 12 colours, the tone (Highlights, Shadows, Midtones, Blacks,
-  Whites), the camera's Contrast and Shading, the **Extras** (NR, lens vignette correction, Grain, Sharp,
-  Glow ↔ Clarity, Art Effect) and the WB shift, with a live preview on test photos or your own (drag the line on the
-  photo to compare before and after; grain, glow and clarity are previewed, Art Effects, NR and the lens correction
-  are not). On firmware v0.25 the Art Effect is Frame or Off, and a look with Glow / Clarity, Frame and Grain together
-  gets a note that it saves more slowly.
-- **Export › Save to card…** (Chrome or Edge on a computer) writes `OM3MOD/LOOKS.BIN` and `NAMES.BIN` (the name
-  pictures for the camera) straight onto the card; **Card folder (.zip)** downloads both.
-- **Open…** the card's `OM3MOD/LOOKS.BIN` to edit looks you made on the camera, then save them back.
+1. **The list on the left is FILM 1–20**, in the same order as on the camera. Click a film to edit it. Drag a film to
+   another place, or use ↑ ↓; × empties a place (empty places are left out of the camera's list and the films after
+   them move up a number).
+2. **Start from the 20 film sims.** The first time you open it, the list holds the 20 films below. Already used it
+   before? **New › Reset looks to standard** puts the 20 back (Undo brings your old list back).
+3. **Film sims** opens all 61 film looks: **The 20** first, in FILM order, then more under "More" (other slide and
+   negative films, Fujifilm-style simulations, instant films and cinema print stocks). Click one to preview it on your
+   photo; **+ Add** puts it in an empty place (or offers to replace one when all 20 are used).
+4. **Edit** a film: Hue, Lightness and Saturation for each of the 12 colours; the tone (Highlights, Shadows,
+   Midtones, Blacks, Whites); the camera's Contrast and Shading; the WB shift (A-B / G-M); and the Extras (Noise
+   Filter, lens vignette correction, Grain, Sharp, Glow ↔ Clarity). The preview on the test photos (or your own: drag
+   the line on the photo to compare before and after) shows grain, glow and clarity; Noise Filter and the lens
+   correction are not previewed. Art Effects are not used on v0.25.
+5. **Export › Save to card…** (Chrome or Edge on a computer) writes `OM3MOD/LOOKS.BIN` (and `NAMES.BIN`) straight
+   onto the card; **Card folder (.zip)** downloads them. Keep **Firmware on the camera: v0.25 or later**.
+6. On the camera: switch on, half-press once, and your films are FILM 1–20 in Picture Mode. A film you changed in the
+   Control Panel starts as built on the camera; the others keep the changes you made on the camera.
+
+More:
+- **Lists** keep whole sets of 20 films under a name, like playlists: **Save as…** stores the current set, the **List**
+  menu switches between them, **Rename** / **Delete** manage them. Lists stay in this browser; export one to put it on
+  the card.
+- **Open…** the card's `OM3MOD/LOOKS.BIN` to edit the films on your card, then save them back.
 - **Caduceus looks:** **Paste code** takes a Caduceus look code or pack link, and **Open…** a Caduceus pack or E-P7
-  `LOOKS.BIN`. Each colour look becomes an OM-3 look: Hue, Light, Saturation, WB, the tone, Contrast, Vignette
-  (as Shading), NR, glow / clarity and Star Light / Pin Hole carry over; values beyond the OM-3's ±5 are limited, a
-  halation (coloured) glow becomes a plain glow, Blur and monochrome looks are left out, and it says which.
-- **Share looks** / **Share** make a link to all your looks or to one.
+  `LOOKS.BIN`. Each colour look becomes an OM-3 film (values beyond the OM-3's range are limited, a coloured glow
+  becomes a plain glow, Blur and monochrome looks are left out, and it says which).
+- **Share looks** / **Share** make a link to all your films or to one.
 
-Your work stays in the browser (nothing is uploaded). Looks from the earlier OM-3 Look Lab are brought over the
-first time you open it. The preview is an approximation of the camera, good for direction and strength: judge the
-final look in live view. On a Mac, Safari's **File › Add to Dock** makes the Control Panel an app.
+Your work stays in the browser (nothing is uploaded). The preview is an approximation of the camera, good for
+direction and strength: judge the final look in live view. On a Mac, Safari's **File › Add to Dock** makes the Control
+Panel an app.
+
+### The 20 film sims
+
+Our own looks, designed from what each film is known for and made only of the camera's settings. None uses grain,
+Glow / Clarity or an Art Effect, so you can add those yourself. The names describe what inspired each look; they
+aren't the film makers' products or presets. This is the standard set, in camera order (also in the v0.25 release as
+an optional `LOOKS.BIN`):
+
+| FILM | Name | The look |
+|---|---|---|
+| 1 | Portra 400 | Warm, soft contrast, natural skin, bright and airy |
+| 2 | Gold 200 | Warm and golden, rich yellows |
+| 3 | Kodachrome 64 | Deep reds, golden yellows, dark rich blues, dense shadows |
+| 4 | Portra 800 | Warmer and richer than Portra 400 |
+| 5 | CineStill 800T | Cool, teal-leaning night look with warm skin and strong reds |
+| 6 | Ektar 100 | Saturated and punchy, bold reds, clean blues |
+| 7 | Ultramax 400 | Warm, saturated, punchy |
+| 8 | Pro 400H | Soft pastels, airy highlights, minty greens, cyan skies |
+| 9 | Velvia 50 | Very saturated landscape slide, deep blues, lush greens |
+| 10 | Superia 400 | Green-leaning, cyan skies, snappy |
+| 11 | ColorPlus 200 | Warm, yellow-golden, softer and more muted than Gold |
+| 12 | CineStill 400D | Soft, warm daylight, pastel colour |
+| 13 | Fuji C200 | Cool greens and blues, clear and airy |
+| 14 | Ektachrome E100 | Clean, neutral slide colour, crisp, clear blues |
+| 15 | Reala 100 | Natural, accurate colour |
+| 16 | Provia 100F | Accurate slide colour, clean skies, crisp |
+| 17 | Vision3 250D | Natural, very soft daylight cinema look, open shadows |
+| 18 | Fuji Eterna | Muted, understated cinema look, soft contrast |
+| 19 | Astia 100F | Soft slide film for people, gentle contrast |
+| 20 | Agfa Ultra 100 | Extremely saturated, bold reds and blues |
 
 ## Using it
 
 **On the card** (`OM3MOD` at the card's top level):
 
 ```
-OM3MOD/LOOKS.BIN      your films: up to 5 for each of COLOR 1–4, with their names (from the Control Panel)
+OM3MOD/LOOKS.BIN      your films FILM 1–20, with their names (from the Control Panel or the release)
 OM3MOD/EDITS.BIN      the changes you made on the camera, per film and per COLOR (the camera writes it)
 OM3MOD/BUNDLES.BIN    the wheels' current values (the camera writes it; .NEW and .BAK are its safety copies)
 OM3MOD/GUIDES.BIN     the labels under the wheel + Caduceus code (from the release, with its firmware)
@@ -161,15 +189,18 @@ OM3MOD/NAMES.BIN      name pictures for v0.17–v0.22 (not needed from v0.24; ha
 **Every time you switch on:** **half-press the shutter once.** That loads your films and changes from the card
 (nothing is read at power-on). Until then Picture Mode works as stock.
 
-**Choosing a film:** Picture Mode › the COLOR position. The top row lists **COLOR 1–4, then FILM 1, FILM 2, …**: turn
-to a film and its name shows as the big title. The film loads onto the COLOR it belongs to (FILM 1–5 on COLOR 1, the
-next five on COLOR 2 and so on, counting only the films on the card), and from then on the quick menu and the shooting
-screen show **FILM n**.
+**Choosing a film:** Picture Mode › the COLOR position. The top row lists **COLOR 1–4, then FILM 1–20**: turn to a
+film and its name shows as the big title; the quick menu, the shooting screen and the viewfinder show it from then on.
+The camera remembers the film you were on over power off. (Behind the scenes FILM 1–5 use COLOR 1, FILM 6–10 COLOR 2,
+and so on.)
 
 **The rows** under Picture Mode: **HSL** (the colour wheel), Contrast, Highlight & Shadow, **Blk** (Blacks), **Wht**
-(Whites), **A-B**, **G-M**, Sharpness (Sharp, −5 = Off .. +2), **Noise Filter** (Off / Low / Std / High), **Vignette
-Correction** (Off = natural corners, On = the camera's correction), **Shading**, **Glow / Clarity** (−5 Glow .. +5
-Clarity), **Frame** (Off / On) and **Film Grain** (Off / Low / Med / High). They change the film or COLOR you're on, and the photo straight away.
+(Whites), **WB** (the WB shift: the small grid shows where it is and the numbers sit under WB±, like "A2.G1"; press
+**OK**, left / right or turn a dial to open the camera's own WB fine-tune screen, then MENU or OK to come back),
+Sharpness (Sharp, −5 = Off .. +2), **Noise Filter** (Off / Low / Std / High), **Vignette Correction** (Off = natural
+corners, On = the camera's correction), **Shading**, **Glow** (+1..+5 Glow, a soft glow; −1..−5 Clarity, local
+contrast) and **Film Grain** (Off / Low / Med / High). They change the film or COLOR you're on, and the photo straight
+away. Picture Mode always opens on the top row.
 
 **The HSL wheel:** on the HSL row press **INFO**. INFO goes **Color** (the camera's saturation, one colour) → **Color
 All** → **Hue** → **Luminance** → Color. The front dial picks the colour, the rear dial the value. Colours run
@@ -178,7 +209,7 @@ Green-cyan, Green, Yellow-green. Hue + turns a colour toward its clockwise neigh
 makes it brighter or darker (−5..+5).
 
 **Your changes are kept:** change anything on a film (or on COLOR 1–4) and it stays when you switch to another film
-and back. The camera keeps the changes in `EDITS.BIN` (saved at the next half-press); the film as built stays as it is
+and back, and over power off. The camera keeps the changes in `EDITS.BIN` (saved at the next half-press); the film as built stays as it is
 in `LOOKS.BIN`.
 
 **Hold OK:**
@@ -189,15 +220,13 @@ A **`*`** means changed: after COLOR n, something differs from the factory setti
 from how the film was built. Rows show their own `*` too.
 
 **Grain:** grain is added by the camera's image processor while it develops the photo, in colour, at no extra time,
-also with Shading, Glow / Clarity and Frame. Only Glow / Clarity **and** Frame **and** Grain together take a slower
-route (about 3 seconds more per photo, no fast burst).
+with every other setting.
 
 **Quick answers**
 - *No films in the list?* Half-press once after switching on, and check `OM3MOD/LOOKS.BIN` is on the card.
 - *Settings change but nothing happens in the photo?* The card's `GUIDES.BIN` must come from the same release as the
   firmware. Copy the release's `GUIDES.BIN` again.
 - *My changes were lost?* They save at the next half-press, and only when the card has an `OM3MOD` folder.
-- *A photo takes a few seconds to save?* That film or COLOR has Glow / Clarity and Frame and Grain together.
 - *New films from the Control Panel?* Export `LOOKS.BIN` (choose "v0.25 or later") and copy it to `OM3MOD`. A film
   you changed in the Control Panel starts again as built; the others keep your camera changes. Deleting `EDITS.BIN`
   puts every film back as built.

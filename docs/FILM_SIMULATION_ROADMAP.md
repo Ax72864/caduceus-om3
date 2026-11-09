@@ -3,7 +3,7 @@
 **Goal:** make the OM-3 with Caduceus the best film-replicating camera available: looks that render like real film
 stock straight out of the camera, and that load and shoot like a roll of film.
 
-Last updated 2026-11-07 (evening: space probes, split toning research). Update the status column as work moves, and add findings to the research log at the end
+Last updated 2026-11-09 (v0.25 released; split toning probe; halation parked). Update the status column as work moves, and add findings to the research log at the end
 (details go in [`research/NOTES.md`](../research/NOTES.md)). The general roadmap is [`ROADMAP.md`](../ROADMAP.md).
 
 **Effort:** Low = a few sessions on known hooks · Medium = new firmware work on parts we already understand ·
@@ -18,20 +18,19 @@ new features have room; more can be opened up the same way.
 
 ## Next steps
 
-0. **Camera test of the 20 rewritten film sims** (owner's order, FILM 1-20; on the card 2026-11-08). Then tune
-   from the owner's photos.
+0. **Tune the 20 film sims from the owner's camera photos** (released in v0.25, tuned on the preview).
 1. **Our own grain texture** (after v0.25's fast colour grain with every setting): colour speckle and grain size from the
    Grain Lab design, through the same texture route. Plan: project doc `fast-grain-plan`, `research/NOTES.md`.
-2. **Halation (coloured glow):** port the E-P7's method (CPU pass, our own code) onto the Glow row's route; first
-   test the OM-3 chroma byte order. (Split toning research done 2026-11-07: see the table; building it can now use the proven 64 KiB.)
+2. **Split toning** (probe st1 on `experiment/split-tone-probe`, camera test next), then **halation** (parked by the
+   owner 2026-11-09; port the E-P7's method, our own code, onto the Glow row's route). (Split toning research done 2026-11-07: see the table; building it can now use the proven 64 KiB.)
 3. **White balance mode and exposure compensation per look:** quick wins that make a look behave like a roll.
 
 ## The film look itself
 
 | Feature | Why it matters for film | Effort | Status | Research notes |
 |---|---|---|---|---|
-| Split toning: colour by brightness | Teal shadows and warm highlights (cinema), cool shadows (Portra), green shadows (Superia). The colour wheel works by hue only. | Medium | Researching (mechanism found, emulator) | Cross Process and (likely) Vintage do it with three different R/G/B tone curves in the camera's RGB gamma stage. The job keeps its own copy of the curves, so a look can bend them: 6 bytes per look, about 100-150 B of code. Emulator-checked on the stock code; not camera-tested. Blocked by code space (needs a hook in sections 1-5, or the space probe). |
-| Coloured glow (halation) | The red glow around lights of CineStill and other cinema film. | Medium | Researching (2026-11-09) | Caduceus for the E-P7 v0.31 has it camera-tested: a CPU pass on the CPU grain route (our OM-3 route, ported there) adds a tinted glow around lights. Feasible here on the Glow row's route; ~1.8 KB of code (ext11 has ~3 KB); OM-3 chroma byte order unproven. `research/NOTES.md` 2026-11-09. |
+| Split toning: colour by brightness | Teal shadows and warm highlights (cinema), cool shadows (Portra), green shadows (Superia). The colour wheel works by hue only. | Medium | Probe st1 built (emulator, 2026-11-09; branch experiment/split-tone-probe; camera test next) | Cross Process and (likely) Vintage do it with three different R/G/B tone curves in the camera's RGB gamma stage. The job keeps its own copy of the curves, so a look can bend them: 6 bytes per look, about 100-150 B of code. Emulator-checked on the stock code; not camera-tested. Blocked by code space (needs a hook in sections 1-5, or the space probe). |
+| Coloured glow (halation) | The red glow around lights of CineStill and other cinema film. | Medium | Parked (owner, 2026-11-09: after split toning) | Caduceus for the E-P7 v0.31 has it camera-tested: a CPU pass on the CPU grain route (our OM-3 route, ported there) adds a tinted glow around lights. Feasible here on the Glow row's route; ~1.8 KB of code (ext11 has ~3 KB); OM-3 chroma byte order unproven. `research/NOTES.md` 2026-11-09. |
 | Highlight roll-off and toe | Film compresses highlights gently and has a soft toe in the blacks. | Medium | Not started | We already hook the tone curve builder (Highlights / Shadows / Midtones, Blacks / Whites). Add a shoulder setting, and colour that fades toward white. |
 | Grain by brightness, size and roughness | Film grain is strongest in the midtones and depends on the stock. | Medium | Not started | Today: the camera's Monochrome grain (Low / Med / High), the same everywhere. Look for its size and strength parameters. |
 | Faster grain with Glow or Art Effects | Grain plus glow costs about 3 s per photo and blocks burst shooting. | Medium | Researching | On the main roadmap. The v0.21 timing work on the slow route is the starting point. |
@@ -65,8 +64,8 @@ new features have room; more can be opened up the same way.
 
 | Date | Item | What it gives film looks |
 |---|---|---|
-| 2026-11-08 | The camera's 20 films (camera test pending) | 20 film sims rewritten in the owner's order, FILM 1–20 on the camera and in the Control Panel (one list). |
-| 2026-11-08 | v0.25 fast colour grain (camera-tested, release pending) | Film grain from the image processor in colour, as fast as no grain, with Shading and Glow / Clarity; a Glow row (+ Glow, − Clarity), a WB grid row, no Art Effects; film choice and changes now kept over power off. |
+| 2026-11-09 | The camera's 20 films (in v0.25) | 20 film sims rewritten in the owner's order, FILM 1–20 on the camera and in the Control Panel (one list). |
+| 2026-11-09 | v0.25 released (fast colour grain) | Film grain from the image processor in colour, as fast as no grain, with Shading and Glow / Clarity; a Glow row (+ Glow, − Clarity), a WB grid row, no Art Effects; film choice and changes now kept over power off. |
 | 2026-11-08 | v0.24.1 films in the list | Films (FILM n) in the Picture Mode list with their names; changes kept per film; the Extras as Picture Mode rows. Glow / Clarity and Art Effects off and the Shading row hidden for now. (v0.24 was withdrawn the same day: Film Grain High rebooted the camera.) |
 | 2026-11-07 | v0.22 Sharp | Sharpening per look, −5 (Off) to +2; film sims set it. |
 | 2026-11-07 | Photo-to-look instructions | A look built from any photo, loaded by a link. |

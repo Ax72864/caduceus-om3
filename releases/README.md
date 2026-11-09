@@ -5,7 +5,7 @@ card files it needs, the expected checksums, and short notes. No OM firmware is 
 
 | Version | What's new | Status |
 |---|---|---|
-| [v0.25](v0.25/NOTES.md) | Fast colour film grain with every setting (image processor, Grainy Film's texture route); Shading row back; Glow / Clarity and Frame rows; Art Effects = Frame only | Camera-tested |
+| [v0.25](v0.25/NOTES.md) | Fast colour film grain with every setting; WB grid row (OK opens the camera's WB fine-tune screen); Glow row (+ Glow / − Clarity); Shading back; settings and the film kept over power off; no Art Effects; 20 new film sims (optional `LOOKS.BIN`) | Camera-tested (firmware) |
 | [v0.24.1](v0.24.1/NOTES.md) | Films in the Picture Mode list (FILM n, name as title, changes kept, hold OK = as built); the Extras as Picture Mode rows; Glow / Clarity and Art Effects off and the Shading row hidden for now. Replaces v0.24 (withdrawn: Film Grain High rebooted the camera) | Camera-tested |
 | [v0.22](v0.22/NOTES.md) | Sharp per look (Extras sector 10, −5 Off..+2); the stock Sharpness row leaves the COLOR screen | Camera-tested |
 | [v0.21](v0.21/NOTES.md) | Grain on COLOR, VigFix, hold OK on the Film page saves a look, `*` = differs from factory, WB shift with Auto WB | Camera-tested |

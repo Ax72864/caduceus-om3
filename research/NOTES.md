@@ -1916,3 +1916,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   has ~3 KB left, so the pass would go in ext11 and call the block's xb_open / mapper through the block entry table.
   Rules: halation is an effect the user adds (like Glow), not part of the film sims. Open: control (a Halo row, or a
   Glow colour), and the OM-3 chroma byte order.
+
+## v0.25 released (2026-11-09; owner's go-ahead)
+- Owner: release v0.25 with everything (not split toning). releases/v0.25 rebuilt from the branch (= fx3, rebuilt byte
+  for byte: E1479999.BIN db189ca6…, GUIDES.BIN 1edf66bd…, LABELS.BIN d6c1b4ab…); `patch.py --release v0.25` makes
+  db189ca6… again. New: the release also carries the 20 film sims as an optional LOOKS.BIN (b7e4262a…; the workflow
+  now attaches LOOKS.BIN when a release folder has one). main merged into the branch first (v0.24.1 release commit;
+  the branch already held its changes; conflicts taken from the branch).
+- Docs: CHANGELOG, release notes with the 20 films, README (features, Control Panel step by step, the 20-film table,
+  the rows), USING.md, DEVELOPER_NOTES. Control Panel text: the Glow row is "+ Glow, − Clarity". looklab rebuilt.

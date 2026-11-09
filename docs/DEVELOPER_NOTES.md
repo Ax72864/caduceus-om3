@@ -390,10 +390,11 @@ Stock: OLY_E_147_1100_0000_0000_3.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - The looks are only as good as the preview model (`src/preview.ts`) is of the camera; check a film on the camera
   before trusting it for anything critical.
 
-## v0.25 fast colour grain (branch feature/v0.25-fast-grain; camera-tested 2026-11-08)
+## v0.25 release (branch feature/v0.25-fast-grain; build fx3, camera-tested 2026-11-08)
 
-Full trail: `research/NOTES.md` ("Grainy Film's grain path in the firmware", ft1..ft9, rc1..rc2c), decoded camera
-logs `research/grain/fg3_logs.txt`.
+Full trail: `research/NOTES.md` ("Grainy Film's grain path in the firmware", ft1..ft9, rc1..rc2c; "WB grid again",
+wbg1..3, bw1 reverted; "v0.25 fixes", fx1..fx3; "The camera's 20 film sims"), decoded camera logs
+`research/grain/fg3_logs.txt`.
 
 - **Texture:** for a COLOR still with Grain, `xb_tex` gets Grainy Film's grain texture object (0x604cd921, the cached
   texture builder, with Grainy Film's 6-byte parameter block) into job+8324; the stock clean-up 0x604b9cd9 releases it.
@@ -407,11 +408,23 @@ logs `research/grain/fg3_logs.txt`.
   0x04000400, +100 = 1024; Grainy Film's 1024 / 0 = its black and white), the texture gain (+148: Low 448, Med 832,
   High 1280) and the Y offset (+180 low half = -0.102 x gain: the texture is not zero-mean).
 - **Set-up:** `.hook_su` (0x604b7730) -> block +112 `xb_su` (marks a texture made earlier, or makes it).
-- **Rows:** Glow / Clarity (GL_IT 5382, slider class 9, GLB 0x7ea0 + k, slot +49) and Frame (FR_IT 5381, choice class
-  10, FRB 0x7eb0 + k, slot +50 = 0 / 5); Shading (5399) back. Art Effects: `xb_art` only Frame (5).
-- **Fallback:** Glow / Clarity + Frame + Grain: no texture, COLOR's list, the CPU grain (xb_gs). The MONO-key grain
-  (xb_gt) remains only if the texture cannot be made.
-- Firmware `E1479999.BIN` 591fe72d…, `GUIDES.BIN` cbee5efc…, `LABELS.BIN` 903af75b…. ext11 64976 of 65536 B.
+- **Rows** (`pm_list` 111, 5397, 8, 5398, Blk, Wht, WB, 7, NR, VigFix, 5399 Shading, Glow, 5400 Grain): Glow (GL_IT,
+  slider class 9, slot +49; the row shows the slot negated: + Glow, − Clarity); Shading (5399) back, its readout picture
+  16244 redrawn 6 px lower (`sh_build`). Frame row removed; Art Effects off (`XB_ART 0`: the Art Effect reads as 0).
+- **WB row** (AB_IT, class 11, one row for A-B / G-M): the camera's 2-D control (scene 498 captured by `sc_cap`
+  0x610cdf05; `gr_upd` / `gr_pub` property 256 / `gr_ref` from `pu_hook` 0x611d04ec) shows the dot; `pm_ev`
+  (0x6125becc) opens GUI state 0x0408 (the camera's WB fine-tune screen) for OK / left / right / dials; `gr_id` maps
+  the screen's ids 1580..1605 to the look's slot +26 / +27; `gx_map` (0x610f6016) leaves it (MENU back to our row).
+  Left cell WB± over "A2.G1": `wb_draw` (SL_VAL class 11) -> block +144 `xb_wbc`, glyphs in LABELS.BIN v3 'WBG1'.
+- **Fixes:** `gd_set`'s `call gd_sel` had no return-address slot (overwrote its saved a2, so the half-press save
+  stopped once the editor was used): settings and the film choice are kept over power off now; the same slot fix in
+  `gr_upd` / `gr_pub` / `gr_ref` / `gr_now` / `wb_draw` / `sh_build` and the facade's `gr_id` calls. The editor's
+  first use no longer clears DIRTY. Row memory (setting 2148): Picture Mode opens on its top row.
+- **Fallback:** the CPU grain (xb_gs) stays for the case the texture cannot be made (no Art Effects remain to need it).
+- Firmware `E1479999.BIN` db189ca6…, `GUIDES.BIN` 1edf66bd… (16308 of 16448 B), `LABELS.BIN` d6c1b4ab… (v3, 12160 B).
+  ext11 ~62.4 of 64 KB. Optional `LOOKS.BIN` b7e4262a… = the Control Panel's standard 20 (fw 24 export).
+- **Control Panel:** one list FILM 1–20 (`renderBank`), the 20 films first in the film browser (`CAMERA_FILMS`, from
+  `films.py` `CAMERA`), `defaultBank` = the 20; export "v0.25 or later" (fw 24: Shading kept, Art Effect 0).
 
 ## v0.24.1 (branch hotfix/v0.24.1; camera-tested 2026-11-08)
 

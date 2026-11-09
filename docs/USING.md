@@ -8,13 +8,16 @@
 
 ## Films
 
-Make films (looks) in the [Control Panel](https://androidfanman.github.io/caduceus-om3/): up to five for each of
-COLOR 1–4. Export `LOOKS.BIN` with **Firmware on the camera: v0.25 or later** and copy it to `OM3MOD` on the card.
+Films are your creative profiles: up to 20, **FILM 1–20**, after COLOR 1–4. v0.25 comes with 20 film sims (Portra
+400, Gold 200, Kodachrome 64, Portra 800, CineStill 800T, Ektar 100, Ultramax 400, Pro 400H, Velvia 50, Superia 400,
+ColorPlus 200, CineStill 400D, Fuji C200, Ektachrome E100, Reala 100, Provia 100F, Vision3 250D, Fuji Eterna, Astia
+100F, Agfa Ultra 100: what each looks like is in the [README](../README.md#the-20-film-sims)). Copy the release's
+`LOOKS.BIN` to `OM3MOD`, or make and change films in the [Control Panel](https://androidfanman.github.io/caduceus-om3/)
+(it starts with the same 20, in the same order) and export `LOOKS.BIN` with **Firmware on the camera: v0.25 or later**.
 
-On the camera, Picture Mode › the COLOR position: the top row lists **COLOR 1–4, then FILM 1, FILM 2, …** (the films
-on the card in order, empty numbers skipped). Turn to a film: its **name** is the big title, and it loads onto the
-COLOR it belongs to (the Control Panel's COLOR 1 films onto COLOR 1, and so on). The quick menu and the shooting screen
-then show **FILM n**.
+On the camera, Picture Mode › the COLOR position: the top row lists **COLOR 1–4, then FILM 1–20** (empty places
+skipped). Turn to a film: its **name** is the big title; the quick menu, the shooting screen and the viewfinder show it
+from then on. The camera remembers the film you were on over power off.
 
 ## Changing a film
 
@@ -25,14 +28,15 @@ Every row under Picture Mode changes the film (or the COLOR) you're on, at once:
 | **HSL** | The colour wheel (below) |
 | Contrast, Highlight & Shadow | The camera's own |
 | **Blk** / **Wht** | Blacks / Whites, −5..+5: + lifts / brightens, − crushes / softens |
-| **A-B** / **G-M** | WB shift, −7..+7: amber / blue, green / magenta, in every WB mode (Auto WB included) |
+| **WB** | The WB shift (A-B amber / blue, G-M green / magenta, −7..+7), in every WB mode (Auto WB included). The row shows a small grid with the dot where the shift is, and the numbers under WB± (like "A2.G1"). **OK**, left / right or a dial opens the camera's own WB fine-tune screen; MENU or OK comes back |
 | Sharpness | Sharp: the camera's sharpening, −5 = Off, −4..−1 softer, 0 its normal, +1 / +2 crisper |
 | **Noise Filter** | Off / Low / Std / High for photos with this film |
 | **Vignette Correction** | Off = the lens's natural corners, On = the camera's correction |
 | Shading | The camera's own (darker or lighter corners) |
-| **Glow / Clarity** | −5..−1 Glow (a soft glow), +1..+5 Clarity (local contrast), 0 off |
-| **Frame** | Off / On: a white frame (the only Art Effect from v0.25) |
+| **Glow** | +1..+5 Glow (a soft glow), −1..−5 Clarity (local contrast), 0 off |
 | **Film Grain** | Off / Low / Med / High: film grain on the colour photo |
+
+Picture Mode always opens on the top row. There are no Art Effects from v0.25 (Shading does the dark corners).
 
 **The HSL wheel:** on the HSL row press **INFO**. INFO goes **Color** (the camera's saturation, one colour at a time)
 → **Color All** → **Hue** → **Luminance** → Color. The front dial picks the colour, the rear dial the value. Colours
@@ -40,7 +44,8 @@ run clockwise from Yellow at 12 o'clock: Yellow, Orange, Orange-red, Red, Magent
 Green-cyan, Green, Yellow-green. **Hue** (−5..+5): + turns a colour toward its clockwise neighbour (Yellow → Orange,
 Blue → Blue-cyan). **Luminance** (−5..+5): darker or brighter for that colour.
 
-Your changes stay with the film: switch to another film and back and they're still there. COLOR 1–4 keep their own
+Your changes stay with the film: switch to another film and back, or switch the camera off and on, and they're still
+there. COLOR 1–4 keep their own
 changes the same way. The camera keeps them in `OM3MOD/EDITS.BIN` (saved at the next half-press); `LOOKS.BIN` is never
 changed by the camera.
 
@@ -54,11 +59,10 @@ changed by the camera.
 ## Grain
 
 Grain is added by the camera's image processor while it develops the photo (the way its Grainy Film Art Filter adds
-grain), in colour and at no extra time, also with Shading, Glow / Clarity and Frame. Only Glow / Clarity **and** Frame
-**and** Grain together take a slower route: about 3 seconds more per photo, no fast burst.
+grain), in colour and at no extra time, with every other setting.
 
 ## Card files
 
-`LOOKS.BIN` (your films, from the Control Panel), `EDITS.BIN` (your camera changes, written by the camera),
+`LOOKS.BIN` (your films, from the Control Panel or the release), `EDITS.BIN` (your camera changes, written by the camera),
 `BUNDLES.BIN` (written by the camera), `GUIDES.BIN` and `LABELS.BIN` (from the release, always with its firmware).
 `NAMES.BIN` is only used by v0.17–v0.22. Formats: [FORMATS.md](FORMATS.md).

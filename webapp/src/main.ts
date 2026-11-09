@@ -1480,7 +1480,7 @@ function renderOm3Editor(l: Look) {
       return h('div', { class: 'srow plain', title: 'The camera\'s sharpening for photos with this look' }, h('span', { class: 'sname' }, 'Sharp'), inp, out);
     })(),
       h('p', { class: 'help' }, 'The camera\'s sharpening for photos with this look, in its own numbers: 0 is its normal, +1 and +2 crisper, −1 to −4 softer (−3 and −4 go past the camera\'s menu) and Off (−5) no sharpening at all. Extras sector 10 (firmware v0.22, which takes the Sharpness item off the COLOR screen). Shown roughly in the preview.')),
-    h('p', { class: 'warn' }, h('b', {}, 'Firmware v0.25: '), 'Glow / Clarity has its own row on the camera\'s Picture Mode screen (called Clarity: + is Clarity, − is Glow), and grain stays as fast as normal with it. Art Effects are not used on v0.25 (Shading does the dark corners).'),
+    h('p', { class: 'warn' }, h('b', {}, 'Firmware v0.25: '), 'Glow / Clarity has its own row on the camera\'s Picture Mode screen (called Glow: + is Glow, − is Clarity), and grain stays as fast as normal with it. Art Effects are not used on v0.25 (Shading does the dark corners).'),
     effectPanel(l, fxChanged),
     h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'Art Effect'),
       h('select', { onchange: (e: Event) => { l.art_effect = (e.target as HTMLSelectElement).value as Look['art_effect']; fxChanged(); } },

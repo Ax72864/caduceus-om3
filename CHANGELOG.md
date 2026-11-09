@@ -4,28 +4,45 @@ Versions are named v0.N from v0.18 on. Earlier builds were called "test N" while
 same number is used here (test 17 = v0.17).
 
 ## v0.25
-Fast colour film grain with every setting. Camera-tested (2026-11-08).
+Fast colour film grain, a WB grid row, a Glow row, settings kept over power off, and 20 new film sims. Firmware
+camera-tested (2026-11-08, build fx3); the 20 film sims were tuned on the Control Panel's preview.
 
 **Film grain**
 - Film Grain on COLOR photos is now made by the camera's **image processor while it develops the photo**, the way the
   Grainy Film Art Filter adds its grain (its ready-made grain texture), but kept in colour. It saves **as fast as a
-  photo without grain**, also with **Shading, Glow / Clarity and Frame**.
+  photo without grain**, with every other setting (Shading and Glow / Clarity included).
 - Three clearly different strengths (Low / Med / High). The texture's slight brightening is taken back, so grain no
   longer lifts the photo, and colours stay as they are.
-- One slower combination: Glow / Clarity and Frame and Grain together use the older software grain (about 3 s more per
-  photo): the fast route wrote no picture there.
 - The v0.21–v0.24 grain (the camera's Monochrome grain forced on COLOR photos) is gone with its limits: no more black
-  and white with Shading, no grain lost with Glow or an Art Effect.
+  and white with Shading, no grain lost with Glow.
 
-**Picture Mode rows**
-- **Shading** is back (v0.24.1 hid it).
-- New rows after Shading: **Glow / Clarity** (−5 Glow … +5 Clarity) and **Frame** (Off / On).
-- **Art Effects: Frame only.** Star Light (slow), Pin Hole and White Edge are gone; Shading does the dark corners.
+**Picture Mode screen**
+- **WB row:** one row in place of A-B and G-M. It shows a small grid with the dot where the film's shift is, and
+  "A2.G1"-style numbers under WB±. **OK**, left / right or a dial opens the camera's own WB fine-tune screen on the
+  film's A-B / G-M, with the camera's own directions.
+- **Shading** is back (v0.24.1 hid it), and its number sits in line with the other rows.
+- **Glow row:** + is Glow (soft glow), − is Clarity (local contrast), −5..+5.
+- **No Art Effects any more:** Star Light, Pin Hole, White Edge and Frame are gone (Shading does the dark corners).
+- Picture Mode always opens on its top row.
 
-**Control Panel**
-- Export › Firmware on the camera: **v0.25 or later** (new default; Shading kept, Art Effect saved as Frame or Off),
-  v0.24.1 (Shading 0), v0.22, v0.21, v0.20 or older. The Art Effect menu offers Off / Frame; the slow-grain note now
-  covers only Glow / Clarity + Frame + Grain.
+**Kept over power off**
+- Changes to films and to COLOR 1–4 and the film you were on are now kept when you switch the camera off and on
+  (a v0.24 bug stopped the half-press save once the editor had been used).
+- The viewfinder's info screen shows the film you're on.
+
+**Film sims and the Control Panel**
+- **20 new film sims**, our own designs, rewritten with every setting the camera now has (colour per slice, WB shift,
+  Contrast, Highlights / Shadows / Midtones, Blacks / Whites, Sharp), in this order as FILM 1–20: Portra 400,
+  Gold 200, Kodachrome 64, Portra 800, CineStill 800T, Ektar 100, Ultramax 400, Pro 400H, Velvia 50, Superia 400,
+  ColorPlus 200, CineStill 400D, Fuji C200, Ektachrome E100, Reala 100, Provia 100F, Vision3 250D, Fuji Eterna,
+  Astia 100F, Agfa Ultra 100. None uses grain, Glow / Clarity or an Art Effect. The release has them as an optional
+  `LOOKS.BIN`.
+- The Control Panel's list is now **one list, FILM 1–20**, the same order as the camera (no COLOR 1–4 groups). New
+  visitors start with the 20 films; **New › Reset looks to standard** gives them to existing users.
+- **Film sims** shows **The 20** first, in FILM order; the other films follow under "More". Renamed: Fuji 400H →
+  Pro 400H, Superia Reala → Reala 100 (looks using the old names still work); new: Fuji Eterna (the cinema film).
+- Export › Firmware on the camera: **v0.25 or later** (new default; Shading kept, Art Effect Off), v0.24.1 (Shading 0),
+  v0.22, v0.21, v0.20 or older.
 
 ## v0.24.1
 v0.24 with the reboot fixed and the Shading row hidden. Camera-tested (2026-11-08). Everything listed under v0.24
