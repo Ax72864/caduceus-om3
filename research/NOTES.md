@@ -1610,3 +1610,8 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   combiner 1 forced (xb_lg / xb_sel2 by request) with COLOR's chroma back (xb_c1e). Frame still CPU grain. No CPU
   grain whenever a texture exists. Test LOOKS: COLOR 1 FILM 1-5 = High / + Pin Hole / + Glow -3 / + Shading -3 /
   + White Edge, COLOR 2 FILM 6-7 = + Frame (CPU) / + Star. GUIDES 2b66efbc….
+- **ft7 camera (2026-11-08, owner): FAILED.** FILM 1 (plain High) fine (PB081472). **FILM 2 (Pin Hole): took the
+  picture, froze, black screen, battery pull** (no file): texture + combiner 1 on the kind-3 conversion pass hangs the
+  image processor. Do not retry that form. Also: "COLOR 1 had a white frame": with XB_FX 1 again, COLOR 1's own
+  stored Art Effect (likely Frame, set in the v0.20-v0.22 Extras era; v0.24 has no row to change it) is active again
+  (analysis; to check). ft6 GUIDES (705cf9b8…) put back on the card.
