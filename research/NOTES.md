@@ -1848,3 +1848,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   switch fails (re-entry check), and no other picture in the table looks like the shooting screen's COLOR labels
   (15706..15709), so the viewfinder may draw it as text. Possibly the same cause as (7) (bank not loaded yet).
 - Package fx1: E1479999.BIN 1203dedc…, GUIDES.BIN 9fc2aea5…, LABELS.BIN d6c1b4ab…, on the card, checked by checksum.
+- Camera (owner, 2026-11-08, fx1, photos): the film now shows on the screens (the viewfinder title too); **missing
+  icons** in the Noise Filter / Vignette Correction / Film Grain strips (only "High Std", nothing, "Low Off"); the
+  Clarity icon looks bad -> back to "Glow", **+ = stronger Glow, - = Clarity**.
+- Strips: a regression since the WB grid builds (wbg1..fx1; rc2c fine in the emulator): sl_cnt / sl_vbi / sl_sel
+  called gr_id without a return-address slot, so the call's return address overwrote the saved d2 (call writes
+  (0,sp)); the strips' option lists came out wrong. Fixed with add -4,sp around the call. Glow row: string "Glow",
+  icon "Glow" again; SL_VAL / sl_set class 9 negate (the row + = slot - = Glow; the slot and the Control Panel keep
+  - Glow / + Clarity). Emulator: all three strips as rc2c; Glow +2 on the row.
+- Package fx2: E1479999.BIN 9fb1d1f1…, GUIDES.BIN 48ff01c3…, LABELS.BIN d6c1b4ab…, on the card, checked by checksum.
