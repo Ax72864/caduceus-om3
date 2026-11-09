@@ -1895,3 +1895,24 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   FILM 20 "Agfa Ultra 100" Contrast +1. On the owner's card as LOOKS.BIN and LOOKS.NEW, checked by checksum; the old
   LOOKS.BIN / .NEW / EDITS.BIN kept in the session scratchpad (not in the repo). Old EDITS.BIN changes drop by
   themselves (each carries a CRC of the film record it came from). No firmware change.
+
+## Halation on the E-P7: how cakelesscoder did it (read 2026-11-09, their repo 685531c; analysis only, nothing built here)
+- Source: github.com/cakelesscoder/caduceus-ep7 (Apache-2.0), docs/HALATION_RED.md sections 14-17, patches/halation
+  (hl.s.in), v0.31. Read only; their repository was not changed.
+- Their result: **camera-tested on the E-P7** (h1): CineStill 800T shows a red / orange halo around an LED strip.
+  h2 (a Halo Off / Low / Med / High control) is emulator only on their side.
+- How: a CPU pass over the finished photo, on the CPU grain route (Soft Focus blend hook, after the blend, before the
+  grain). That route was ported from our OM-3 CPU grain (xb_gs / xb_open window / mapper), so the OM-3 already has it.
+  A. read Y (every 2nd pixel, every 4th row), sum how far it is above a threshold into a 64 x 64 px cell grid (u8,
+     one malloc <= 16 KB); B. blur the grid ([1 2 1] twice per axis) and soften it (knee); skip when a third of the
+     cells glow (bright daylight stays fast); C. on rows near lights, add the glow to Y and push the chroma toward red
+     / amber / warm / cool, fading on bright pixels so light cores stay white.
+- Buffer: 2 bytes per pixel, pixel pair = Y0 Cb Y1 Cr, chroma offset-binary (camera-proven on the E-P7 by the red halo).
+  **Not proven on the OM-3** (our CPU grain writes Y only): the first OM-3 test needs a swap fallback, as theirs had.
+- Cost on the E-P7 (their estimate): about 1-2 s more per photo at night, about 3 s near the cap, on top of the Soft
+  Focus passes; ~1.8 KB of code in 7 places.
+- For the OM-3 (analysis / guess): feasible on the same route as our Glow row (which already runs the Soft Focus
+  passes). Code must be our own (credit them in NOTICE / README). Space: GUIDES.BIN is full (16308 / 16448), ext11
+  has ~3 KB left, so the pass would go in ext11 and call the block's xb_open / mapper through the block entry table.
+  Rules: halation is an effect the user adds (like Glow), not part of the film sims. Open: control (a Halo row, or a
+  Glow colour), and the OM-3 chroma byte order.
