@@ -1566,3 +1566,12 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   -> `s_c1e` -> block +128 `xb_c1e`: when xb_sel2 forced combiner 1 for Grain Low / High, +96 = 0x04000400 and
   +100 = 1024 (the default's values); High also +148 = 2048 (texture gain guess). Med = ft2/ft3 control. Firmware
   75a48eb7…, GUIDES 605f7b1a….
+- **ft4 camera (2026-11-08, owner; PB081456 Grain Low, PB081457 Grain High; no restarts): COLOUR + GRAIN from the
+  image processor.** Low: full colour (Cb/Cr means 101..148, as normal), grain Y high-pass ~20 on every patch (the
+  MONO-grain High of v0.21 measured ~25..38 on its scene; plain COLOR ~4), chroma high-pass ~0.5 (grey grain).
+  High (+148 = 2048): stronger grain (Y hp ~31..38) but the whole photo darker (patch means 28..96 vs 90..187) and some
+  chroma speckle (Cb/Cr hp up to 8): so +148 is the texture's gain and the texture is not zero-mean at that gain
+  (or the gain also shifts the offset). Confirms: +96 high half / +100 = the main input's chroma gains.
+  => Fast colour-photo grain through Grainy Film's texture blend works. Next: strength levels (texture gain with the
+  right offset: +8 3822, +144 0x2a0000, the signed ranges of 0x605047c1, or +148 below 1024 for Low), speed check,
+  Art Effects / Glow / Clarity / Shading on top, then our own texture (colour speckle).
