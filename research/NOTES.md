@@ -1805,3 +1805,22 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   left cell "Blk/Wht" over "+2.-1". Pictures drawn at run time by the cell drawer, generalised and moved to ext11
   (GUIDES.BIN is at 16316 of 16448 B); glyphs in LABELS.BIN (+ '+', '-', '/', 'l', 'k', 'W', 'h', 't').
   To check in the emulator: does the fine-tune screen take the facade's count (11) and stop at +-5?
+
+### Blacks / Whites grid test 1 (2026-11-08; emulator only)
+- Commit "Blacks / Whites grid row": BK_IT is a one-option choice row (class 12, BWB 0x7ed0 + k; CHC bw_a..f, lc_bw,
+  item entry bw_l0 "Blacks / Whites" / bw_l1, bw_l2 IC_BW 0x7f7f); WH_IT has no row now, the Blk / Wht slider
+  pictures are blank (ic_pay 16432). gr_mode (gr_upd: AB_IT 0, BK_IT 1) picks the slots (+26 / +27 or +47 / +48 in
+  gr_pub) and the facade ids (gr_id: BKB / WHB + k). Experiment first: the fine-tune screen takes the facade's range
+  (-5..+5) and stops there.
+- Pictures while gr_mode = 1 and gr_flag (ic_get, bw_swap): the box letters G 10324 / A 10327 -> our '+' (IC_BP), B
+  10325 / M 10328 -> our '-' (IC_BM), 32 x 32; the header letters A 10813 / 10814, G 10817 / 10818 -> our '+' (IC_HP,
+  16 x 30), B 10815 / 10816, M 10820 -> the camera's '-' 1120; the header's "WBAuto" 11240 -> "Blk/Wht" (bw_tdesc).
+  No large camera '+' exists among the 32 x 32 / 16 x 30 pictures (survey of the table), so ours (mkicons bw_syms,
+  bw_top) travel in LABELS.BIN's 'WBG1' section (header now 4 (offset, length) pairs); the block publishes the
+  section at wb_v + 36 and wb_draw (mode 1) fills the descriptors. The left cell (xb_wbc mode 1): "Blk/Wht" over
+  "+2/-1" (glyphs '+', '-', '/' added: 16). gr_upd reloads scene 498 when moving between the two grid rows
+  (gr_lmode), else the boxes kept the other row's pictures.
+- Sizes: GUIDES.BIN 16416 of 16448 B, LABELS.BIN 15244 B, ext11 64544 of 65536 B.
+- Emulator: both rows, preview, fine-tune (+ / - boxes, "Blk/Wht +2 . +3" header), MENU / OK / half-press exits,
+  re-entry: no fault. Package bw1: E1479999.BIN e44e23c4…, GUIDES.BIN c7d51ce8…, LABELS.BIN 88f4c049… (card not
+  connected at packaging).
