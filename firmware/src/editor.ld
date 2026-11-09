@@ -9,6 +9,7 @@ SECTIONS {
   .hook_su      0x604b7730 : { *(.hook_su) }
   .hook_sel2    0x60504b5d : { *(.hook_sel2) }
   .hook_c1e     0x605053cc : { *(.hook_c1e) }
+  .hook_wl      0x604b8d91 : { *(.hook_wl) }
   .hook_tone    0x605197d7 : { *(.hook_tone) }
   .hook_fx      0x60555e50 : { *(.hook_fx) }
   .hook_lv      0x6046b8bb : { *(.hook_lv) }
@@ -57,6 +58,7 @@ pg_back       = 0x611d07bd;
 pgm_back      = 0x611c3710;
 rsp_back      = 0x611c3cbd;
 sf_stock      = 0x604be2aa;
+wl_back       = 0x604b8d99;         /* ft8: after the work-list key read */
 su_stock      = 0x604b97db;         /* ft1: the still set-up (Grainy Film's texture is made here) */
 arw_back      = 0x611d0be8;
 rv_469        = 0x611b21f2;

@@ -51,6 +51,8 @@ xb_base:
  .balign 8
  jmp xb_c1e                       /* +128 ft4: end of combiner 1's set-up (s_c1e, `calls`, a2 = register image) */
  .balign 8
+ jmp xb_wl                        /* +136 ft8: the still's work list key (s_wl, `calls`, a0 = job) -> d0 key or 0 */
+ .balign 8
 xb_nrel:
  .long 0                          /* relocation count (written by the build) */
 
@@ -165,9 +167,7 @@ xb_cap:
  movbu (53,a1),d0                 /* Art Effect + Grain: the Soft Focus passes for the CPU grain (w 1024), */
  cmp 0,d0
  beq 1f
- movbu (50,a1),d0                 /* ft7: only Frame (5) keeps the CPU grain; the others take the texture */
- cmp 5,d0
- bne 1f
+ bra 1f                           /* ft8: Art Effects take the texture (Grainy Film's list) */
 2:
  or 128,d1
 1:
@@ -529,24 +529,9 @@ xb_dev:
  movhu (1756,a1),d1               /* ft5: without its own effect: the texture here */
  cmp 0,d1
  beq 4f
- mov 3,d1                         /* ft7: Pin Hole 0x0200, Glow 0x0400, White Edge 0x0500, Shading 0x0c00: later */
- movbu d1,(xb_tx)
- clr d1
- movbu d1,(xb_gt)
- bra 9f
+ bra 9f                           /* ft8: its own effect in the development (ft7's conversion-pass texture hung) */
 2:
- cmp 3,d1                         /* ft7: kind 3, waiting: the conversion pass (stage 0xf005, effect 0) */
- bne 9f
- cmp 3,d0
- bne 9f
- movhu (12,a1),d1
- cmp 0xf005,d1
- bne 9f
- movhu (1084,a1),d1
- cmp 0,d1
- bne 9f
- mov 1,d1
- movbu d1,(xb_k3)
+ bra 9f
 4:
  mov 2,d0
  movbu d0,(xb_tx)
@@ -622,9 +607,9 @@ xb_su:
  movbu (53,a1),d0                 /* Grain 1..3 */
  cmp 0,d0
  beq 9f
- movbu (50,a1),d1                 /* ft7: no texture with Frame (it restarted the camera): CPU grain there */
- cmp 5,d1
- beq 9f
+ movbu (49,a1),d1                 /* ft8: no texture with Glow / Clarity (CPU grain there) */
+ cmp 0,d1
+ bne 9f
  movbu d0,(xb_tl)
  mov a2,a3
  add 4,a3                         /* the still's parameters */
@@ -723,6 +708,46 @@ xb_c1e:
  .balign 2
 xb_tgain:
  .hword 512, 768, 1024
+
+/* xb_wl (ft8): `calls` from s_wl in the work-list builder 0x604b8cf7, a0 = job, before it picks the list by the
+ * job's key (job+5352). A COLOR still (11) that already has our texture (job+8324, made at the set-up) and whose
+ * profile has Grain with Pin Hole (2), White Edge (4) or Frame (5) and no Glow / Clarity gets Grainy Film II's list
+ * (handler 0x604b8ddc: development with the texture, then the effect as its own pass, as Grainy Film + Pin Hole /
+ * Frame do on the camera). The job's key itself stays 11. d0 = the key to look up, 0 = keep. */
+xb_wl:
+ movm [d2,d3,a2,a3],(sp)
+ add -4,sp
+ clr d2
+ mov a0,a2
+ mov (5352,a2),d0
+ cmp 11,d0
+ bne 9f
+ mov (8324,a2),d0
+ cmp 0,d0
+ beq 9f
+ call xb_slot,[d2,d3],12
+ cmp 0,a1
+ beq 9f
+ movbu (53,a1),d0
+ cmp 0,d0
+ beq 9f
+ movbu (49,a1),d0
+ cmp 0,d0
+ bne 9f
+ movbu (50,a1),d0
+ cmp 2,d0
+ beq 8f
+ cmp 4,d0
+ beq 8f
+ cmp 5,d0
+ bne 9f
+8:
+ mov 0x01020068,d2
+9:
+ mov d2,d0
+ add 4,sp
+ movm (sp),[d2,d3,a2,a3]
+ rets
 
 xb_sv:                            /* `calls` from pf_save: (0,sp) = return */
  rets

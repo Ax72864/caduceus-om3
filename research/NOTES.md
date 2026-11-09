@@ -1615,3 +1615,20 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   image processor. Do not retry that form. Also: "COLOR 1 had a white frame": with XB_FX 1 again, COLOR 1's own
   stored Art Effect (likely Frame, set in the v0.20-v0.22 Extras era; v0.24 has no row to change it) is active again
   (analysis; to check). ft6 GUIDES (705cf9b8…) put back on the card.
+
+## Grainy Film's work list for COLOR + effects (2026-11-08; analysis + ft8 build)
+
+- Default (COLOR) list 0x604b917f: main pass 0x604b857b / hook 0x604b84c6 = the development itself (Pin Hole /
+  White Edge / Shading / Glow put their combiner there), then flag-driven passes (request flags 0x20000, 0x40000,
+  0x40 + job+5385 ...), then finals. Grainy Film's list 0x604b8ddc: pre-pass 0x604b81ca (job+5385 4..8) / 0x604b81ec
+  (the four kind-3 0xf002 records), development 0x604bc17e + texture hook 0x604bc0cf (stage 0x0100), then the common
+  tail 0x604b918c with **pass 0x604bc2a1 / hook 0x604bc40e = the kind-3 stage-0x0101 pass that carries the Art
+  Effect** (Pin Hole combiner 9, Frame combiner 10 in the fg3 logs), then the same flag passes. So Grainy Film keeps
+  the effect out of the development; COLOR puts it in.
+- **ft8 (firmware + GUIDES; emulator: boots, live view fine):** `.hook_wl` at 0x604b8d91 (the builder's key read) ->
+  `s_wl` -> block +136 `xb_wl`: a COLOR still (job key 11) that already has our texture (job+8324) and Grain with Pin
+  Hole / White Edge / Frame (no Glow) is given Grainy Film II's list (lookup key only; the job keeps key 11, so its
+  colour settings stay COLOR's). ft7's conversion-pass texture removed (it hung); xb_su makes the texture for every
+  Art Effect (not with Glow / Clarity: CPU grain there); Art + Grain never adds the Soft Focus pass. If the set-up
+  runs after the list build, job+8324 is still 0 and nothing changes (safe). Firmware 235ecee0…, GUIDES 38408948….
+  Test LOOKS: COLOR 1 FILM 1-5 = High / + Pin Hole / + White Edge / + Frame / + Star.

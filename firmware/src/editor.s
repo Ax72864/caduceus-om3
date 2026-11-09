@@ -6612,3 +6612,29 @@ s_c1e:
  calls (a1)
 9:
  ret [d2,d3,a2,a3],28
+
+/* ft8: the work-list builder 0x604b8cf7 reads the job's key (0x604b8d91: mov d3,a0; mov (a0),a0; mov (5352,a0),d2)
+ * and picks the list by it; code block +136 (xb_wl) may give Grainy Film II's key for that pick only. */
+.section .hook_wl,"ax"
+ jmp s_wl                         /* stock 0x604b8d91: f1ec f000 fa08e814 */
+ nop
+ nop
+ nop
+
+.section .ext11,"ax"
+s_wl:
+ mov d3,a0
+ mov (a0),a0
+ mov (5352,a0),d2
+ mov a0,d1
+ call xp,[],0
+ beq 9f
+ add 120,a1
+ add 16,a1
+ mov d1,a0
+ calls (a1)
+ cmp 0,d0
+ beq 9f
+ mov d0,d2
+9:
+ jmp wl_back
