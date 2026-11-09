@@ -1697,3 +1697,6 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   High = fine (Y hp ~22). So the break is Glow + Frame on Grainy Film's list with the texture.
 - **rc2c (GUIDES only, firmware = rc2b; emulator: boots):** Glow / Clarity together with Frame and Grain: no texture,
   COLOR's own list, the CPU grain (~3 s, as v0.22). Every other combination as rc2b. GUIDES cbee5efc….
+- **rc2c camera (2026-11-08, owner: "that works!!!"):** Glow + Frame + Grain saves (slower CPU grain) with grain,
+  glow and frame; Glow + Grain and Frame + Grain fast. rc2c = firmware 591fe72d…, GUIDES cbee5efc… = the v0.25
+  release candidate.
