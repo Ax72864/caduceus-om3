@@ -1867,3 +1867,9 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Emulator after the fix: film change + Contrast, half-press -> status 1 (saved), LOOKS.BIN selection 2, EDITS.BIN
   and BUNDLES.BIN written; booting from that card: LIDX 2 again. (The camera keeps its own picture mode itself.)
 - Package fx3: E1479999.BIN db189ca6…, GUIDES.BIN 1edf66bd…, LABELS.BIN d6c1b4ab… (card not connected).
+- **Camera (owner, 2026-11-08, fx3): "it works perfectly!"** Settings and the film choice are kept over power off /
+  on. With fx1 / fx2: the film shows on the screens and in the viewfinder, Picture Mode opens on the top row, Frame is
+  gone, Shading's number is in line, the strips show all options, Glow + / - right. **fx3 is camera-tested** (the
+  v0.25 candidate: E1479999.BIN db189ca6…, GUIDES.BIN 1edf66bd…, LABELS.BIN d6c1b4ab…). Not released yet: releases
+  /v0.25 on the branch still holds rc2c's files and must be rebuilt from this build before a release (owner's go-ahead
+  needed). Next (owner): update the Control Panel and the film sims.

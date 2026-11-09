@@ -63,7 +63,7 @@ new features have room; more can be opened up the same way.
 
 | Date | Item | What it gives film looks |
 |---|---|---|
-| 2026-11-08 | v0.25 fast colour grain | Film grain from the image processor in colour, as fast as no grain, with Shading, Glow / Clarity and Frame; Glow / Clarity and Frame rows. |
+| 2026-11-08 | v0.25 fast colour grain (camera-tested, release pending) | Film grain from the image processor in colour, as fast as no grain, with Shading and Glow / Clarity; a Glow row (+ Glow, − Clarity), a WB grid row, no Art Effects; film choice and changes now kept over power off. |
 | 2026-11-08 | v0.24.1 films in the list | Films (FILM n) in the Picture Mode list with their names; changes kept per film; the Extras as Picture Mode rows. Glow / Clarity and Art Effects off and the Shading row hidden for now. (v0.24 was withdrawn the same day: Film Grain High rebooted the camera.) |
 | 2026-11-07 | v0.22 Sharp | Sharpening per look, −5 (Off) to +2; film sims set it. |
 | 2026-11-07 | Photo-to-look instructions | A look built from any photo, loaded by a link. |
