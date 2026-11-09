@@ -1824,3 +1824,7 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
 - Emulator: both rows, preview, fine-tune (+ / - boxes, "Blk/Wht +2 . +3" header), MENU / OK / half-press exits,
   re-entry: no fault. Package bw1: E1479999.BIN e44e23c4…, GUIDES.BIN c7d51ce8…, LABELS.BIN 88f4c049… (card not
   connected at packaging).
+- Camera (owner, 2026-11-08, bw1): "that don't look too good. lets scrap it and go back to the sliders". Reverted
+  (commit "Revert the Blacks / Whites grid row"): firmware and card files are WB grid test 3 again (rebuilt byte for
+  byte: E1479999.BIN eba6b508…, GUIDES.BIN 58983837…, LABELS.BIN d6c1b4ab…), back on the card, checked by
+  checksum. The Blacks / Whites grid code stays in commit 2fa6a5c for reference.
