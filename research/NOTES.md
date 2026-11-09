@@ -1766,3 +1766,11 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   903af75b… (card not connected at packaging).
 - Still to do: Blacks / Whites grid the same way (the fine-tune screen shows B / A / G / M and WB letters: needs our
   own pictures / header); docs.
+- Camera (owner, 2026-11-08, package wbg1): **OK opens the grid**, arrows and the rest adjust properly; **half-press out
+  of the grid restarted the camera**; the WB row's left cell looks wrong (wants it as the camera's WB screen: the WB±
+  picture with "A2.G2" under it). Emulator reproduced the restart: the next Picture Mode visit called gr_is on the old
+  screen's holder (fault in gr_is). Fix (package wbg2: E1479999.BIN 40927e34…, GUIDES.BIN 11d8ca4b…, LABELS.BIN
+  903af75b…, on the card, checked by checksum): leaving the fine-tune screen anywhere but MENU forgets the holder;
+  sc_cap loads 498 in place of 457 whenever our row is current (Picture Mode now comes back on the remembered row,
+  setting 2148 / gr_row); gr_wait only after MENU. Emulator: half-press, OK and MENU exits, re-entry, OK again: no
+  fault. Next: the left cell as a runtime-drawn picture (WB± over the values), then the Blacks / Whites grid.
