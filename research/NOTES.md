@@ -1857,3 +1857,13 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   icon "Glow" again; SL_VAL / sl_set class 9 negate (the row + = slot - = Glow; the slot and the Control Panel keep
   - Glow / + Clarity). Emulator: all three strips as rc2c; Glow +2 on the row.
 - Package fx2: E1479999.BIN 9fb1d1f1…, GUIDES.BIN 48ff01c3…, LABELS.BIN d6c1b4ab…, on the card, checked by checksum.
+- Camera (owner, fx2): strips all fine, Glow + / - right; **settings still not kept over power off / on**.
+- Found (emulator): ed_trig never passed its dirty check once the editor had been used: it calls gd_set, whose first
+  instruction (film test 8: `call gd_sel`) had no return-address slot, so that call wrote over gd_set's saved a2;
+  ed_trig came back with a2 = 0x61aa4492 (gd_set + 7) and read DIRTY there. So since film test 8 the half-press saved
+  only when the editor had not been used since power-on. Fix: add -4 / +4 around that call. The same pattern in our
+  own code (call ..,[d2,d3,a2,a3],16 in functions that call others: gr_upd / gr_pub / gr_ref / gr_now / wb_draw /
+  sh_build) -> frame 20; calls from hooked frames (pu_hook, sc_cap, gx_map) get their own slot.
+- Emulator after the fix: film change + Contrast, half-press -> status 1 (saved), LOOKS.BIN selection 2, EDITS.BIN
+  and BUNDLES.BIN written; booting from that card: LIDX 2 again. (The camera keeps its own picture mode itself.)
+- Package fx3: E1479999.BIN db189ca6…, GUIDES.BIN 1edf66bd…, LABELS.BIN d6c1b4ab… (card not connected).
