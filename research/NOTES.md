@@ -1789,3 +1789,19 @@ Stock: OLY_E_147_1100_0000_0000.BIN sha 8c133084…696d, main 5e8d376e…7d59.
   Emulator: cell "WB±" / "A2.G1" / "B2.M2" follows the fine-tune values, grid preview with "WB" under it, half-press /
   OK / MENU exits and re-entry: no fault. Package wbg3: E1479999.BIN eba6b508…, GUIDES.BIN 58983837…, LABELS.BIN
   d6c1b4ab… (new: always copy with this firmware), on the card, checked by checksum.
+- Camera (owner, 2026-11-08, wbg3): "It's perfect!" The WB row (cell, preview, OK -> fine-tune, exits) is
+  camera-tested. Next: the Blacks / Whites grid.
+
+### Blacks / Whites grid: plan (2026-11-08; analysis)
+- Owner: a grid like the WB one, Blacks on the horizontal axis, Whites on the vertical; it replaces the Blacks and
+  Whites rows; OK opens it "just like" the WB grid.
+- The fine-tune screen's pictures (emulator, rendered from the picture table): box letters 10324 G, 10325 B, 10327 A,
+  10328 M (32 x 32, type 11); header "WBAuto*" 11240 (86 x 44), header glyphs 16 x 30: 10813 'A', 10817 'G', 10826
+  '.', 1121 '1' (the digits nearby); 10159 "Reset OK Hold"; 10904..10907 grid frame / dot / lines.
+- Plan: one row (BK_IT reused, WH_IT dropped; their "Blk" / "Wht" pictures freed from ic_pay, ~1.6 KB of ext11).
+  gr_mode 1 = Blacks / Whites: pm_ev opens 0x0408 the same way; gr_id maps the grid ids to BKB / WHB + k (slots
+  +47 / +48, -5..+5); gr_pub draws the dot from +47 / +48; ic_get answers the box letters, the header letters and the
+  header title with our pictures while gr_mode = 1 and gr_flag (boxes '-' / '+', header "Blk/Wht", '+' / '-'); the
+  left cell "Blk/Wht" over "+2.-1". Pictures drawn at run time by the cell drawer, generalised and moved to ext11
+  (GUIDES.BIN is at 16316 of 16448 B); glyphs in LABELS.BIN (+ '+', '-', '/', 'l', 'k', 'W', 'h', 't').
+  To check in the emulator: does the fine-tune screen take the facade's count (11) and stop at +-5?
